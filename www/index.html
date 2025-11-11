@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="assets/icon.png">
+    <title>Snake Ultra - Deluxe Edition</title>
+    <link rel="stylesheet" href="snake.css">
+    <link rel="stylesheet" href="rules.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:,">
+    
+    <!-- Nouveaux modules (ordre important!) -->
+    <script src="render-utils.js"></script>
+    <script src="solo-game.js"></script>
+    <script src="network-multiplayer.js"></script>
+    <script src="multi-game.js"></script>
+    <script src="navigation.js"></script>
+    <script src="snake.js"></script>
+</head>
+<body>
+    <!-- ÉCRAN DE CHARGEMENT -->
+    <div class="screen" id="loading">
+        <div class="video-wrapper">
+            <img id="loading-image" src="assets/loading-image.jpg" alt="Écran de chargement Snake Ultra">
+            <div id="start-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); display: flex; justify-content: center; align-items: center; z-index: 1001;">
+                <button id="start-button" style="padding: 20px; font-size: 24px; background: #D4AF37; color: #00FF87; border: 2px solid #00FF87; border-radius: 15px; cursor: pointer;">Démarrer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="phone">
+        <!-- MENU PRINCIPAL FINAL -->
+        <div class="screen hidden" id="menu">
+            
+            <!-- CERCLE NIVEAU (Position absolute - en haut à gauche) -->
+            <div class="player-circle-container">
+                <div class="player-circle">
+                    <div class="player-circle-inner">
+                        <span class="player-level-text">Nv</span>
+                        <span class="player-level-number" id="player-level-num">1</span>
+                    </div>
+                    <svg class="player-circle-progress" viewBox="0 0 100 100">
+                        <circle class="player-circle-bg" cx="50" cy="50" r="45" />
+                        <circle class="player-circle-fill" id="player-circle-fill" cx="50" cy="50" r="45" />
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- TITRE -->
+            <div class="subtitle">Deluxe Edition</div>
+            
+            <!-- TOUS LES BOUTONS -->
+            <div class="menu-content">
+                <button class="menu-btn play-btn" onclick="window.audio.buttonClick();window.start()">🎮 JOUER SOLO</button>
+                <button class="menu-btn play-btn" onclick="window.audio.buttonClick();startLocalMultiplayer()">🌐 MULTIJOUEUR RÉSEAU</button>
+                
+                <div class="diff-selector" role="radiogroup" aria-label="Sélection du niveau de difficulté">
+                    <button class="diff-btn active" onclick="window.audio.buttonClick();setDiff(0)" aria-label="Mode Facile" role="radio" aria-checked="true">🟢 FACILE</button>
+                    <button class="diff-btn" onclick="window.audio.buttonClick();setDiff(1)" aria-label="Mode Normal" role="radio" aria-checked="false">🟡 NORMAL</button>
+                    <button class="diff-btn" onclick="window.audio.buttonClick();setDiff(2)" aria-label="Mode Difficile" role="radio" aria-checked="false">🔴 DIFFICILE</button>
+                </div>
+               
+                
+                <button class="menu-btn" onclick="window.audio.buttonClick();career()" aria-label="Voir votre carrière">🏆 CARRIERE</button>
+                <button class="menu-btn" onclick="window.audio.buttonClick();showRules()" aria-label="Voir les règles du jeu">📋 RÈGLES</button>
+                <button class="menu-btn" onclick="window.audio.buttonClick();showCredits()" aria-label="Voir les crédits">🎬 CRÉDITS</button>
+                <button class="menu-btn sound-btn" id="soundToggle" onclick="window.audio.buttonClick();toggleSound()" aria-label="Activer ou désactiver le son">🔊 SON : <span id="sound-status">ACTIVÉ</span></button>
+            </div>
+        </div>
+
+        <!-- ÉCRAN JEU SOLO -->
+        <div class="screen hidden" id="game-solo">
+            <div class="game-area">
+                <div class="game-column">
+                    <div class="score-box" id="solo-score-box">
+                        <table>
+                            <tr>
+                                <td>
+                                    <div class="score-label">Score</div>
+                                    <div class="score-value" id="solo-sc" aria-live="polite">0</div>
+                                </td>
+                                <td>
+                                    <div class="score-label">Niveau</div>
+                                    <div class="score-value" id="solo-lv" aria-live="polite">1</div>
+                                </td>
+                                <td>
+                                    <div class="score-label">Combo</div>
+                                    <div class="score-value" id="solo-cb" aria-live="polite">x1</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <canvas id="canvas-solo" width="400" height="400" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
+                    <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">Up</button>
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">Left</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">Down</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">Right</button>
+                    </div>
+                    <div class="game-controls">
+                        <button class="control-btn" onclick="window.audio.buttonClick();window.pauseSolo()" aria-label="Mettre le jeu en pause">Pause</button>
+                        <button class="control-btn" onclick="window.audio.buttonClick();window.quitSolo()" aria-label="Revenir au menu">Menu</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="score-box">
+                        <div class="score-label">Power-Ups Actifs</div>
+                        <div class="powerup-status" id="solo-powerup-status" aria-live="polite">Aucun</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN JEU MULTIJOUEUR -->
+        <div class="screen hidden" id="game-multi">
+            <div class="game-area">
+                <div class="game-column">
+                    <!-- Tableau J1 | Timer | J2 -->
+                    <div id="multi-score-board" style="display: flex; justify-content: space-between; width: 100%; max-width: 360px; margin: 0 auto 16px; background: linear-gradient(145deg, rgba(0,0,0,0.9), rgba(20,20,50,0.9)); border: 3px solid #D4AF37; border-radius: 12px; padding: 12px 16px; font-family: 'Press Start 2P', monospace; font-size: 14px; color: #00FF87;">
+                        <div id="multi-player1-score" style="flex: 1; text-align: left;">J1: 0</div>
+                        <div id="multi-timer" style="flex: 1; text-align: center; color: #D4AF37; font-weight: bold;">5:00</div>
+                        <div id="multi-player2-score" style="flex: 1; text-align: right;">J2: 0</div>
+                    </div>
+
+                    <canvas id="canvas-multi" width="360" height="360" aria-label="Zone de jeu Snake Ultra Multijoueur"></canvas>
+
+                    <div class="dpad" id="multi-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">Up</button>
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">Left</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">Down</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">Right</button>
+                    </div>
+
+                    <div class="game-controls" style="margin-top: 16px;">
+                        <button class="control-btn" onclick="window.audio.buttonClick();window.abandonMulti()" aria-label="Abandonner la partie">Abandonner</button>
+                        <button class="control-btn" onclick="window.audio.buttonClick();window.quitMulti()" aria-label="Revenir au menu">Menu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN GAME OVER -->
+        <div class="screen hidden" id="over">
+            <div class="game-over-title" role="alert">GAME OVER</div>
+            <div class="menu-content">
+                <div class="score-box">
+                    <div class="score-stats">Statistiques de la Partie</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Score Final</div>
+                            <div class="stat-value"><span id="fsc" aria-live="polite">0</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Niveau Atteint</div>
+                            <div class="stat-value"><span id="flv" aria-live="polite">1</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Combo Maximum</div>
+                            <div class="stat-combo">x<span id="fcb" aria-live="polite">1</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Pommes Mangées</div>
+                            <div class="stat-food"><span id="ffood" aria-live="polite">0</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Temps de Survie</div>
+                            <div class="stat-time"><span id="ftime" aria-live="polite">0:00</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Longueur Max</div>
+                            <div class="stat-length"><span id="fmaxlength" aria-live="polite">1</span> segments</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Murs Détruits</div>
+                            <div class="stat-walls"><span id="fwalls" aria-live="polite">0</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Crânes Mangés</div>
+                            <div class="stat-skulls"><span id="fskulls" aria-live="polite">0</span></div>
+                        </div>
+                    </div>
+                    <div class="stat-difficulty-container">
+                        <div class="stat-label">Difficulté Jouée</div>
+                        <div class="stat-difficulty" id="fdiff" aria-live="polite">Facile</div>
+                    </div>
+                    <div class="stat-powerups-container">
+                        <div class="stat-label">Power-Ups Collectés</div>
+                        <div class="stat-powerups"><span id="fslow" aria-live="polite">0</span> | <span id="fdouble" aria-live="polite">0</span> | <span id="finvincible" aria-live="polite">0</span></div>
+                    </div>
+                    <div class="no-highscore" id="no-highscore">
+                        <div class="no-highscore-label">Score non classé</div>
+                        <div class="no-highscore-text" id="proximity-info">Votre score n'entre pas dans le top 3. Continuez à jouer pour vous améliorer !</div>
+                    </div>
+                </div>
+                <button class="menu-btn" onclick="window.audio.buttonClick();window.start()" aria-label="Rejouer une nouvelle partie">Rejouer</button>
+                <button class="menu-btn" onclick="window.audio.buttonClick();toMenu()" aria-label="Retourner au menu">Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES -->
+    <div class="modal" id="modal">
+        <div class="modal-box" id="mcontent"></div>
+    </div>
+    <div class="modal" id="namemodal">
+        <div class="name-box">
+            <div class="modal-title">Nouveau Record !</div>
+            <div class="name-message">Félicitations ! Vous avez réalisé <strong class="name-score"><span id="ms" aria-live="polite">0</span></strong> points !<br><br>Entrez votre nom pour immortaliser ce score :</div>
+            <input type="text" id="namein" class="name-input" placeholder="VOTRE NOM" maxlength="15" aria-label="Entrez votre nom pour enregistrer le score">
+            <button class="name-submit" onclick="window.audio.buttonClick();saveName()" aria-label="Valider le nom pour enregistrer le score">Valider</button>
+        </div>
+    </div>
+    <div class="modal" id="confirmQuitModal">
+        <div class="modal-box">
+            <div class="modal-title">Quitter la partie ?</div>
+            <div class="info">Voulez-vous vraiment retourner au menu ? Votre progression sera perdue.</div>
+            <div class="modal-buttons">
+                <button class="menu-btn" onclick="window.audio.buttonClick();confirmQuit(true)" aria-label="Confirmer quitter la partie">Oui</button>
+                <button class="menu-btn" onclick="window.audio.buttonClick();confirmQuit(false)" aria-label="Annuler quitter la partie">Non</button>
+            </div>
+        </div>
+    </div>
+
+
+    </body>
+</html>

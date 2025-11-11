@@ -1,0 +1,514 @@
+// ============================================
+// MULTIPLAYER SNAKE GAME - MODE MULTIJOUEUR ENCAPSULÉ
+// ============================================
+
+class MultiplayerSnakeGame {
+    constructor() {
+        // Canvas dédié au multijoueur
+        this.canvas = document.getElementById('canvas-multi');
+        if (!this.canvas) {
+            throw new Error('Canvas canvas-multi introuvable!');
+        }
+        this.ctx = this.canvas.getContext('2d');
+
+        // Configuration
+        this.GRID_SIZE = 30;
+        this.CANVAS_SIZE = 360;
+        this.CELL_SIZE = 360 / 30; // 12px
+
+        // Client WebSocket
+        this.client = new MultiplayerClient();
+
+        // État du serveur
+        this.serverState = null;
+
+        // Contrôle
+        this.isActive = false;
+        this.renderRAF = null;
+        this.timerInterval = null;
+
+        // Couleurs
+        this.COLORS = {
+            GOLD: '#D4AF37',
+            BG_DARK: '#0f0f23',
+            grid: '#404060',
+            border: '#D4AF37'
+        };
+
+        // Setup des callbacks
+        this.setupCallbacks();
+    }
+
+    // ============================================
+    // SETUP CALLBACKS
+    // ============================================
+
+    setupCallbacks() {
+        this.client.onConnected = (message) => {
+            console.log('🎮 Connecté au serveur multijoueur');
+        };
+
+        this.client.onRoomJoined = (message) => {
+            console.log(`🏠 Salle rejointe - Joueur ${message.playerNumber}`);
+
+            if (message.playersInRoom === 1) {
+                this.showWaitingOverlay();
+            } else {
+                this.hideWaitingOverlay();
+                setTimeout(() => this.client.sendReady(), 1000);
+            }
+        };
+
+        this.client.onRoomFull = (message) => {
+            console.log('🎉 Salle complète - 2 joueurs');
+            this.hideWaitingOverlay();
+            setTimeout(() => this.client.sendReady(), 1000);
+        };
+
+        this.client.onGameStart = (message) => {
+            console.log('🎮 Démarrage de la partie!');
+            this.hideWaitingOverlay();
+            this.isActive = true;
+
+            if (message.gameState) {
+                this.serverState = message.gameState;
+            }
+
+            this.startRenderLoop();
+            this.startTimerUpdate();
+        };
+
+        this.client.onGameUpdate = (gameState) => {
+            this.serverState = gameState;
+        };
+
+        this.client.onGameOver = (message) => {
+            console.log('🏁 Fin de partie multijoueur');
+            this.stopRenderLoop();
+            this.stopTimerUpdate();
+            this.showGameOver(message);
+        };
+
+        this.client.onPlayerLeft = (message) => {
+            console.log('👋 Adversaire déconnecté');
+            this.stopRenderLoop();
+            this.stopTimerUpdate();
+            this.client.showMessage('Adversaire déconnecté', 'warning');
+            setTimeout(() => this.returnToMenu(), 3000);
+        };
+    }
+
+    // ============================================
+    // DÉMARRAGE & ARRÊT
+    // ============================================
+
+    start() {
+        console.log('🎮 Démarrage mode multijoueur');
+        this.isActive = false;
+        this.serverState = null;
+
+        // Connecter au serveur
+        this.client.connect();
+
+        // Afficher l'écran de jeu multijoueur
+        this.showGameScreen();
+    }
+
+    stop() {
+        console.log('🛑 Arrêt mode multijoueur');
+        this.isActive = false;
+
+        this.stopRenderLoop();
+        this.stopTimerUpdate();
+        this.client.disconnect();
+    }
+
+    // ============================================
+    // BOUCLE DE RENDU
+    // ============================================
+
+    startRenderLoop() {
+        console.log('🎨 Démarrage boucle de rendu');
+
+        const render = () => {
+            if (!this.isActive) return;
+            this.draw();
+            this.renderRAF = requestAnimationFrame(render);
+        };
+
+        render();
+    }
+
+    stopRenderLoop() {
+        if (this.renderRAF) {
+            cancelAnimationFrame(this.renderRAF);
+            this.renderRAF = null;
+        }
+    }
+
+    // ============================================
+    // RENDU (Avec RenderUtils)
+    // ============================================
+
+    draw() {
+        if (!this.serverState || !this.ctx) return;
+
+        // Effacer le canvas
+        this.ctx.fillStyle = this.COLORS.BG_DARK;
+        this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
+
+        // Dessiner la grille (même style que le solo)
+        RenderUtils.drawGrid(
+            this.ctx,
+            this.GRID_SIZE,
+            this.CELL_SIZE,
+            this.CANVAS_SIZE,
+            { grid: this.COLORS.grid, border: this.COLORS.border }
+        );
+
+        // Dessiner la nourriture (même étoile dorée que le solo)
+        if (this.serverState.food) {
+            RenderUtils.drawStar(
+                this.ctx,
+                this.serverState.food.x,
+                this.serverState.food.y,
+                this.CELL_SIZE
+            );
+        }
+
+        // Dessiner le crâne (même que le solo)
+        if (this.serverState.bad) {
+            RenderUtils.drawSkull(
+                this.ctx,
+                this.serverState.bad.x,
+                this.serverState.bad.y,
+                this.CELL_SIZE
+            );
+        }
+
+        // Dessiner les obstacles (même murs que le solo)
+        if (this.serverState.obstacles && this.serverState.obstacles.length > 0) {
+            for (let obs of this.serverState.obstacles) {
+                RenderUtils.drawWall(
+                    this.ctx,
+                    obs.x,
+                    obs.y,
+                    this.CELL_SIZE
+                );
+            }
+        }
+
+        // Dessiner les serpents des joueurs
+        if (this.serverState.players) {
+            for (let [playerId, playerData] of Object.entries(this.serverState.players)) {
+                if (!playerData.snake || playerData.snake.length === 0) continue;
+
+                const isMe = playerId === this.client.playerId;
+                const isAlive = playerData.alive;
+
+                // Couleur du serpent
+                const headColor = isMe ? '#00FF87' : '#FF6B6B';
+                const bodyColor = isMe ? '#00CC6A' : '#CC5555';
+                const deadColor = '#666666';
+
+                // Dessiner le serpent avec RenderUtils.drawMultiplayerSnake
+                const playerNumber = isMe ? this.client.playerNumber : (this.client.playerNumber === 1 ? 2 : 1);
+                RenderUtils.drawMultiplayerSnake(
+                    this.ctx,
+                    playerData.snake,
+                    this.CELL_SIZE,
+                    isAlive ? headColor : deadColor,
+                    playerNumber,
+                    isAlive
+                );
+            }
+        }
+    }
+
+    // ============================================
+    // TIMER & SCOREBOARD
+    // ============================================
+
+    startTimerUpdate() {
+        this.timerInterval = setInterval(() => {
+            if (!this.isActive || !this.serverState) {
+                this.stopTimerUpdate();
+                return;
+            }
+
+            this.updateScoreBoard();
+        }, 100);
+    }
+
+    stopTimerUpdate() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    }
+
+    updateScoreBoard() {
+        if (!this.serverState) return;
+
+        // Mettre à jour le timer
+        const timerElement = document.getElementById('multi-timer');
+        if (timerElement && this.serverState.matchTimeRemaining !== undefined) {
+            const timeRemaining = this.serverState.matchTimeRemaining;
+            const minutes = Math.floor(timeRemaining / 60000);
+            const seconds = Math.floor((timeRemaining % 60000) / 1000);
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Changer le style si temps critique
+            if (timeRemaining < 60000) {
+                timerElement.style.color = '#FF4444';
+                timerElement.style.fontWeight = 'bold';
+            }
+        }
+
+        // Mettre à jour les scores (segments)
+        if (this.serverState.segments && this.client.playerId) {
+            const segments = this.serverState.segments;
+            const players = Object.keys(segments);
+
+            const myId = this.client.playerId;
+            const opponentId = players.find(id => id !== myId);
+
+            const mySegments = segments[myId] || 1;
+            const oppSegments = segments[opponentId] || 1;
+
+            const p1El = document.getElementById('multi-player1-score');
+            const p2El = document.getElementById('multi-player2-score');
+
+            // J1 ou J2 selon le playerNumber
+            if (this.client.playerNumber === 1) {
+                if (p1El) p1El.textContent = `J1: ${mySegments}`;
+                if (p2El) p2El.textContent = `J2: ${oppSegments}`;
+            } else {
+                if (p1El) p1El.textContent = `J1: ${oppSegments}`;
+                if (p2El) p2El.textContent = `J2: ${mySegments}`;
+            }
+        }
+    }
+
+    // ============================================
+    // CONTRÔLES
+    // ============================================
+
+    changeDirection(dx, dy) {
+        console.log(`🎮 MultiplayerSnakeGame.changeDirection(${dx}, ${dy})`);
+
+        // Convertir { dx, dy } en string pour le serveur
+        let directionString;
+        if (dy === -1) directionString = 'up';
+        else if (dy === 1) directionString = 'down';
+        else if (dx === -1) directionString = 'left';
+        else if (dx === 1) directionString = 'right';
+        else return; // Direction invalide
+
+        console.log(`   → Direction convertie: "${directionString}"`);
+        this.client.sendInput(directionString);
+    }
+
+    abandon() {
+        if (confirm('Abandonner la partie ?')) {
+            this.returnToMenu();
+        }
+    }
+
+    // ============================================
+    // ÉCRANS & UI
+    // ============================================
+
+    showGameScreen() {
+        const menu = document.getElementById('menu');
+        const gameMulti = document.getElementById('game-multi');
+
+        if (menu) menu.classList.add('hidden');
+        if (gameMulti) gameMulti.classList.remove('hidden');
+    }
+
+    showWaitingOverlay() {
+        // Créer un overlay d'attente sur le canvas
+        const overlay = document.createElement('div');
+        overlay.id = 'mp-waiting-overlay';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: #D4AF37;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 8px;
+        `;
+
+        overlay.innerHTML = `
+            <h2 style="font-size: 20px; margin-bottom: 16px; text-shadow: 0 0 10px #D4AF37;">
+                🔍 Recherche adversaire...
+            </h2>
+            <div style="
+                width: 40px;
+                height: 40px;
+                border: 4px solid #333;
+                border-top: 4px solid #D4AF37;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            "></div>
+            <style>
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+
+        // Insérer l'overlay juste après le canvas
+        const canvasParent = this.canvas.parentElement;
+        if (canvasParent) {
+            canvasParent.style.position = 'relative';
+            canvasParent.appendChild(overlay);
+        }
+    }
+
+    hideWaitingOverlay() {
+        const overlay = document.getElementById('mp-waiting-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    showGameOver(message) {
+        console.log('🏁 Affichage écran Game Over');
+
+        this.isActive = false;
+
+        const myId = this.client.playerId;
+        const scores = message.scores || {};
+        const mySegments = scores[myId] || 0;
+        const opponentId = Object.keys(scores).find(id => id !== myId);
+        const opponentSegments = opponentId ? scores[opponentId] : 0;
+
+        const isWinner = message.winner === myId;
+        const resultMessage = isWinner
+            ? '🏆 VICTOIRE !'
+            : message.winner
+                ? '💀 DÉFAITE'
+                : '⚔️ MATCH NUL';
+
+        const reasonText = message.reason === 'time_up'
+            ? '⏰ Temps écoulé !'
+            : message.reason === 'opponent_died'
+                ? '💀 Adversaire éliminé !'
+                : '💀 Les deux sont morts !';
+
+        // Créer l'overlay de game over
+        const gameOverOverlay = document.createElement('div');
+        gameOverOverlay.id = 'mp-gameover-overlay';
+        gameOverOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        `;
+
+        gameOverOverlay.innerHTML = `
+            <div style="text-align: center; max-width: 400px;">
+                <h1 style="font-size: 36px; margin-bottom: 10px; color: #D4AF37; text-shadow: 0 0 10px #D4AF37;">${resultMessage}</h1>
+                <p style="font-size: 16px; color: #C0C0C0; margin-bottom: 20px;">${reasonText}</p>
+                <div style="margin: 20px 0;">
+                    <div style="font-size: 20px; margin: 12px 0;">
+                        <span style="color: #4CAF50;">Vous:</span> <strong>${mySegments} segments</strong>
+                    </div>
+                    <div style="font-size: 20px; margin: 12px 0;">
+                        <span style="color: #F44336;">Adversaire:</span> <strong>${opponentSegments} segments</strong>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 16px; justify-content: center; margin-top: 24px;">
+                    <button id="mp-replay-btn" style="
+                        padding: 12px 24px;
+                        font-size: 16px;
+                        background: #4CAF50;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+                    ">🔄 Rejouer</button>
+                    <button id="mp-menu-btn" style="
+                        padding: 12px 24px;
+                        font-size: 16px;
+                        background: #D4AF37;
+                        color: #000;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+                    ">🏠 Menu</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(gameOverOverlay);
+
+        // Attacher les événements
+        document.getElementById('mp-replay-btn').onclick = () => {
+            gameOverOverlay.remove();
+            this.replay();
+        };
+
+        document.getElementById('mp-menu-btn').onclick = () => {
+            gameOverOverlay.remove();
+            this.returnToMenu();
+        };
+    }
+
+    replay() {
+        console.log('🔄 Rejouer');
+        // Redémarrer une nouvelle partie
+        this.stop();
+        setTimeout(() => this.start(), 500);
+    }
+
+    returnToMenu() {
+        console.log('🏠 Retour au menu');
+
+        // Arrêter le jeu
+        this.stop();
+
+        // Nettoyer les overlays
+        const waiting = document.getElementById('mp-waiting-overlay');
+        if (waiting) waiting.remove();
+
+        const gameOver = document.getElementById('mp-gameover-overlay');
+        if (gameOver) gameOver.remove();
+
+        // Cacher l'écran multijoueur, afficher le menu
+        const gameMulti = document.getElementById('game-multi');
+        const menu = document.getElementById('menu');
+
+        if (gameMulti) gameMulti.classList.add('hidden');
+        if (menu) menu.classList.remove('hidden');
+    }
+}
+
+// ============================================
+// EXPORT
+// ============================================
+
+window.MultiplayerSnakeGame = MultiplayerSnakeGame;
+console.log('✅ MultiplayerSnakeGame chargé!');

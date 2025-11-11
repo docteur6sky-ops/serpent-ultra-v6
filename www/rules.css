@@ -1,0 +1,475 @@
+/* ============================================
+   STYLES POUR LA MODALE DES RÈGLES
+   ============================================ */
+
+.rules-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(192,192,192,0.08));
+    border-radius: 12px;
+    border-left: 4px solid var(--color-gold);
+}
+
+.rules-subtitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-gold);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.rules-text {
+    font-size: 14px;
+    color: var(--color-text-light);
+    line-height: 1.6;
+}
+
+.rules-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.rules-item:hover {
+    background: rgba(212,175,55,0.1);
+    transform: translateX(5px);
+}
+
+.rules-item:last-child {
+    margin-bottom: 0;
+}
+
+.rules-emoji {
+    font-size: 32px;
+    min-width: 40px;
+    text-align: center;
+    display: inline-block;
+}
+
+.rules-item div {
+    flex: 1;
+}
+
+.rules-item strong {
+    color: var(--color-gold);
+    font-size: 15px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.rules-item em {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-style: normal;
+}
+
+/* ============================================
+   STYLES POUR L'ÉCRAN DE CRÉDITS
+   ============================================ */
+
+.credits-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.credits-section {
+    margin-bottom: 35px;
+    padding: 25px 20px;
+    background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(192,192,192,0.08));
+    border-radius: 15px;
+    border: 2px solid rgba(212,175,55,0.2);
+    transition: all 0.3s ease;
+}
+
+.credits-section:hover {
+    background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(192,192,192,0.12));
+    border-color: rgba(212,175,55,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(212,175,55,0.2);
+}
+
+.credits-role {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-gold);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.credits-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-text-light);
+    margin: 8px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.credits-name:hover {
+    color: var(--color-silver);
+    transform: scale(1.05);
+}
+
+.gold-text {
+    font-size: 28px;
+    background: linear-gradient(135deg, var(--color-gold), #FFD700, var(--color-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    letter-spacing: 2px;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+.special-thanks {
+    font-size: 24px;
+    color: #FF69B4;
+    font-weight: 700;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.credits-footer {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 3px solid rgba(212,175,55,0.3);
+}
+
+.credits-game-title {
+    font-size: 26px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--color-gold), var(--color-silver), var(--color-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    letter-spacing: 4px;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.credits-subtitle {
+    font-size: 14px;
+    color: var(--color-silver);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.credits-year {
+    font-size: 18px;
+    color: var(--color-gold);
+    font-weight: 700;
+    margin-top: 15px;
+}
+
+/* ============================================
+   ANIMATIONS POUR LES EMOJIS
+   ============================================ */
+
+/* Animation pulse pour la pomme */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Animation shake pour le crâne */
+@keyframes shake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-8deg);
+    }
+    75% {
+        transform: rotate(8deg);
+    }
+}
+
+.shake {
+    animation: shake 0.8s ease-in-out infinite;
+}
+
+/* Animation glow pour les power-ups */
+@keyframes glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.3));
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.8));
+        transform: scale(1.1);
+    }
+}
+
+.glow {
+    animation: glow 2s ease-in-out infinite;
+}
+
+/* Animation shimmer pour le texte doré */
+@keyframes shimmer {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Animation heartbeat pour Sylvie */
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.1);
+    }
+    50% {
+        transform: scale(1);
+    }
+    75% {
+        transform: scale(1.05);
+    }
+}
+
+/* Animation bounce subtile */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* ============================================
+   STYLES POUR LES NOUVELLES STATS GAME OVER
+   ============================================ */
+
+.stat-time {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-silver);
+}
+
+.stat-length {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-gold);
+}
+
+.stat-walls {
+    font-size: 20px;
+    font-weight: 700;
+    color: #FF8C00;
+}
+
+.stat-skulls {
+    font-size: 20px;
+    font-weight: 700;
+    color: #FF1744;
+}
+
+/* Animation pour nouveau record */
+@keyframes newRecordPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 50px rgba(212, 175, 55, 0.8), 0 0 80px rgba(255, 215, 0, 0.6);
+        transform: scale(1.02);
+    }
+}
+
+@keyframes goldShine {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+.new-record-animation {
+    animation: newRecordPulse 0.8s ease-in-out 3;
+    border: 3px solid var(--color-gold) !important;
+    position: relative;
+}
+
+.new-record-animation::before {
+    content: '🏆 NOUVEAU RECORD ! 🏆';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, var(--color-gold), #FFD700, var(--color-gold), #FFD700);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    animation: goldShine 2s linear infinite;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+    white-space: nowrap;
+}
+
+/* Style amélioré pour proximity-info */
+#proximity-info {
+    font-size: 15px;
+    color: var(--color-text-light);
+    line-height: 1.5;
+}
+
+#proximity-info strong {
+    font-size: 18px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   RESPONSIVE POUR LES RÈGLES
+   ============================================ */
+
+@media (max-width: 768px) {
+    .rules-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .rules-subtitle {
+        font-size: 16px;
+    }
+    
+    .rules-text {
+        font-size: 13px;
+    }
+    
+    .rules-emoji {
+        font-size: 28px;
+        min-width: 35px;
+    }
+    
+    .rules-item {
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .rules-item strong {
+        font-size: 14px;
+    }
+    
+    .credits-section {
+        padding: 20px 15px;
+        margin-bottom: 25px;
+    }
+    
+    .credits-role {
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+    
+    .credits-name {
+        font-size: 18px;
+    }
+    
+    .gold-text {
+        font-size: 24px;
+    }
+    
+    .special-thanks {
+        font-size: 20px;
+    }
+    
+    .credits-game-title {
+        font-size: 22px;
+        letter-spacing: 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    .rules-section {
+        padding: 12px;
+        margin-bottom: 15px;
+    }
+    
+    .rules-subtitle {
+        font-size: 14px;
+        letter-spacing: 1px;
+    }
+    
+    .rules-text {
+        font-size: 12px;
+    }
+    
+    .rules-emoji {
+        font-size: 24px;
+        min-width: 30px;
+    }
+    
+    .rules-item {
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .rules-item strong {
+        font-size: 13px;
+    }
+    
+    .rules-item em {
+        font-size: 11px;
+    }
+    
+    .credits-section {
+        padding: 15px 10px;
+        margin-bottom: 20px;
+    }
+    
+    .credits-role {
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    
+    .credits-name {
+        font-size: 16px;
+    }
+    
+    .gold-text {
+        font-size: 20px;
+        letter-spacing: 1px;
+    }
+    
+    .special-thanks {
+        font-size: 18px;
+    }
+    
+    .credits-game-title {
+        font-size: 18px;
+        letter-spacing: 2px;
+    }
+    
+    .credits-subtitle {
+        font-size: 12px;
+    }
+    
+    .credits-year {
+        font-size: 16px;
+    }
+}
