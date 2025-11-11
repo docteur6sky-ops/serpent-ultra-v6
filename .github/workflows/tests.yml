@@ -1,0 +1,98 @@
+name: 🐍 Snake Ultra - Tests CI/CD
+
+on:
+  push:
+    branches: [ master, main, develop, feature/* ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'www/package-lock.json'
+
+    - name: 📦 Install dependencies
+      working-directory: ./www
+      run: npm ci
+
+    - name: 🧪 Run all tests
+      working-directory: ./www
+      run: npm test
+
+    - name: 📊 Generate coverage
+      working-directory: ./www
+      run: npm run test:coverage
+
+    - name: 💾 Archive coverage report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report-node-${{ matrix.node-version }}
+        path: www/coverage/
+        retention-days: 7
+
+  lint:
+    name: 🔍 Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: 🔍 Check for console.log in source files
+      run: |
+        echo "🔍 Searching for console.log in source files..."
+        if grep -r "console\.log" www/*.js --exclude-dir=node_modules --exclude-dir=tests --exclude-dir=coverage 2>/dev/null | grep -v "^Binary"; then
+          echo "❌ console.log detected in source files!"
+          echo "Please remove console.log statements before committing."
+          exit 1
+        else
+          echo "✅ No console.log found in source files"
+        fi
+
+    - name: ✅ Code quality check passed
+      run: echo "🎉 All quality checks passed!"
+
+  coverage-check:
+    name: 📊 Coverage Threshold
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: 📦 Install dependencies
+      working-directory: ./www
+      run: npm ci
+
+    - name: 📊 Check coverage thresholds
+      working-directory: ./www
+      run: |
+        npm run test:coverage
+        echo "✅ Coverage thresholds met!"

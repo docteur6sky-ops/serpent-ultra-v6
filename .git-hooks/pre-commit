@@ -1,0 +1,71 @@
+#!/bin/bash
+
+echo ""
+echo "═══════════════════════════════════════════════════"
+echo "🐍 Snake Ultra - Pre-Commit Tests"
+echo "═══════════════════════════════════════════════════"
+echo ""
+
+# Se déplacer dans le dossier www
+cd www || exit 1
+
+# Lancer les tests unitaires
+echo "🧪 Running unit tests..."
+npm run test:unit --silent
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Unit tests FAILED!"
+    echo "Fix the failing tests before committing."
+    echo ""
+    exit 1
+fi
+
+echo "✅ Unit tests passed"
+echo ""
+
+# Lancer les tests d'intégration
+echo "🔗 Running integration tests..."
+npm run test:integration --silent
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Integration tests FAILED!"
+    echo "Fix the failing tests before committing."
+    echo ""
+    exit 1
+fi
+
+echo "✅ Integration tests passed"
+echo ""
+
+# Retourner à la racine
+cd ..
+
+# Vérifier console.log dans les fichiers stagés
+echo "🔍 Checking for console.log..."
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.js$" | grep -v "tests/" | grep -v "node_modules/")
+
+if [ -n "$STAGED_FILES" ]; then
+    CONSOLE_LOGS=$(echo "$STAGED_FILES" | xargs grep -n "console\.log" 2>/dev/null || true)
+
+    if [ -n "$CONSOLE_LOGS" ]; then
+        echo ""
+        echo "❌ console.log detected in staged files:"
+        echo "$CONSOLE_LOGS"
+        echo ""
+        echo "Please remove console.log statements before committing."
+        echo ""
+        exit 1
+    fi
+fi
+
+echo "✅ No console.log found"
+echo ""
+echo "═══════════════════════════════════════════════════"
+echo "✅ All pre-commit checks passed!"
+echo "🚀 Commit authorized"
+echo "═══════════════════════════════════════════════════"
+echo ""
+
+exit 0
