@@ -1,0 +1,37 @@
+# Node
+node_modules/
+npm-debug.log
+*.log
+
+# Cordova
+platforms/
+plugins/
+
+# Backups
+*backup*/
+*Backup*/
+*.backup
+.backup/
+www_backup/
+www-backup*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build
+build/
+dist/
+
+# Logs
+logs/
+*.json.log
+snake-ultra-logs-*.json
+
+# Temporary files
+nul
+*.tmp
+.tmp/
