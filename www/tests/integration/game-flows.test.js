@@ -235,17 +235,19 @@ describe('INTÉGRATION - Edge Cases et Situations Complexes', () => {
     test('devrait gérer plusieurs shrink consécutifs jusqu\'à la mort', () => {
         const snake = new Snake(10, 10, 'shrink');
 
+        // Commencer avec 4 segments (1 initial + 3 grow)
         snake.grow();
         snake.grow();
+        snake.grow();
 
         snake.shrink(1);
-        expect(snake.alive).toBe(true);
+        expect(snake.alive).toBe(true);  // 3 segments
 
         snake.shrink(1);
-        expect(snake.alive).toBe(true);
+        expect(snake.alive).toBe(true);  // 2 segments
 
         snake.shrink(1);
-        expect(snake.alive).toBe(false);
+        expect(snake.alive).toBe(false); // 1 segment -> mort
     });
 
     test('devrait gérer un serpent qui fait le tour complet de la grille', () => {
@@ -319,12 +321,12 @@ describe('INTÉGRATION - Collisions Complexes', () => {
     test('devrait détecter auto-collision après séquence en spirale', () => {
         const snake = new Snake(10, 10, 'spiral');
 
-        // Créer un long serpent
-        for (let i = 0; i < 8; i++) {
+        // Créer un très long serpent pour garantir collision
+        for (let i = 0; i < 15; i++) {
             snake.grow();
         }
 
-        // Spirale : droite, bas, gauche, haut
+        // Spirale très serrée : carré 2x2
         snake.move();
         snake.move();
         snake.changeDirection({ dx: 0, dy: 1 });
@@ -334,6 +336,7 @@ describe('INTÉGRATION - Collisions Complexes', () => {
         snake.move();
         snake.move();
         snake.changeDirection({ dx: 0, dy: -1 });
+        snake.move();
         snake.move();
 
         const collision = snake.checkSelfCollision();
