@@ -31,11 +31,31 @@ function hideAllScreens() {
  * @param {string} screenId - ID de l'écran à afficher
  */
 function showScreen(screenId) {
+    // Nettoyer d'abord tous les overlays dynamiques
+    cleanupDynamicOverlays();
+
     hideAllScreens();
     const screen = document.getElementById(screenId);
     if (screen) {
         screen.classList.remove('hidden');
     }
+}
+
+function cleanupDynamicOverlays() {
+    // Nettoyer tous les overlays qui peuvent être créés dynamiquement
+    const dynamicIds = [
+        'mp-waiting-overlay',
+        'mp-gameover-overlay',
+        'mp-message',
+        'mp-lobby'  // Pour l'architecture hybride future
+    ];
+
+    dynamicIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.remove();
+        }
+    });
 }
 
 // ============================================

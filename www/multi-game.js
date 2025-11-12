@@ -118,6 +118,21 @@ class MultiplayerSnakeGame {
         this.stopRenderLoop();
         this.stopTimerUpdate();
         this.client.disconnect();
+
+        // Nettoyer TOUS les overlays créés dynamiquement
+        this.cleanupOverlays();
+    }
+
+    cleanupOverlays() {
+        // Supprimer tous les overlays dynamiques du multijoueur
+        const overlayIds = ['mp-waiting-overlay', 'mp-gameover-overlay', 'mp-message'];
+        overlayIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+                console.log(`🧹 Overlay ${id} supprimé`);
+            }
+        });
     }
 
     // ============================================
@@ -649,22 +664,11 @@ class MultiplayerSnakeGame {
     returnToMenu() {
         console.log('🏠 Retour au menu');
 
-        // Arrêter le jeu
+        // Arrêter le jeu (cleanup des overlays inclus)
         this.stop();
 
-        // Nettoyer les overlays
-        const waiting = document.getElementById('mp-waiting-overlay');
-        if (waiting) waiting.remove();
-
-        const gameOver = document.getElementById('mp-gameover-overlay');
-        if (gameOver) gameOver.remove();
-
-        // Cacher l'écran multijoueur, afficher le menu
-        const gameMulti = document.getElementById('game-multi');
-        const menu = document.getElementById('menu');
-
-        if (gameMulti) gameMulti.classList.add('hidden');
-        if (menu) menu.classList.remove('hidden');
+        // Utiliser la fonction centralisée de navigation
+        showScreen('menu');
     }
 }
 

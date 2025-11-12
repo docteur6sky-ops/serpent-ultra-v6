@@ -1,6 +1,33 @@
 /* Import Google Font - Poppins */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
+/* ========================================
+   Z-INDEX HIERARCHY - NE PAS MODIFIER
+   ======================================== */
+/*
+  1-9     : Écrans de jeu normaux
+  100-999 : Overlays de jeu (waiting, etc)
+  1000    : Modales principales
+  10000   : Messages système (toujours au-dessus)
+*/
+
+.screen {
+    z-index: 1;
+}
+
+.mp-waiting-overlay,
+.mp-gameover-overlay {
+    z-index: 500 !important;
+}
+
+.modal {
+    z-index: 1000 !important;
+}
+
+.mp-message {
+    z-index: 10000 !important;
+}
+
 body {
     display: flex;
     justify-content: center;
