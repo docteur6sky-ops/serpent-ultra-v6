@@ -11,6 +11,7 @@ class Snake {
         this.nextDirection = { dx: 1, dy: 0 };
         this.score = 0;
         this.alive = true;
+        this.invincible = false;  // ✅ NOUVEAU - Pour éjection tête-à-tête
     }
 
     get length() {
@@ -170,7 +171,31 @@ class Snake {
     }
 }
 
+// ============================================
+// HELPERS DE DIRECTION
+// ============================================
+
+// Fonction helper pour tourner à gauche (perpendiculaire)
+function getPerpendicularLeft(direction) {
+    // Droite (1,0) → Haut (0,-1)
+    // Haut (0,-1) → Gauche (-1,0)
+    // Gauche (-1,0) → Bas (0,1)
+    // Bas (0,1) → Droite (1,0)
+    return { dx: direction.dy, dy: -direction.dx };
+}
+
+// Fonction helper pour tourner à droite (perpendiculaire)
+function getPerpendicularRight(direction) {
+    // Droite (1,0) → Bas (0,1)
+    // Bas (0,1) → Gauche (-1,0)
+    // Gauche (-1,0) → Haut (0,-1)
+    // Haut (0,-1) → Droite (1,0)
+    return { dx: -direction.dy, dy: direction.dx };
+}
+
 // Export pour Node.js (serveur)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Snake;
+    module.exports.getPerpendicularLeft = getPerpendicularLeft;
+    module.exports.getPerpendicularRight = getPerpendicularRight;
 }

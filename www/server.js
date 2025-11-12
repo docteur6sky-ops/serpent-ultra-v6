@@ -184,8 +184,15 @@ class Room {
             number: playerNumber,
             snake: snake,
             ready: false,
-            activePowerup: null,        // ✅ NOUVEAU
-            powerupEndTime: 0           // ✅ NOUVEAU
+            activePowerup: null,        // Power-up actif
+            powerupEndTime: 0,          // Temps de fin du power-up
+            queueContact: {             // ✅ NOUVEAU - Contact queue
+                active: false,
+                targetId: null,
+                startTime: 0,
+                lastStealTime: 0,
+                stolenCount: 0
+            }
         });
 
         this.gameState.scores[playerId] = 0;
@@ -293,6 +300,64 @@ class Room {
         }
 
         return CONFIG.BASE_TICK_RATE;
+    }
+
+    handleHeadToHeadCollision(player1, player2) {
+        logger.info('GAME', `💥 Collision tête-à-tête`, {
+            player1: player1.number,
+            player2: player2.number,
+            lengths: [player1.snake.length, player2.snake.length]
+        });
+
+        // 1. Déterminer qui perd un segment
+        if (player1.snake.length < player2.snake.length) {
+            player1.snake.shrink(1);
+            logger.debug('GAME', `Player ${player1.number} perd 1 segment (plus petit)`);
+        } else if (player2.snake.length < player1.snake.length) {
+            player2.snake.shrink(1);
+            logger.debug('GAME', `Player ${player2.number} perd 1 segment (plus petit)`);
+        }
+        // Si égalité : personne ne perd
+
+        // 2. Importer les helpers
+        const { getPerpendicularLeft, getPerpendicularRight } = require('./SnakeServer.js');
+
+        // 3. Éjection latérale
+        const leftDir = getPerpendicularLeft(player1.snake.direction);
+        const rightDir = getPerpendicularRight(player2.snake.direction);
+
+        player1.snake.direction = leftDir;
+        player2.snake.direction = rightDir;
+
+        // 4. Avancer de 2 cases dans la nouvelle direction
+        for (let i = 0; i < 2; i++) {
+            player1.snake.head.x += leftDir.dx;
+            player1.snake.head.y += leftDir.dy;
+
+            player2.snake.head.x += rightDir.dx;
+            player2.snake.head.y += rightDir.dy;
+
+            // Wrapping
+            player1.snake.head.x = (player1.snake.head.x + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+            player1.snake.head.y = (player1.snake.head.y + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+
+            player2.snake.head.x = (player2.snake.head.x + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+            player2.snake.head.y = (player2.snake.head.y + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+        }
+
+        // 5. Invincibilité temporaire
+        player1.snake.invincible = true;
+        player2.snake.invincible = true;
+
+        setTimeout(() => {
+            player1.snake.invincible = false;
+            player2.snake.invincible = false;
+        }, 300);
+
+        logger.debug('GAME', `Éjection complète`, {
+            p1NewPos: player1.snake.head,
+            p2NewPos: player2.snake.head
+        });
     }
 
     // Boucle de jeu avec setTimeout
@@ -532,6 +597,26 @@ class Room {
             return;
         }
 
+        // 💥 Détecter collisions tête-à-tête AVANT les déplacements
+        if (alivePlayers.length === 2) {
+            const [p1, p2] = alivePlayers;
+
+            // Vérifier si les têtes sont au même endroit
+            if (p1.snake.head.x === p2.snake.head.x &&
+                p1.snake.head.y === p2.snake.head.y &&
+                !p1.snake.invincible && !p2.snake.invincible) {
+
+                this.handleHeadToHeadCollision(p1, p2);
+
+                // Skip le reste de l'update ce tick
+                this.notifyPlayers({
+                    type: 'game_update',
+                    gameState: this.getGameStateForClients()
+                });
+                return;
+            }
+        }
+
         // Déplacer chaque serpent
         for (let player of this.players.values()) {
             if (!player.snake.alive) continue;
@@ -624,6 +709,58 @@ class Room {
             }
 
             // Pas de nourriture mangée - le move() a déjà géré le pop()
+        }
+
+        // 🍴 Contact queue : Manger segments
+        for (let player of this.players.values()) {
+            if (!player.snake.alive) continue;
+            if (player.activePowerup === 'ghost') continue; // Ghost ignore ça
+
+            for (let opponent of this.players.values()) {
+                if (opponent.id === player.id || !opponent.snake.alive) continue;
+                if (opponent.activePowerup === 'ghost') continue; // Ne peut pas manger un ghost
+
+                // Vérifier si la tête touche la queue de l'adversaire
+                const tail = opponent.snake.body[opponent.snake.body.length - 1];
+                if (player.snake.head.x === tail.x && player.snake.head.y === tail.y) {
+
+                    if (!player.queueContact.active) {
+                        // Premier contact
+                        player.queueContact.active = true;
+                        player.queueContact.targetId = opponent.id;
+                        player.queueContact.startTime = Date.now();
+                        player.queueContact.lastStealTime = Date.now();
+                        player.queueContact.stolenCount = 0;
+
+                        logger.info('GAME', `🍴 Player ${player.number} commence à manger la queue de ${opponent.number}`);
+                    } else {
+                        // Contact continu
+                        const now = Date.now();
+                        if (now - player.queueContact.lastStealTime >= 1000 &&
+                            player.queueContact.stolenCount < 5) {
+
+                            // Voler 1 segment
+                            opponent.snake.shrink(1);
+                            player.snake.grow();
+                            player.queueContact.lastStealTime = now;
+                            player.queueContact.stolenCount++;
+
+                            logger.debug('GAME', `🍴 Player ${player.number} vole segment #${player.queueContact.stolenCount}`);
+
+                            if (!opponent.snake.alive) {
+                                logger.info('GAME', `💀 Player ${opponent.number} éliminé (queue mangée)`);
+                            }
+                        }
+                    }
+                } else {
+                    // Contact perdu
+                    if (player.queueContact.active && player.queueContact.targetId === opponent.id) {
+                        logger.info('GAME', `Player ${player.number} perd le contact (${player.queueContact.stolenCount} segments volés)`);
+                        player.queueContact.active = false;
+                        player.queueContact.targetId = null;
+                    }
+                }
+            }
         }
 
         // Envoyer l'état
