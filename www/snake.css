@@ -183,8 +183,11 @@ body::before {
 }
 
 .screen.hidden {
-    opacity: 0;
-    pointer-events: none;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: -9999 !important;
+    pointer-events: none !important;
 }
 
 @keyframes fadeIn {

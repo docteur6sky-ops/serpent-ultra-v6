@@ -22,6 +22,11 @@ function hideAllScreens() {
         const element = document.getElementById(id);
         if (element) {
             element.classList.add('hidden');
+            // Forcer le style en dur si le CSS ne marche pas
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.style.opacity = '0';
+            element.style.zIndex = '-9999';
         }
     });
 }
@@ -38,6 +43,11 @@ function showScreen(screenId) {
     const screen = document.getElementById(screenId);
     if (screen) {
         screen.classList.remove('hidden');
+        // Forcer le style en dur
+        screen.style.display = '';  // Reset au CSS par défaut
+        screen.style.visibility = 'visible';
+        screen.style.opacity = '1';
+        screen.style.zIndex = '1';
     }
 }
 
