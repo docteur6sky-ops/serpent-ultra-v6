@@ -176,6 +176,44 @@ class MultiplayerSnakeGame {
             );
         }
 
+        // Dessiner les power-ups
+        if (this.serverState.powerups && this.serverState.powerups.length > 0) {
+            const powerupColors = {
+                fire: '#FF4500',
+                ice: '#00CED1',
+                ghost: '#FFFFFF',
+                rock: '#D2B48C'
+            };
+
+            const powerupEmojis = {
+                fire: '🔥',
+                ice: '❄️',
+                ghost: '👻',
+                rock: '🪨'
+            };
+
+            this.serverState.powerups.forEach(powerup => {
+                const x = powerup.x * this.CELL_SIZE;
+                const y = powerup.y * this.CELL_SIZE;
+
+                // Fond coloré avec transparence
+                this.ctx.fillStyle = powerupColors[powerup.type] || '#FFFFFF';
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.fillRect(x, y, this.CELL_SIZE, this.CELL_SIZE);
+                this.ctx.globalAlpha = 1;
+
+                // Emoji au centre
+                this.ctx.font = `${this.CELL_SIZE * 0.8}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(
+                    powerupEmojis[powerup.type] || '?',
+                    x + this.CELL_SIZE / 2,
+                    y + this.CELL_SIZE / 2
+                );
+            });
+        }
+
         // Dessiner le crâne (même que le solo)
         if (this.serverState.bad) {
             RenderUtils.drawSkull(
@@ -205,11 +243,32 @@ class MultiplayerSnakeGame {
 
                 const isMe = playerId === this.client.playerId;
                 const isAlive = playerData.alive;
+                const activePowerup = playerData.activePowerup;
 
-                // Couleur du serpent
-                const headColor = isMe ? '#00FF87' : '#FF6B6B';
-                const bodyColor = isMe ? '#00CC6A' : '#CC5555';
+                // Couleur du serpent (modifiée par power-up)
+                let headColor = isMe ? '#00FF87' : '#FF6B6B';
                 const deadColor = '#666666';
+
+                // Modifier la couleur selon le power-up actif
+                if (isAlive && activePowerup) {
+                    const powerupColors = {
+                        fire: '#FF4500',
+                        ice: '#00CED1',
+                        ghost: '#E0E0E0',
+                        rock: '#D2B48C'
+                    };
+                    headColor = powerupColors[activePowerup] || headColor;
+                }
+
+                // Appliquer l'opacité pour GHOST
+                if (isAlive && activePowerup === 'ghost') {
+                    this.ctx.globalAlpha = 0.6;
+                }
+
+                // Dessiner particules FIRE avant le serpent
+                if (isAlive && activePowerup === 'fire' && playerData.snake.length > 0) {
+                    this.drawFireParticles(playerData.snake[0]);
+                }
 
                 // Dessiner le serpent avec RenderUtils.drawMultiplayerSnake
                 const playerNumber = isMe ? this.client.playerNumber : (this.client.playerNumber === 1 ? 2 : 1);
@@ -221,8 +280,114 @@ class MultiplayerSnakeGame {
                     playerNumber,
                     isAlive
                 );
+
+                // Restaurer l'opacité normale
+                this.ctx.globalAlpha = 1;
+
+                // Dessiner indicateur ROCK (bordure épaisse)
+                if (isAlive && activePowerup === 'rock' && playerData.snake.length > 0) {
+                    const head = playerData.snake[0];
+                    this.ctx.strokeStyle = '#8B4513';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(
+                        head.x * this.CELL_SIZE,
+                        head.y * this.CELL_SIZE,
+                        this.CELL_SIZE,
+                        this.CELL_SIZE
+                    );
+                }
             }
         }
+
+        // Dessiner l'UI des power-ups actifs
+        this.drawPowerupUI();
+    }
+
+    // ============================================
+    // POWER-UP VISUAL EFFECTS
+    // ============================================
+
+    drawFireParticles(headSegment) {
+        // Créer des particules de feu aléatoires autour de la tête
+        const centerX = headSegment.x * this.CELL_SIZE + this.CELL_SIZE / 2;
+        const centerY = headSegment.y * this.CELL_SIZE + this.CELL_SIZE / 2;
+
+        // Dessiner 3-5 particules aléatoires
+        const particleCount = 3 + Math.floor(Math.random() * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * this.CELL_SIZE * 0.8;
+            const x = centerX + Math.cos(angle) * distance;
+            const y = centerY + Math.sin(angle) * distance;
+            const size = 2 + Math.random() * 3;
+
+            // Couleur aléatoire entre orange et rouge
+            const colors = ['#FF4500', '#FF6347', '#FF8C00', '#FFA500'];
+            this.ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+            this.ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+
+        this.ctx.globalAlpha = 1;
+    }
+
+    drawPowerupUI() {
+        if (!this.serverState || !this.serverState.players) return;
+
+        // Trouver le power-up actif du joueur local
+        const myPlayer = this.serverState.players[this.client.playerId];
+        if (!myPlayer || !myPlayer.activePowerup || !myPlayer.powerupEndTime) return;
+
+        const timeRemaining = Math.max(0, myPlayer.powerupEndTime - Date.now());
+        if (timeRemaining <= 0) return;
+
+        const powerupEmojis = {
+            fire: '🔥',
+            ice: '❄️',
+            ghost: '👻',
+            rock: '🪨'
+        };
+
+        const powerupNames = {
+            fire: 'FIRE',
+            ice: 'ICE',
+            ghost: 'GHOST',
+            rock: 'ROCK'
+        };
+
+        const powerupColors = {
+            fire: '#FF4500',
+            ice: '#00CED1',
+            ghost: '#FFFFFF',
+            rock: '#D2B48C'
+        };
+
+        // Position en haut au centre
+        const centerX = this.CANVAS_SIZE / 2;
+        const y = 20;
+
+        // Fond semi-transparent
+        const text = `${powerupEmojis[myPlayer.activePowerup]} ${powerupNames[myPlayer.activePowerup]} ${(timeRemaining / 1000).toFixed(1)}s`;
+        this.ctx.font = 'bold 16px Arial';
+        const textWidth = this.ctx.measureText(text).width;
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
+
+        // Bordure colorée
+        this.ctx.strokeStyle = powerupColors[myPlayer.activePowerup];
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
+
+        // Texte
+        this.ctx.fillStyle = powerupColors[myPlayer.activePowerup];
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(text, centerX, y);
     }
 
     // ============================================
