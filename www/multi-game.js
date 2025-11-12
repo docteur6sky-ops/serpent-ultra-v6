@@ -109,9 +109,6 @@ class MultiplayerSnakeGame {
 
         // Connecter au serveur
         this.client.connect();
-
-        // Afficher l'écran de jeu multijoueur
-        this.showGameScreen();
     }
 
     stop() {
