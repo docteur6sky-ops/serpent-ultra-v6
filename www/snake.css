@@ -3427,71 +3427,28 @@ body.dark-mode .diff-btn:hover {
 
 /* ============================================
    PROGRESSION XP dans Game Over
+   Position : Après "Statistiques" / Avant "Score Final"
    ============================================ */
 
-.game-over-separator {
-    width: 80%;
-    height: 2px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        var(--border-color) 50%,
-        transparent 100%
-    );
-    margin: 30px auto;
-}
-
 .game-over-progression {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 15px;
+    background: linear-gradient(145deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
     padding: 20px;
-    margin: 20px auto;
-    max-width: 90%;
+    margin: 20px 0;
 }
 
 body.dark-mode .game-over-progression {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(145deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.01) 100%
+    );
 }
 
-.progression-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.3em;
-    font-weight: 700;
-    color: var(--text-primary);
-    text-align: center;
-    margin: 0 0 15px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
-
-.progression-stats {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 15px;
-}
-
-.stat-xp-gained {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
-
-.stat-xp-gained .stat-label {
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.stat-xp-gained .stat-value {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.5em;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.level-display {
+.progression-header {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3499,26 +3456,74 @@ body.dark-mode .game-over-progression {
     margin-bottom: 15px;
 }
 
-.level-icon {
+.progression-icon {
     font-size: 1.5em;
+}
+
+.progression-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.progression-xp-gained {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.xp-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.xp-value {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.progression-level {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.level-icon {
+    font-size: 1.3em;
 }
 
 .level-text {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+.xp-bar-wrapper {
+    margin-bottom: 12px;
 }
 
 .xp-bar-container-gameover {
     position: relative;
     width: 100%;
-    height: 35px;
+    height: 30px;
     background: var(--xp-bar-bg);
-    border-radius: 20px;
+    border-radius: 15px;
     overflow: hidden;
     border: 2px solid var(--border-color);
-    margin-bottom: 15px;
+    margin-bottom: 8px;
 }
 
 .xp-bar-fill {
@@ -3527,61 +3532,58 @@ body.dark-mode .game-over-progression {
     left: 0;
     height: 100%;
     background: var(--btn-gradient);
-    border-radius: 18px;
+    border-radius: 13px;
     transition: width 0.3s ease;
-    box-shadow: 0 0 15px var(--xp-glow);
+    box-shadow: 0 0 12px var(--xp-glow);
 }
 
-.xp-text-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.xp-bar-text {
     font-family: 'Poppins', sans-serif;
-    font-size: 1em;
-    font-weight: 700;
+    font-size: 0.95em;
+    font-weight: 600;
     color: var(--text-primary);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    z-index: 1;
+    text-align: center;
 }
 
-.level-up-message {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 12px;
+.level-up-banner {
     background: var(--btn-gradient);
-    border-radius: 10px;
-    animation: pulse 1s ease-in-out infinite;
-}
-
-.level-up-icon {
-    font-size: 1.3em;
-}
-
-.level-up-text {
+    color: var(--text-primary);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
     font-family: 'Poppins', sans-serif;
     font-size: 1.1em;
     font-weight: 700;
-    color: var(--text-primary);
     text-transform: uppercase;
     letter-spacing: 1px;
+    animation: pulse 1s ease-in-out infinite;
+    box-shadow: 0 4px 15px var(--xp-glow);
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.03);
+        opacity: 0.95;
+    }
 }
 
-/* Responsive pour progression XP */
+/* Responsive */
 @media (max-width: 768px) {
     .game-over-progression {
         padding: 15px;
+        margin: 15px 0;
     }
 
     .progression-title {
-        font-size: 1.1em;
+        font-size: 1em;
+    }
+
+    .xp-value {
+        font-size: 1.2em;
     }
 
     .level-text {
@@ -3589,6 +3591,6 @@ body.dark-mode .game-over-progression {
     }
 
     .xp-bar-container-gameover {
-        height: 30px;
+        height: 25px;
     }
 }

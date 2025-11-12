@@ -452,6 +452,36 @@
             <div class="menu-content">
                 <div class="score-box">
                     <div class="score-stats">Statistiques de la Partie</div>
+
+                    <!-- Section Progression XP (insérée ici) -->
+                    <div class="game-over-progression" id="progression-section">
+                        <div class="progression-header">
+                            <span class="progression-icon">🏆</span>
+                            <span class="progression-title">PROGRESSION</span>
+                        </div>
+
+                        <div class="progression-xp-gained">
+                            <span class="xp-label">XP Gagné</span>
+                            <span class="xp-value" id="xp-gained-value">+0 XP</span>
+                        </div>
+
+                        <div class="progression-level">
+                            <span class="level-icon">🏆</span>
+                            <span class="level-text" id="current-level-text">Niveau 1</span>
+                        </div>
+
+                        <div class="xp-bar-wrapper">
+                            <div class="xp-bar-container-gameover">
+                                <div class="xp-bar-fill" id="xp-bar-gameover" style="width: 0%"></div>
+                            </div>
+                            <div class="xp-bar-text" id="xp-text-overlay">0 / 100 XP</div>
+                        </div>
+
+                        <div class="level-up-banner" id="level-up-message" style="display: none;">
+                            <span id="level-up-text">🎉 NIVEAU 2 ATTEINT ! 🎉</span>
+                        </div>
+                    </div>
+
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-label">Score Final</div>
@@ -497,37 +527,6 @@
                     <div class="no-highscore" id="no-highscore">
                         <div class="no-highscore-label">Score non classé</div>
                         <div class="no-highscore-text" id="proximity-info">Votre score n'entre pas dans le top 3. Continuez à jouer pour vous améliorer !</div>
-                    </div>
-                </div>
-
-                <!-- Séparateur avant progression -->
-                <div class="game-over-separator"></div>
-
-                <!-- Section Progression XP -->
-                <div class="game-over-progression" id="progression-section">
-                    <h3 class="progression-title">🏆 PROGRESSION</h3>
-
-                    <div class="progression-stats">
-                        <div class="stat-xp-gained">
-                            <span class="stat-label">XP Gagné</span>
-                            <span class="stat-value" id="xp-gained-value">+0 XP</span>
-                        </div>
-                    </div>
-
-                    <div class="level-display">
-                        <span class="level-icon">🏆</span>
-                        <span class="level-text" id="current-level-text">Niveau 1</span>
-                    </div>
-
-                    <div class="xp-bar-container-gameover">
-                        <div class="xp-bar-fill" id="xp-bar-gameover" style="width: 0%"></div>
-                        <span class="xp-text-overlay" id="xp-text-overlay">0 / 100 XP</span>
-                    </div>
-
-                    <div class="level-up-message" id="level-up-message" style="display: none;">
-                        <span class="level-up-icon">🎉</span>
-                        <span class="level-up-text" id="level-up-text">NIVEAU 2 ATTEINT !</span>
-                        <span class="level-up-icon">🎉</span>
                     </div>
                 </div>
 

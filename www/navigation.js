@@ -141,8 +141,8 @@ window.handleSoloGameOver = function(stats) {
         // Afficher/masquer le message level up
         const levelUpMsg = document.getElementById('level-up-message');
         if (progressResult.leveledUp) {
-            levelUpMsg.style.display = 'flex';
-            document.getElementById('level-up-text').textContent = `NIVEAU ${progressResult.newLevel} ATTEINT !`;
+            levelUpMsg.style.display = 'block';
+            document.getElementById('level-up-text').textContent = `🎉 NIVEAU ${progressResult.newLevel} ATTEINT ! 🎉`;
         } else {
             levelUpMsg.style.display = 'none';
         }
