@@ -89,7 +89,10 @@
                         y="70"
                         text-anchor="middle"
                         fill="var(--text-primary)"
-                        font-size="32"
+                        fill-opacity="1"
+                        stroke="rgba(0, 0, 0, 0.3)"
+                        stroke-width="1"
+                        font-size="36"
                         font-weight="bold"
                     >1</text>
 
@@ -188,9 +191,49 @@
                     <span class="btn-icon">ℹ️</span>
                     <span class="btn-text">CRÉDITS</span>
                 </button>
+
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showLanguage()">
+                    <span class="btn-icon">🌍</span>
+                    <span class="btn-text">LANGUE</span>
+                </button>
             </div>
 
             <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Langue -->
+        <div class="screen hidden" id="language-menu">
+            <h2>🌍 LANGUE</h2>
+
+            <div class="language-selector">
+                <button class="lang-btn" onclick="window.audio.buttonClick();setLanguage('fr')">
+                    <span class="flag-icon">🇫🇷</span>
+                    <span class="lang-text">Français</span>
+                </button>
+
+                <button class="lang-btn" onclick="window.audio.buttonClick();setLanguage('en')">
+                    <span class="flag-icon">🇬🇧</span>
+                    <span class="lang-text">English</span>
+                    <span class="coming-soon">(Bientôt disponible)</span>
+                </button>
+
+                <button class="lang-btn" onclick="window.audio.buttonClick();setLanguage('es')">
+                    <span class="flag-icon">🇪🇸</span>
+                    <span class="lang-text">Español</span>
+                    <span class="coming-soon">(Bientôt disponible)</span>
+                </button>
+
+                <button class="lang-btn" onclick="window.audio.buttonClick();setLanguage('de')">
+                    <span class="flag-icon">🇩🇪</span>
+                    <span class="lang-text">Deutsch</span>
+                    <span class="coming-soon">(Bientôt disponible)</span>
+                </button>
+            </div>
+
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>

@@ -2703,6 +2703,7 @@ body.dark-mode .level-circle-bg {
 .level-number {
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
+    opacity: 1 !important;  /* Meilleure visibilité */
 }
 
 .xp-text-svg {
@@ -2827,7 +2828,7 @@ body.dark-mode .level-circle-bg {
    ============================================ */
 
 .menu-btn {
-    padding: 12px 30px !important;  /* RÉDUIT */
+    padding: 10px 30px !important;  /* RÉDUIT à 10px */
     font-size: 1.1em;
     font-family: 'Poppins', sans-serif;
     width: 100%;
@@ -2891,4 +2892,95 @@ body.dark-mode .level-circle-bg {
     .game-title {
         font-size: 2em;
     }
+}
+
+/* ============================================
+   STYLES BOUTONS OPTIONS
+   ============================================ */
+
+.option-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 30px !important;
+    text-align: center;
+}
+
+.option-btn .btn-icon {
+    font-size: 1.2em;
+}
+
+.option-btn .btn-text {
+    flex: 1;
+    text-align: center;
+}
+
+.option-btn .toggle-indicator {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+/* ============================================
+   STYLES BOUTON RETOUR (2x plus petit)
+   ============================================ */
+
+.back-btn {
+    padding: 8px 20px !important;
+    max-width: 200px !important;
+    font-size: 0.95em;
+}
+
+/* ============================================
+   MENU LANGUE
+   ============================================ */
+
+.language-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px auto;
+    max-width: 400px;
+    width: 90%;
+}
+
+.lang-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    background: var(--bg-card);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1em;
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.lang-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: rgba(212, 175, 55, 0.5);
+    transform: translateX(5px);
+}
+
+.flag-icon {
+    font-size: 1.8em;
+    min-width: 40px;
+    text-align: center;
+}
+
+.lang-text {
+    flex: 1;
+    text-align: left;
+    font-weight: 500;
+}
+
+.coming-soon {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    font-style: italic;
+    opacity: 0.7;
 }

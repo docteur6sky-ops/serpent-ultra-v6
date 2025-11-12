@@ -493,6 +493,52 @@ window.showCredits = function() {
     showMenu('credits-menu', 'slide-in-right');
 };
 
+/**
+ * Afficher le menu Langue
+ */
+window.showLanguage = function() {
+    console.log('🌍 Menu Langue');
+    showMenu('language-menu', 'slide-in-right');
+    loadLanguageSettings();
+};
+
+/**
+ * Retourner au menu Options depuis un sous-menu
+ */
+window.backToOptions = function() {
+    console.log('⚙️ Retour au menu Options');
+    showMenu('options-menu', 'slide-in-left');
+};
+
+/**
+ * Définir la langue de l'interface
+ * @param {string} lang - Code de langue ('fr', 'en', 'es', 'de')
+ */
+window.setLanguage = function(lang) {
+    console.log(`🌍 Langue sélectionnée: ${lang}`);
+
+    // Pour l'instant, seul le français est disponible
+    if (lang !== 'fr') {
+        console.log('⚠️ Cette langue n\'est pas encore disponible');
+        return;
+    }
+
+    // Sauvegarder la préférence
+    localStorage.setItem('language', lang);
+
+    // TODO: Implémenter la traduction de l'interface
+    console.log('✅ Langue sauvegardée (traduction à venir)');
+};
+
+/**
+ * Charger les paramètres de langue
+ */
+function loadLanguageSettings() {
+    const savedLang = localStorage.getItem('language') || 'fr';
+    console.log(`🌍 Langue chargée: ${savedLang}`);
+    // TODO: Appliquer la traduction
+}
+
 // ============================================
 // DÉMARRAGE JEUX AVEC DIFFICULTÉ
 // ============================================
