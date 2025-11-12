@@ -25,8 +25,8 @@
     };
 
     const DIFFICULTY = { EASY: 0, NORMAL: 1, HARD: 2 };
-    const DIFFICULTY_NAMES = ['🟢 Facile', '🟡 Normal', '🔴 Difficile'];
-    const DIFFICULTY_ICONS = ['🟢', '🟡', '🔴'];
+    const DIFFICULTY_NAMES = ['😊 Facile', '😮 Normal', '😈 Difficile'];
+    const DIFFICULTY_ICONS = ['😊', '😮', '😈'];
     const MEDALS = ['🥇', '🥈', '🥉'];
 
     const KEYS = {
@@ -50,9 +50,9 @@
     };
 
     const TROPHIES = {
-        first: {i: '🟢', n: 'Apprenti Serpent', d: 'Atteindre le niveau 10 en difficulté Facile'},
-        millenium: {i: '🟡', n: 'Serpent du Millénaire', d: 'Atteindre le niveau 10 en difficulté Normal'},
-        speed: {i: '🔴', n: 'Serpent Véloce', d: 'Atteindre le niveau 10 en difficulté Difficile'},
+        first: {i: '😊', n: 'Apprenti Serpent', d: 'Atteindre le niveau 10 en difficulté Facile'},
+        millenium: {i: '😮', n: 'Serpent du Millénaire', d: 'Atteindre le niveau 10 en difficulté Normal'},
+        speed: {i: '😈', n: 'Serpent Véloce', d: 'Atteindre le niveau 10 en difficulté Difficile'},
         timemaster: {i: '⏱️', n: 'Maître du Temps', d: 'Collecter 5 power-ups Ralentissement'},
         moneysnake: {i: '💰', n: 'Serpent Argenté', d: 'Collecter 5 power-ups Double Score'},
         invincible: {i: '🛡️', n: 'Serpent Indestructible', d: 'Collecter 5 power-ups Invincibilité'},
@@ -268,9 +268,9 @@
     function initMenuEmojis() {
         // Boutons de difficulté
         const diffBtns = document.querySelectorAll('.diff-btn');
-        if (diffBtns[0] && !diffBtns[0].textContent.includes('🟢')) diffBtns[0].textContent = '🟢 FACILE';
-        if (diffBtns[1] && !diffBtns[1].textContent.includes('🟡')) diffBtns[1].textContent = '🟡 NORMAL';
-        if (diffBtns[2] && !diffBtns[2].textContent.includes('🔴')) diffBtns[2].textContent = '🔴 DIFFICILE';
+        if (diffBtns[0] && !diffBtns[0].textContent.includes('😊')) diffBtns[0].textContent = '😊 FACILE';
+        if (diffBtns[1] && !diffBtns[1].textContent.includes('😮')) diffBtns[1].textContent = '😮 NORMAL';
+        if (diffBtns[2] && !diffBtns[2].textContent.includes('😈')) diffBtns[2].textContent = '😈 DIFFICILE';
 
         // Bouton Son
         updateSoundButtonEmoji();
@@ -400,9 +400,9 @@
         h += '<div class="rules-section">';
         h += '<h3>🎯 Difficultés</h3>';
         h += '<ul>';
-        h += '<li><strong>🟢 Facile</strong> : Vitesse lente, peu d\'obstacles</li>';
-        h += '<li><strong>🟡 Normal</strong> : Vitesse moyenne, obstacles modérés</li>';
-        h += '<li><strong>🔴 Difficile</strong> : Vitesse rapide, nombreux obstacles</li>';
+        h += '<li><strong>😊 Facile</strong> : Vitesse lente, peu d\'obstacles</li>';
+        h += '<li><strong>😮 Normal</strong> : Vitesse moyenne, obstacles modérés</li>';
+        h += '<li><strong>😈 Difficile</strong> : Vitesse rapide, nombreux obstacles</li>';
         h += '</ul>';
         h += '</div>';
 
