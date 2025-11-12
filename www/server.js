@@ -635,14 +635,30 @@ class Room {
         if (alivePlayers.length === 2) {
             const [p1, p2] = alivePlayers;
 
-            // Vérifier si les têtes sont au même endroit
-            if (p1.snake.head.x === p2.snake.head.x &&
-                p1.snake.head.y === p2.snake.head.y &&
+            // Calculer les PROCHAINES positions des têtes (après mouvement)
+            const nextP1Head = {
+                x: (p1.snake.head.x + p1.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE,
+                y: (p1.snake.head.y + p1.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE
+            };
+
+            const nextP2Head = {
+                x: (p2.snake.head.x + p2.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE,
+                y: (p2.snake.head.y + p2.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE
+            };
+
+            // Vérifier si collision tête-à-tête va se produire
+            if (nextP1Head.x === nextP2Head.x &&
+                nextP1Head.y === nextP2Head.y &&
                 !p1.snake.invincible && !p2.snake.invincible) {
+
+                logger.info('GAME', `💥 TÊTE-À-TÊTE DÉTECTÉE - Éjection`, {
+                    p1: { current: p1.snake.head, next: nextP1Head, dir: p1.snake.direction, length: p1.snake.length },
+                    p2: { current: p2.snake.head, next: nextP2Head, dir: p2.snake.direction, length: p2.snake.length }
+                });
 
                 this.handleHeadToHeadCollision(p1, p2);
 
-                // Skip le reste de l'update ce tick
+                // Skip le reste de l'update ce tick (ne pas bouger)
                 this.notifyPlayers({
                     type: 'game_update',
                     gameState: this.getGameStateForClients()
@@ -668,7 +684,8 @@ class Room {
 
             // Vérifier collision avec adversaire
             // 👻 GHOST = Peut traverser les adversaires
-            if (player.activePowerup !== 'ghost') {
+            // 🛡️ INVINCIBLE = Pas de collision pendant 300ms après tête-à-tête
+            if (player.activePowerup !== 'ghost' && !player.snake.invincible) {
                 let hitOpponent = false;
                 for (let opponent of this.players.values()) {
                     if (opponent.id === player.id || !opponent.snake.alive) continue;
