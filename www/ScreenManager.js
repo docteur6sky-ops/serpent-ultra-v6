@@ -42,6 +42,11 @@ class ScreenManager {
             window.backgroundManager.setBackground(screenId);
         }
 
+        // Changer l'audio selon l'écran
+        if (window.audioManager) {
+            window.audioManager.setAudio(screenId);
+        }
+
         // Afficher l'écran demandé
         const screen = document.getElementById(screenId);
         if (screen) {

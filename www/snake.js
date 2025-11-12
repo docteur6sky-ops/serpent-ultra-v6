@@ -94,66 +94,19 @@
     let diff = DIFFICULTY.NORMAL;  // Difficulté courante
 
     // ============================================
-    // SYSTÈME AUDIO (Web Audio API + Music)
+    // SYSTÈME AUDIO (Web Audio API pour effets sonores)
+    // Note: Musiques gérées par AudioManager.js
     // ============================================
 
     const audio = {
         ctx: null,
-        music: { menu: null, game: null, gameover: null, current: null },
 
         init() {
             try {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                console.log('✅ AudioContext initialisé');
-
-                this.loadMusic('menu', 'assets/music/menu.mp3');
-                this.loadMusic('game', 'assets/music/game.mp3');
-                this.loadMusic('gameover', 'assets/music/gameover.mp3');
+                console.log('✅ AudioContext initialisé (effets sonores)');
             } catch (error) {
                 console.error('❌ Impossible d\'initialiser l\'audio:', error);
-            }
-        },
-
-        loadMusic(name, path) {
-            const audio = new Audio(path);
-            audio.loop = true;
-            audio.volume = 0.3;
-            audio.preload = 'auto';
-            this.music[name] = audio;
-            console.log(`🎵 Musique "${name}" chargée`);
-        },
-
-        playMusic(name) {
-            if (!soundEnabled || !this.music[name]) return;
-
-            this.stopMusic();
-
-            this.music.current = this.music[name];
-            this.music.current.currentTime = 0;
-            this.music.current.play().catch(err => {
-                console.warn('⚠️ Lecture musique impossible (interaction requise):', err);
-            });
-        },
-
-        stopMusic() {
-            if (this.music.current) {
-                this.music.current.pause();
-                this.music.current.currentTime = 0;
-                this.music.current = null;
-            }
-        },
-
-        pauseMusic() {
-            if (this.music.current && !this.music.current.paused) {
-                this.music.current.pause();
-            }
-        },
-
-        resumeMusic() {
-            if (this.music.current && this.music.current.paused) {
-                this.music.current.play().catch(err => {
-                    console.warn('⚠️ Reprise musique impossible:', err);
-                });
             }
         },
 
@@ -304,7 +257,7 @@
 
     function startMenuMusicOnce() {
         if (!musicStarted && soundEnabled) {
-            audio.playMusic('menu');
+            // Musique gérée par AudioManager maintenant
             musicStarted = true;
         }
     }
@@ -489,12 +442,14 @@
         save('soundEnabled', soundEnabled);
         updateSoundButton();
 
-        if (!soundEnabled) {
-            audio.stopMusic();
-        } else {
-            const menuScreen = getElementSafely('menu');
-            if (menuScreen && !menuScreen.classList.contains('hidden')) {
-                audio.playMusic('menu');
+        // Musique gérée par AudioManager maintenant
+        if (!soundEnabled && window.audioManager) {
+            if (!window.audioManager.muted) {
+                window.audioManager.toggleMute();
+            }
+        } else if (soundEnabled && window.audioManager) {
+            if (window.audioManager.muted) {
+                window.audioManager.toggleMute();
             }
         }
     }
@@ -620,10 +575,17 @@
     function init() {
         console.log('🎮 Initialisation Snake Ultra...');
 
-        // Init backgrounds
-        if (window.backgroundManager) {
-            window.backgroundManager.preloadAll().then(() => {
+        // Init backgrounds & audio
+        if (window.backgroundManager && window.audioManager) {
+            Promise.all([
+                window.backgroundManager.preloadAll(),
+                window.audioManager.preloadAll()
+            ]).then(() => {
                 window.backgroundManager.setBackground('menu');
+                window.audioManager.setAudio('menu');
+                console.log('✅ Backgrounds et audio prêts');
+            }).catch(error => {
+                console.error('❌ Erreur chargement média:', error);
             });
         }
 

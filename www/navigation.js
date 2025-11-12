@@ -607,11 +607,19 @@ function updatePlayerProgress() {
 window.updateMusicVolume = function(value) {
     const valueElement = document.getElementById('music-value');
     if (valueElement) valueElement.textContent = value + '%';
-    localStorage.setItem('musicVolume', value);
 
-    // Appliquer au système audio
-    if (window.audio && window.audio.backgroundMusic) {
-        window.audio.backgroundMusic.volume = value / 100;
+    const volume = value / 100; // 0-100 → 0.0-1.0
+    localStorage.setItem('musicVolume', volume);
+
+    // Mettre à jour la jauge visuelle via CSS variable
+    const slider = document.getElementById('music-volume');
+    if (slider) {
+        slider.style.setProperty('--slider-value', value + '%');
+    }
+
+    // Appliquer avec AudioManager
+    if (window.audioManager) {
+        window.audioManager.setVolume(volume);
     }
 };
 
@@ -622,12 +630,18 @@ window.updateMusicVolume = function(value) {
 window.updateSFXVolume = function(value) {
     const valueElement = document.getElementById('sfx-value');
     if (valueElement) valueElement.textContent = value + '%';
-    localStorage.setItem('sfxVolume', value);
 
-    // Appliquer au système audio
-    if (window.audio) {
-        window.audio.sfxVolume = value / 100;
+    const volume = value / 100; // 0-100 → 0.0-1.0
+    localStorage.setItem('sfxVolume', volume);
+
+    // Mettre à jour la jauge visuelle via CSS variable
+    const slider = document.getElementById('sfx-volume');
+    if (slider) {
+        slider.style.setProperty('--slider-value', value + '%');
     }
+
+    // Effets sonores gérés par window.audio (beep)
+    // Volume des effets reste dans l'ancien système pour l'instant
 };
 
 /**
@@ -642,12 +656,11 @@ window.toggleMute = function() {
     muteStateElement.textContent = currentState ? 'ON' : 'OFF';
     localStorage.setItem('muted', currentState);
 
-    // Appliquer
-    if (window.audio) {
-        if (currentState) {
-            window.audio.muteAll();
-        } else {
-            window.audio.unmuteAll();
+    // Appliquer avec AudioManager
+    if (window.audioManager) {
+        // Toggle seulement si l'état est différent
+        if (window.audioManager.muted !== currentState) {
+            window.audioManager.toggleMute();
         }
     }
 };
@@ -656,25 +669,44 @@ window.toggleMute = function() {
  * Charger les paramètres son depuis localStorage
  */
 function loadSoundSettings() {
-    // Charger depuis localStorage
-    const musicVolume = localStorage.getItem('musicVolume') || '70';
-    const sfxVolume = localStorage.getItem('sfxVolume') || '85';
+    // Charger depuis localStorage (valeurs en 0.0-1.0)
+    const musicVolume = parseFloat(localStorage.getItem('musicVolume')) || 0.5;
+    const sfxVolume = parseFloat(localStorage.getItem('sfxVolume')) || 0.85;
     const muted = localStorage.getItem('muted') === 'true';
 
-    // Appliquer aux sliders
+    // Appliquer aux sliders (convertir 0.0-1.0 → 0-100)
     const musicVolumeSlider = document.getElementById('music-volume');
     const musicValueElement = document.getElementById('music-value');
     const sfxVolumeSlider = document.getElementById('sfx-volume');
     const sfxValueElement = document.getElementById('sfx-value');
     const muteStateElement = document.getElementById('mute-state');
 
-    if (musicVolumeSlider) musicVolumeSlider.value = musicVolume;
-    if (musicValueElement) musicValueElement.textContent = musicVolume + '%';
+    const musicVolumePercent = Math.round(musicVolume * 100);
+    const sfxVolumePercent = Math.round(sfxVolume * 100);
 
-    if (sfxVolumeSlider) sfxVolumeSlider.value = sfxVolume;
-    if (sfxValueElement) sfxValueElement.textContent = sfxVolume + '%';
+    if (musicVolumeSlider) {
+        musicVolumeSlider.value = musicVolumePercent;
+        // Initialiser la jauge visuelle
+        musicVolumeSlider.style.setProperty('--slider-value', musicVolumePercent + '%');
+    }
+    if (musicValueElement) musicValueElement.textContent = musicVolumePercent + '%';
+
+    if (sfxVolumeSlider) {
+        sfxVolumeSlider.value = sfxVolumePercent;
+        // Initialiser la jauge visuelle
+        sfxVolumeSlider.style.setProperty('--slider-value', sfxVolumePercent + '%');
+    }
+    if (sfxValueElement) sfxValueElement.textContent = sfxVolumePercent + '%';
 
     if (muteStateElement) muteStateElement.textContent = muted ? 'ON' : 'OFF';
+
+    // Appliquer avec AudioManager
+    if (window.audioManager) {
+        window.audioManager.setVolume(musicVolume);
+        if (muted && !window.audioManager.muted) {
+            window.audioManager.toggleMute();
+        }
+    }
 }
 
 // ============================================
@@ -755,6 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('📱 Initialisation des menus...');
     updatePlayerProgress();
     loadDarkMode();
+    loadSoundSettings(); // Charger paramètres audio au démarrage
 });
 
 console.log('✅ Système de navigation chargé');
