@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm test)",
+      "Bash(node fix-tests.js:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm test:*)",
+      "Bash(chmod:*)",
+      "Bash(git config:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(timeout 5 node:*)",
+      "Bash(node test-powerup-effects.js:*)",
+      "Bash(node test-collisions.js:*)",
+      "Bash(node test-powerups.js:*)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(timeout 10 node:*)",
+      "Bash(node:*)",
+      "Bash(nul)",
+      "Bash(taskkill /F /PID 18232)",
+      "Bash(powershell -Command \"Stop-Process -Id 18232 -Force\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

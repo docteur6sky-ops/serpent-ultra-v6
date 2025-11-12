@@ -37,6 +37,11 @@ class ScreenManager {
         this.cleanupAll();
         this.hideAll();
 
+        // Changer le fond d'écran selon l'écran
+        if (window.backgroundManager) {
+            window.backgroundManager.setBackground(screenId);
+        }
+
         // Afficher l'écran demandé
         const screen = document.getElementById(screenId);
         if (screen) {

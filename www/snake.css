@@ -36,7 +36,7 @@ body {
     padding: 0;
     margin: 0;
     font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-image: url('assets/snake-background.jpeg');
+    /* Géré par BackgroundManager */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -151,14 +151,14 @@ body::before {
 }
 
 .phone {
-    background: url('assets/snake-background.jpeg');
+    /* Géré par BackgroundManager */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     border: none;                    /* ← Supprimé la bordure */
     border-radius: 0;                /* ← Supprimé les coins arrondis */
     padding: 0;                      /* ← 10px → 0 */
-    width: 100vw;                    
+    width: 100vw;
     max-width: none;
     min-height: 100vh;               /* ← 90vh → 100vh (plein écran) */
     box-shadow: none;                /* ← Supprimé les ombres */

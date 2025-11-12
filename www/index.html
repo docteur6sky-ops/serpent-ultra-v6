@@ -14,6 +14,7 @@
     
     <!-- Nouveaux modules (ordre important!) -->
     <script src="ScreenManager.js"></script>  <!-- PREMIER - Gère tous les écrans -->
+    <script src="BackgroundManager.js"></script>
     <script src="render-utils.js"></script>
     <script src="solo-game.js"></script>
     <script src="network-multiplayer.js"></script>
@@ -25,7 +26,7 @@
     <!-- ÉCRAN DE CHARGEMENT -->
     <div class="screen" id="loading">
         <div class="video-wrapper">
-            <img id="loading-image" src="assets/loading-image.jpg" alt="Écran de chargement Snake Ultra">
+            <img id="loading-image" src="assets/backgrounds/loading.jpg" alt="Écran de chargement Snake Ultra">
             <div id="start-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); display: flex; justify-content: center; align-items: center; z-index: 1001;">
                 <button id="start-button" style="padding: 20px; font-size: 24px; background: #D4AF37; color: #00FF87; border: 2px solid #00FF87; border-radius: 15px; cursor: pointer;">Démarrer</button>
             </div>
@@ -535,7 +536,7 @@
                     <span class="btn-icon">🔄</span>
                     <span class="btn-text">Rejouer</span>
                 </button>
-                <button class="back-btn-compact" onclick="window.audio.buttonClick();toMenu()" aria-label="Retourner au menu">
+                <button class="back-btn-compact" onclick="window.audio.buttonClick();window.exitToMenu()" aria-label="Retourner au menu">
                     <span class="btn-icon">🏠</span>
                     <span class="btn-text">Menu</span>
                 </button>

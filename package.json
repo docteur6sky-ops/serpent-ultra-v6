@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "cordova-android": "^14.0.1",
+    "cordova-plugin-add-swift-support": "^2.0.2",
+    "cordova-plugin-websocket-server": "github:becvert/cordova-plugin-websocket-server"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ]
+  }
+}

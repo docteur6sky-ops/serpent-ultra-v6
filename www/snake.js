@@ -620,6 +620,13 @@
     function init() {
         console.log('🎮 Initialisation Snake Ultra...');
 
+        // Init backgrounds
+        if (window.backgroundManager) {
+            window.backgroundManager.preloadAll().then(() => {
+                window.backgroundManager.setBackground('menu');
+            });
+        }
+
         // 1. Charger les données sauvegardées
         hi = load('hi', 0);
         ss = load('ss', []);
