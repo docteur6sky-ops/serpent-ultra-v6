@@ -13,60 +13,9 @@ let currentDifficulty = 0; // 0 = Facile, 1 = Normal, 2 = Difficile
 // FONCTIONS DE NAVIGATION
 // ============================================
 
-/**
- * Masque tous les écrans
- */
-function hideAllScreens() {
-    const screens = ['loading', 'menu', 'game-solo', 'game-multi', 'over'];
-    screens.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.classList.add('hidden');
-            // Forcer le style en dur si le CSS ne marche pas
-            element.style.display = 'none';
-            element.style.visibility = 'hidden';
-            element.style.opacity = '0';
-            element.style.zIndex = '-9999';
-        }
-    });
-}
-
-/**
- * Affiche un écran spécifique
- * @param {string} screenId - ID de l'écran à afficher
- */
-function showScreen(screenId) {
-    // Nettoyer d'abord tous les overlays dynamiques
-    cleanupDynamicOverlays();
-
-    hideAllScreens();
-    const screen = document.getElementById(screenId);
-    if (screen) {
-        screen.classList.remove('hidden');
-        // Forcer le style en dur
-        screen.style.display = '';  // Reset au CSS par défaut
-        screen.style.visibility = 'visible';
-        screen.style.opacity = '1';
-        screen.style.zIndex = '1';
-    }
-}
-
-function cleanupDynamicOverlays() {
-    // Nettoyer tous les overlays qui peuvent être créés dynamiquement
-    const dynamicIds = [
-        'mp-waiting-overlay',
-        'mp-gameover-overlay',
-        'mp-message',
-        'mp-lobby'  // Pour l'architecture hybride future
-    ];
-
-    dynamicIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.remove();
-        }
-    });
-}
+// Utiliser le ScreenManager global
+const showScreen = (screenId) => window.screenManager.show(screenId);
+const hideAllScreens = () => window.screenManager.hideAll();
 
 // ============================================
 // MODE SOLO
@@ -78,8 +27,8 @@ function cleanupDynamicOverlays() {
 window.start = function() {
     console.log('🎮 Démarrage mode SOLO');
 
-    // Masquer tous les écrans et afficher game-solo
-    showScreen('game-solo');
+    // Afficher l'écran de jeu solo
+    window.screenManager.show('game-solo');
 
     // Créer l'instance si elle n'existe pas
     if (!soloGameInstance) {
@@ -135,7 +84,7 @@ window.quitSolo = function() {
     }
 
     // Retourner au menu
-    showScreen('menu');
+    window.screenManager.show('menu');
 
     // Lancer la musique du menu
     if (window.audio && window.audio.playMusic) {
@@ -161,7 +110,7 @@ window.handleSoloGameOver = function(stats) {
     const xpPercentage = (currentXP / xpForNextLevel) * 100;
 
     setTimeout(() => {
-        showScreen('over');
+        window.screenManager.show('over');
 
         // Remplir les stats XP
         document.getElementById('xp-gained-value').textContent = `+${xpGained} XP`;
@@ -198,8 +147,8 @@ window.handleSoloGameOver = function(stats) {
 window.startLocalMultiplayer = function() {
     console.log('🌐 Démarrage mode MULTIJOUEUR');
 
-    // Masquer tous les écrans et afficher game-multi
-    showScreen('game-multi');
+    // Afficher l'écran multijoueur
+    window.screenManager.show('game-multi');
 
     // Créer l'instance si elle n'existe pas
     if (!multiGameInstance) {
@@ -248,7 +197,7 @@ window.quitMulti = function() {
     }
 
     // Retourner au menu
-    showScreen('menu');
+    window.screenManager.show('menu');
 
     // Lancer la musique du menu
     if (window.audio && window.audio.playMusic) {

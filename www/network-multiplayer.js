@@ -259,6 +259,9 @@ class MultiplayerClient {
 
         document.body.appendChild(msg);
 
+        // Enregistrer dans le ScreenManager
+        window.screenManager.registerOverlay('mp-message');
+
         setTimeout(() => {
             if (msg && msg.parentNode) {
                 msg.remove();

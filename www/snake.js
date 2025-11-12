@@ -606,8 +606,7 @@
     }
 
     function startGame() {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('menu').classList.remove('hidden');
+        window.screenManager.show('menu');
         initMenuEmojis();
 
         const firstButton = document.querySelector('#menu .menu-btn');

@@ -496,14 +496,6 @@ class MultiplayerSnakeGame {
     // ÉCRANS & UI
     // ============================================
 
-    showGameScreen() {
-        const menu = document.getElementById('menu');
-        const gameMulti = document.getElementById('game-multi');
-
-        if (menu) menu.classList.add('hidden');
-        if (gameMulti) gameMulti.classList.remove('hidden');
-    }
-
     showWaitingOverlay() {
         // Créer un overlay d'attente sur le canvas
         const overlay = document.createElement('div');
@@ -549,6 +541,9 @@ class MultiplayerSnakeGame {
             canvasParent.style.position = 'relative';
             canvasParent.appendChild(overlay);
         }
+
+        // Enregistrer l'overlay dans le ScreenManager
+        window.screenManager.registerOverlay('mp-waiting-overlay');
     }
 
     hideWaitingOverlay() {
@@ -642,6 +637,9 @@ class MultiplayerSnakeGame {
 
         document.body.appendChild(gameOverOverlay);
 
+        // Enregistrer l'overlay dans le ScreenManager
+        window.screenManager.registerOverlay('mp-gameover-overlay');
+
         // Attacher les événements
         document.getElementById('mp-replay-btn').onclick = () => {
             gameOverOverlay.remove();
@@ -667,8 +665,8 @@ class MultiplayerSnakeGame {
         // Arrêter le jeu (cleanup des overlays inclus)
         this.stop();
 
-        // Utiliser la fonction centralisée de navigation
-        showScreen('menu');
+        // Le ScreenManager s'occupe de tout (cleanup + affichage)
+        window.screenManager.show('menu');
     }
 }
 
