@@ -29,6 +29,64 @@ const CONFIG = {
     MATCH_DURATION: 300000       // 5 minutes
 };
 
+const POWERUP_TYPES = {
+    FIRE: {
+        id: 'fire',
+        duration: 5000,      // 5 secondes
+        color: '#FF4500',    // Rouge orangé
+        symbol: '🔥',
+        spawnChance: 0.25    // 25% de chance à chaque spawn
+    },
+    ICE: {
+        id: 'ice',
+        duration: 8000,      // 8 secondes
+        color: '#00CED1',    // Bleu cyan
+        symbol: '❄️',
+        spawnChance: 0.25
+    },
+    GHOST: {
+        id: 'ghost',
+        duration: 6000,      // 6 secondes
+        color: '#FFFFFF',    // Blanc
+        symbol: '👻',
+        spawnChance: 0.25
+    },
+    ROCK: {
+        id: 'rock',
+        duration: 8000,      // 8 secondes
+        color: '#D2B48C',    // Beige tan
+        symbol: '🪨',
+        spawnChance: 0.25
+    }
+};
+
+// ============================================
+// CLASSE POWERUP
+// ============================================
+
+class PowerUp {
+    constructor(type) {
+        this.type = type;
+        this.x = 0;
+        this.y = 0;
+        this.active = true;
+    }
+
+    setPosition(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    toJSON() {
+        return {
+            type: this.type,
+            x: this.x,
+            y: this.y,
+            active: this.active
+        };
+    }
+}
+
 // ============================================
 // GESTION DES SALLES
 // ============================================
@@ -66,6 +124,34 @@ class Room {
         return food;
     }
 
+    generatePowerUp() {
+        // Choisir un type aléatoire
+        const types = ['fire', 'ice', 'ghost', 'rock'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
+
+        // Créer le power-up
+        const powerup = new PowerUp(randomType);
+
+        // Trouver une position libre
+        let attempts = 0;
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * CONFIG.GRID_SIZE);
+            y = Math.floor(Math.random() * CONFIG.GRID_SIZE);
+            attempts++;
+            if (attempts > 200) break;
+        } while (this.isPositionOccupied(x, y));
+
+        powerup.setPosition(x, y);
+
+        logger.debug('GAME', `Power-up généré`, {
+            type: randomType,
+            position: { x, y }
+        });
+
+        return powerup;
+    }
+
     isPositionOccupied(x, y) {
         // Vérifier si une position est occupée
         if (this.gameState.food && this.gameState.food.x === x && this.gameState.food.y === y) return true;
@@ -95,7 +181,9 @@ class Room {
             ws: ws,
             number: playerNumber,
             snake: snake,
-            ready: false
+            ready: false,
+            activePowerup: null,        // ✅ NOUVEAU
+            powerupEndTime: 0           // ✅ NOUVEAU
         });
 
         this.gameState.scores[playerId] = 0;
@@ -223,6 +311,12 @@ class Room {
 
         // ⭐ Générer étoile uniquement
         this.gameState.food = this.generateFood();
+
+        // 🎮 Générer 2 power-ups au début
+        this.gameState.powerups = [];
+        for (let i = 0; i < 2; i++) {
+            this.gameState.powerups.push(this.generatePowerUp());
+        }
 
         this.notifyPlayers({
             type: 'game_start',
@@ -446,6 +540,27 @@ class Room {
                     length: player.snake.length
                 });
             }
+
+            // 🎮 Ramasser un power-up
+            for (let i = this.gameState.powerups.length - 1; i >= 0; i--) {
+                const powerup = this.gameState.powerups[i];
+                if (player.snake.headAt(powerup.x, powerup.y)) {
+                    // Activer le power-up
+                    player.activePowerup = powerup.type;
+                    player.powerupEndTime = Date.now() + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
+
+                    logger.info('GAME', `🎮 Player ${player.number} ramasse ${powerup.type}`, {
+                        duration: POWERUP_TYPES[powerup.type.toUpperCase()].duration
+                    });
+
+                    // Retirer ce power-up et en générer un nouveau
+                    this.gameState.powerups.splice(i, 1);
+                    this.gameState.powerups.push(this.generatePowerUp());
+
+                    break;
+                }
+            }
+
             // Pas de nourriture mangée - le move() a déjà géré le pop()
         }
 
@@ -489,14 +604,16 @@ class Room {
             const snakeData = player.snake.toJSON();
             players[id] = {
                 ...snakeData,
-                number: player.number  // Ajouter le numéro du joueur
+                number: player.number,              // Ajouter le numéro du joueur
+                activePowerup: player.activePowerup,    // ✅ Power-up actif
+                powerupEndTime: player.powerupEndTime   // ✅ Temps de fin du power-up
             };
         }
 
         return {
             players: players,
             food: this.gameState.food,
-            powerups: this.gameState.powerups, // ✅ Power-ups (vide pour l'instant)
+            powerups: this.gameState.powerups.map(p => p.toJSON()), // ✅ Power-ups avec toJSON()
             scores: this.gameState.scores,
             segments: this.gameState.segments,
             gameStarted: this.gameState.gameStarted,
