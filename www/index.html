@@ -499,6 +499,38 @@
                         <div class="no-highscore-text" id="proximity-info">Votre score n'entre pas dans le top 3. Continuez à jouer pour vous améliorer !</div>
                     </div>
                 </div>
+
+                <!-- Séparateur avant progression -->
+                <div class="game-over-separator"></div>
+
+                <!-- Section Progression XP -->
+                <div class="game-over-progression" id="progression-section">
+                    <h3 class="progression-title">🏆 PROGRESSION</h3>
+
+                    <div class="progression-stats">
+                        <div class="stat-xp-gained">
+                            <span class="stat-label">XP Gagné</span>
+                            <span class="stat-value" id="xp-gained-value">+0 XP</span>
+                        </div>
+                    </div>
+
+                    <div class="level-display">
+                        <span class="level-icon">🏆</span>
+                        <span class="level-text" id="current-level-text">Niveau 1</span>
+                    </div>
+
+                    <div class="xp-bar-container-gameover">
+                        <div class="xp-bar-fill" id="xp-bar-gameover" style="width: 0%"></div>
+                        <span class="xp-text-overlay" id="xp-text-overlay">0 / 100 XP</span>
+                    </div>
+
+                    <div class="level-up-message" id="level-up-message" style="display: none;">
+                        <span class="level-up-icon">🎉</span>
+                        <span class="level-up-text" id="level-up-text">NIVEAU 2 ATTEINT !</span>
+                        <span class="level-up-icon">🎉</span>
+                    </div>
+                </div>
+
                 <button class="primary-btn-unified" onclick="window.audio.buttonClick();window.start()" aria-label="Rejouer une nouvelle partie">
                     <span class="btn-icon">🔄</span>
                     <span class="btn-text">Rejouer</span>

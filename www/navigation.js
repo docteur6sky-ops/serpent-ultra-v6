@@ -120,13 +120,41 @@ window.quitSolo = function() {
 window.handleSoloGameOver = function(stats) {
     console.log('💀 Game Over SOLO', stats);
 
-    // Ici, on pourrait afficher l'écran game over
-    // Pour l'instant, retour au menu après 2 secondes
+    // Calculer l'XP gagné
+    const xpGained = Math.floor(stats.score / 10);
+    const progressResult = window.awardXP(xpGained);
+
+    // Récupérer les données actuelles
+    const currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
+    const currentXP = parseInt(localStorage.getItem('playerXP') || '0');
+    const xpForNextLevel = currentLevel * 100;
+    const xpPercentage = (currentXP / xpForNextLevel) * 100;
 
     setTimeout(() => {
         showScreen('over');
-        // Afficher les stats dans l'écran game over
-        // TODO: Implémenter l'affichage des stats
+
+        // Remplir les stats XP
+        document.getElementById('xp-gained-value').textContent = `+${xpGained} XP`;
+        document.getElementById('current-level-text').textContent = `Niveau ${currentLevel}`;
+        document.getElementById('xp-text-overlay').textContent = `${currentXP} / ${xpForNextLevel} XP`;
+
+        // Afficher/masquer le message level up
+        const levelUpMsg = document.getElementById('level-up-message');
+        if (progressResult.leveledUp) {
+            levelUpMsg.style.display = 'flex';
+            document.getElementById('level-up-text').textContent = `NIVEAU ${progressResult.newLevel} ATTEINT !`;
+        } else {
+            levelUpMsg.style.display = 'none';
+        }
+
+        // Animer la barre XP
+        setTimeout(() => {
+            const xpBar = document.getElementById('xp-bar-gameover');
+            if (xpBar) {
+                xpBar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                xpBar.style.width = xpPercentage + '%';
+            }
+        }, 500);
     }, 500);
 };
 
@@ -691,49 +719,8 @@ window.toggleDarkMode = function() {
     // Animation smooth
     body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
 
-    // Notification visuelle du changement de thème
-    showThemeChangeNotification(isDark ? 'ARGENT' : 'OR');
-
-    console.log(`🌓 Mode ${isDark ? 'ARGENT' : 'OR'} activé`);
+    console.log(`🌓 Mode ${isDark ? 'BLEU ÉLECTRIQUE' : 'OR'} activé`);
 };
-
-/**
- * Afficher une notification de changement de thème
- */
-function showThemeChangeNotification(theme) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        background: var(--bg-menu);
-        padding: 30px 50px;
-        border-radius: 20px;
-        box-shadow: 0 10px 50px var(--shadow-strong);
-        border: 3px solid var(--btn-primary-border);
-        font-family: 'Poppins', sans-serif;
-        font-size: 2em;
-        font-weight: 700;
-        color: var(--text-primary);
-        z-index: 10000;
-        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    `;
-    notification.textContent = `✨ THÈME ${theme} ✨`;
-
-    document.body.appendChild(notification);
-
-    // Animation d'apparition
-    setTimeout(() => {
-        notification.style.transform = 'translate(-50%, -50%) scale(1)';
-    }, 50);
-
-    // Animation de disparition
-    setTimeout(() => {
-        notification.style.transform = 'translate(-50%, -50%) scale(0)';
-        setTimeout(() => notification.remove(), 300);
-    }, 1500);
-}
 
 /**
  * Charger le Dark Mode au démarrage
@@ -757,54 +744,28 @@ window.awardXP = function(amount) {
     let currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
 
     currentXP += amount;
+    let leveledUp = false;
 
     // Vérifier level up
     const xpForNextLevel = currentLevel * 100;
     if (currentXP >= xpForNextLevel) {
         currentLevel++;
         currentXP -= xpForNextLevel;
-
-        // Animation level up
-        showLevelUpNotification(currentLevel);
+        leveledUp = true;
     }
 
     // Sauvegarder
     localStorage.setItem('playerXP', currentXP);
     localStorage.setItem('playerLevel', currentLevel);
+    localStorage.setItem('justLeveledUp', leveledUp);
 
     // Rafraîchir l'affichage
     updatePlayerProgress();
 
     console.log(`✨ XP awarded: +${amount} (Total: ${currentXP}/${xpForNextLevel})`);
+
+    return { leveledUp, newLevel: currentLevel, xpGained: amount };
 };
-
-function showLevelUpNotification(newLevel) {
-    // Créer notification temporaire
-    const notification = document.createElement('div');
-    notification.className = 'level-up-notification';
-    notification.innerHTML = `
-        <div class="level-up-content">
-            <span class="level-up-icon">🎉</span>
-            <h2>NIVEAU ${newLevel} !</h2>
-            <p>Félicitations !</p>
-        </div>
-    `;
-
-    document.body.appendChild(notification);
-
-    // Animation
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-
-    // Retirer après 3 secondes
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 500);
-    }, 3000);
-
-    console.log(`🎉 LEVEL UP! Nouveau niveau: ${newLevel}`);
-}
 
 // ============================================
 // INITIALISATION
