@@ -14,7 +14,21 @@ class ScreenManager {
     constructor() {
         this.currentScreen = null;
         this.overlays = new Set();
-        this.screens = ['loading', 'menu', 'game-solo', 'game-multi', 'over'];
+        this.screens = [
+            'loading',
+            'menu',
+            'game-solo',
+            'game-multi',
+            'over',
+            // Sub-menus
+            'multiplayer-menu',
+            'options-menu',
+            'language-menu',
+            'sound-menu',
+            'career-menu',
+            'rules-menu',
+            'credits-menu'
+        ];
 
         console.log('🖥️ [ScreenManager] ScreenManager initialisé');
     }

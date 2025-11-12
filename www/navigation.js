@@ -390,13 +390,17 @@ window.moveRight = function() { window.d(1, 0); };
 function hideAllMenus() {
     const menus = [
         'menu', 'difficulty-menu', 'multiplayer-menu', 'options-menu',
-        'sound-menu', 'career-menu', 'rules-menu', 'credits-menu'
+        'sound-menu', 'career-menu', 'rules-menu', 'credits-menu', 'language-menu'
     ];
     menus.forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.classList.add('hidden');
             element.classList.remove('active');
+            // Forcer les styles inline pour garantir le masquage
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.style.zIndex = '-9999';
         }
     });
 }
@@ -411,6 +415,10 @@ function showMenu(menuId, direction = 'slide-in-right') {
     const menu = document.getElementById(menuId);
     if (menu) {
         menu.classList.remove('hidden');
+        // Forcer les styles inline pour garantir l'affichage
+        menu.style.display = '';
+        menu.style.visibility = 'visible';
+        menu.style.zIndex = '1';
         // Animation sera gérée par CSS
         setTimeout(() => {
             menu.classList.add('active');

@@ -76,6 +76,28 @@ class MultiplayerSnakeGame {
 
             this.startRenderLoop();
             this.startTimerUpdate();
+
+            // Cacher TOUS les sub-menus au démarrage de la partie
+            const subMenusToHide = [
+                'multiplayer-menu',
+                'options-menu',
+                'language-menu',
+                'sound-menu',
+                'career-menu',
+                'rules-menu',
+                'credits-menu'
+            ];
+
+            subMenusToHide.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('hidden');
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.zIndex = '-9999';
+                    console.log(`🧹 Sub-menu ${id} caché`);
+                }
+            });
         };
 
         this.client.onGameUpdate = (gameState) => {
