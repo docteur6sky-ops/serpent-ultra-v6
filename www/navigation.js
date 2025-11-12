@@ -518,49 +518,29 @@ function updatePlayerProgress() {
     // Récupérer du localStorage
     const level = parseInt(localStorage.getItem('playerLevel') || '1');
     const xp = parseInt(localStorage.getItem('playerXP') || '0');
-    const xpForNextLevel = level * 100; // Exemple : niveau 1 = 100 XP
+    const xpForNextLevel = level * 100;
 
-    // Mettre à jour l'affichage
-    const levelElement = document.getElementById('player-level');
-    const xpTextElement = document.getElementById('xp-text');
-    const xpBarElement = document.getElementById('xp-bar');
-
-    if (levelElement) levelElement.textContent = level;
-    if (xpTextElement) xpTextElement.textContent = `${xp} / ${xpForNextLevel} XP`;
-
-    // Animer la barre XP
-    if (xpBarElement) {
-        const percentage = (xp / xpForNextLevel) * 100;
-        animateXPBar(percentage);
+    // Mettre à jour le texte niveau dans le cercle SVG
+    const levelNum = document.getElementById('player-level-num');
+    if (levelNum) {
+        levelNum.textContent = level;
     }
-}
 
-/**
- * Animer la barre XP
- * @param {number} targetPercentage - Pourcentage cible
- */
-function animateXPBar(targetPercentage) {
-    const bar = document.getElementById('xp-bar');
-    if (!bar) return;
+    // Mettre à jour le texte XP dans le cercle SVG
+    const xpText = document.getElementById('player-xp-text');
+    if (xpText) {
+        xpText.textContent = `${xp}/${xpForNextLevel} XP`;
+    }
 
-    const currentWidth = parseFloat(bar.style.width) || 0;
+    // Animer le cercle XP
+    const circleFill = document.getElementById('player-circle-fill');
+    if (circleFill) {
+        const percentage = (xp / xpForNextLevel);
+        const circumference = 2 * Math.PI * 65; // r=65
+        const offset = circumference * (1 - percentage);
 
-    // Animation progressive
-    let current = currentWidth;
-    const step = (targetPercentage - currentWidth) / 30; // 30 frames
-
-    const animate = () => {
-        current += step;
-        if ((step > 0 && current >= targetPercentage) ||
-            (step < 0 && current <= targetPercentage)) {
-            bar.style.width = targetPercentage + '%';
-            return;
-        }
-        bar.style.width = current + '%';
-        requestAnimationFrame(animate);
-    };
-
-    animate();
+        circleFill.style.strokeDashoffset = offset;
+    }
 }
 
 // ============================================
@@ -662,6 +642,16 @@ window.toggleDarkMode = function() {
     const indicator = document.getElementById('dark-mode-indicator');
     if (indicator) indicator.textContent = isDark ? 'ON' : 'OFF';
 
+    // Changer le gradient du cercle XP
+    const circleFill = document.getElementById('player-circle-fill');
+    if (circleFill) {
+        if (isDark) {
+            circleFill.setAttribute('stroke', 'url(#gradient-dark)');
+        } else {
+            circleFill.setAttribute('stroke', 'url(#gradient)');
+        }
+    }
+
     // Animation smooth
     body.style.transition = 'background-color 0.3s, color 0.3s';
 
@@ -677,6 +667,12 @@ function loadDarkMode() {
         document.body.classList.add('dark-mode');
         const indicator = document.getElementById('dark-mode-indicator');
         if (indicator) indicator.textContent = 'ON';
+
+        // Mettre à jour le gradient du cercle XP
+        const circleFill = document.getElementById('player-circle-fill');
+        if (circleFill) {
+            circleFill.setAttribute('stroke', 'url(#gradient-dark)');
+        }
     }
 }
 

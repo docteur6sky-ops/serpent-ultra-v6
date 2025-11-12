@@ -34,21 +34,78 @@
     <div class="phone">
         <!-- MENU PRINCIPAL REFONTE -->
         <div class="screen hidden" id="menu">
-            <h1 class="game-title">🐍 SNAKE ULTRA V6 🐍</h1>
+            <h1 class="game-title">Snake Deluxe</h1>
 
-            <!-- Barre de progression niveau/XP -->
-            <div class="player-progress">
-                <div class="level-badge">
-                    <span class="level-icon">🏆</span>
-                    <span class="level-text">Niveau <span id="player-level">1</span></span>
-                </div>
-                <div class="xp-bar-container">
-                    <div class="xp-bar" id="xp-bar" style="width: 0%"></div>
-                    <span class="xp-text" id="xp-text">0 / 100 XP</span>
-                </div>
-                <div class="level-badge">
-                    <span class="level-icon">🎯</span>
-                </div>
+            <!-- Cercle de progression (RESTAURÉ) -->
+            <div class="player-info-container">
+                <svg class="level-circle" width="150" height="150" viewBox="0 0 150 150">
+                    <!-- Cercle de fond -->
+                    <circle
+                        class="level-circle-bg"
+                        cx="75"
+                        cy="75"
+                        r="65"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.1)"
+                        stroke-width="10"
+                    />
+
+                    <!-- Cercle de progression (XP) -->
+                    <circle
+                        class="level-circle-fill"
+                        id="player-circle-fill"
+                        cx="75"
+                        cy="75"
+                        r="65"
+                        fill="none"
+                        stroke="url(#gradient)"
+                        stroke-width="10"
+                        stroke-dasharray="408.4"
+                        stroke-dashoffset="408.4"
+                        stroke-linecap="round"
+                        transform="rotate(-90 75 75)"
+                    />
+
+                    <!-- Gradients -->
+                    <defs>
+                        <!-- Gradient Light Mode -->
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#48bb78;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#38a169;stop-opacity:1" />
+                        </linearGradient>
+
+                        <!-- Gradient Dark Mode -->
+                        <linearGradient id="gradient-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#805ad5;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#6b46c1;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Texte niveau au centre -->
+                    <text
+                        class="level-number"
+                        id="player-level-num"
+                        x="75"
+                        y="70"
+                        text-anchor="middle"
+                        fill="var(--text-primary)"
+                        font-size="32"
+                        font-weight="bold"
+                    >1</text>
+
+                    <!-- Texte XP sous le niveau -->
+                    <text
+                        class="xp-text-svg"
+                        id="player-xp-text"
+                        x="75"
+                        y="95"
+                        text-anchor="middle"
+                        fill="var(--text-secondary)"
+                        font-size="14"
+                    >0/100 XP</text>
+                </svg>
+
+                <div class="level-text">NIVEAU</div>
             </div>
 
             <!-- Boutons principaux -->
@@ -58,39 +115,33 @@
                     <span class="btn-text">JOUER EN RÉSEAU</span>
                 </button>
 
-                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();showDifficulty()">
+                <!-- Bouton Jouer Solo -->
+                <button class="menu-btn primary-btn" id="solo-btn">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">JOUER SOLO</span>
                 </button>
+
+                <!-- Boutons de difficulté (TOUJOURS VISIBLES) -->
+                <div class="difficulty-selector">
+                    <button class="diff-btn easy" onclick="window.audio.buttonClick();startSolo(0)">
+                        <span class="diff-icon">😊</span>
+                        <span class="diff-text">Facile</span>
+                    </button>
+                    <button class="diff-btn normal" onclick="window.audio.buttonClick();startSolo(1)">
+                        <span class="diff-icon">😐</span>
+                        <span class="diff-text">Normal</span>
+                    </button>
+                    <button class="diff-btn hard" onclick="window.audio.buttonClick();startSolo(2)">
+                        <span class="diff-icon">😈</span>
+                        <span class="diff-text">Difficile</span>
+                    </button>
+                </div>
 
                 <button class="menu-btn secondary-btn" onclick="window.audio.buttonClick();showOptions()">
                     <span class="btn-icon">⚙️</span>
                     <span class="btn-text">OPTIONS</span>
                 </button>
             </div>
-        </div>
-
-        <!-- Menu Difficulté -->
-        <div class="screen hidden" id="difficulty-menu">
-            <h2>🎮 CHOISIR LA DIFFICULTÉ</h2>
-            <div class="difficulty-buttons">
-                <button class="menu-btn easy-btn" onclick="window.audio.buttonClick();startSolo(0)">
-                    <span class="btn-icon">😊</span>
-                    <span class="btn-text">FACILE</span>
-                </button>
-                <button class="menu-btn normal-btn" onclick="window.audio.buttonClick();startSolo(1)">
-                    <span class="btn-icon">😐</span>
-                    <span class="btn-text">NORMAL</span>
-                </button>
-                <button class="menu-btn hard-btn" onclick="window.audio.buttonClick();startSolo(2)">
-                    <span class="btn-icon">😈</span>
-                    <span class="btn-text">DIFFICILE</span>
-                </button>
-            </div>
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
-                <span class="btn-icon">⬅️</span>
-                <span class="btn-text">RETOUR</span>
-            </button>
         </div>
 
         <!-- Menu Multiplayer -->
