@@ -374,8 +374,322 @@ window.moveLeft = function() { window.d(-1, 0); };
 window.moveRight = function() { window.d(1, 0); };
 
 // ============================================
+// NOUVELLE NAVIGATION MENUS
+// ============================================
+
+/**
+ * Masquer tous les menus
+ */
+function hideAllMenus() {
+    const menus = [
+        'menu', 'difficulty-menu', 'multiplayer-menu', 'options-menu',
+        'sound-menu', 'career-menu', 'rules-menu', 'credits-menu'
+    ];
+    menus.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.add('hidden');
+            element.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Afficher un menu avec animation
+ * @param {string} menuId - ID du menu à afficher
+ * @param {string} direction - Direction de l'animation
+ */
+function showMenu(menuId, direction = 'slide-in-right') {
+    hideAllMenus();
+    const menu = document.getElementById(menuId);
+    if (menu) {
+        menu.classList.remove('hidden');
+        // Animation sera gérée par CSS
+        setTimeout(() => {
+            menu.classList.add('active');
+        }, 10);
+    }
+}
+
+// ============================================
+// NAVIGATION - MENU PRINCIPAL
+// ============================================
+
+/**
+ * Retour au menu principal
+ */
+window.backToMain = function() {
+    console.log('🏠 Retour au menu principal');
+    showMenu('menu', 'slide-in-left');
+    updatePlayerProgress();
+};
+
+/**
+ * Afficher le menu Options
+ */
+window.showOptions = function() {
+    console.log('⚙️ Menu Options');
+    showMenu('options-menu', 'slide-in-right');
+};
+
+/**
+ * Afficher le menu Difficulté
+ */
+window.showDifficulty = function() {
+    console.log('🎮 Menu Difficulté');
+    showMenu('difficulty-menu', 'slide-in-right');
+};
+
+/**
+ * Afficher le menu Multiplayer
+ */
+window.showMultiplayer = function() {
+    console.log('🌐 Menu Multiplayer');
+    showMenu('multiplayer-menu', 'slide-in-right');
+};
+
+// ============================================
+// NAVIGATION - SOUS-MENUS OPTIONS
+// ============================================
+
+/**
+ * Retour au menu Options
+ */
+window.backToOptions = function() {
+    console.log('⚙️ Retour Options');
+    showMenu('options-menu', 'slide-in-left');
+};
+
+/**
+ * Afficher le menu Son
+ */
+window.showSound = function() {
+    console.log('🔊 Menu Son');
+    showMenu('sound-menu', 'slide-in-right');
+    loadSoundSettings();
+};
+
+/**
+ * Afficher le menu Carrière
+ */
+window.showCareer = function() {
+    console.log('📊 Menu Carrière');
+    showMenu('career-menu', 'slide-in-right');
+};
+
+/**
+ * Afficher le menu Règles
+ */
+window.showRules = function() {
+    console.log('📖 Menu Règles');
+    showMenu('rules-menu', 'slide-in-right');
+};
+
+/**
+ * Afficher le menu Crédits
+ */
+window.showCredits = function() {
+    console.log('ℹ️ Menu Crédits');
+    showMenu('credits-menu', 'slide-in-right');
+};
+
+// ============================================
+// DÉMARRAGE JEUX AVEC DIFFICULTÉ
+// ============================================
+
+/**
+ * Démarrer le jeu solo avec une difficulté
+ * @param {number} difficulty - 0 = Facile, 1 = Normal, 2 = Difficile
+ */
+window.startSolo = function(difficulty) {
+    console.log(`🎮 Démarrer SOLO - Difficulté: ${difficulty}`);
+    currentDifficulty = difficulty;
+    window.start(); // Utilise la fonction existante
+};
+
+// ============================================
+// PROGRESSION JOUEUR (Niveau/XP)
+// ============================================
+
+/**
+ * Mettre à jour l'affichage de la progression du joueur
+ */
+function updatePlayerProgress() {
+    // Récupérer du localStorage
+    const level = parseInt(localStorage.getItem('playerLevel') || '1');
+    const xp = parseInt(localStorage.getItem('playerXP') || '0');
+    const xpForNextLevel = level * 100; // Exemple : niveau 1 = 100 XP
+
+    // Mettre à jour l'affichage
+    const levelElement = document.getElementById('player-level');
+    const xpTextElement = document.getElementById('xp-text');
+    const xpBarElement = document.getElementById('xp-bar');
+
+    if (levelElement) levelElement.textContent = level;
+    if (xpTextElement) xpTextElement.textContent = `${xp} / ${xpForNextLevel} XP`;
+
+    // Animer la barre XP
+    if (xpBarElement) {
+        const percentage = (xp / xpForNextLevel) * 100;
+        animateXPBar(percentage);
+    }
+}
+
+/**
+ * Animer la barre XP
+ * @param {number} targetPercentage - Pourcentage cible
+ */
+function animateXPBar(targetPercentage) {
+    const bar = document.getElementById('xp-bar');
+    if (!bar) return;
+
+    const currentWidth = parseFloat(bar.style.width) || 0;
+
+    // Animation progressive
+    let current = currentWidth;
+    const step = (targetPercentage - currentWidth) / 30; // 30 frames
+
+    const animate = () => {
+        current += step;
+        if ((step > 0 && current >= targetPercentage) ||
+            (step < 0 && current <= targetPercentage)) {
+            bar.style.width = targetPercentage + '%';
+            return;
+        }
+        bar.style.width = current + '%';
+        requestAnimationFrame(animate);
+    };
+
+    animate();
+}
+
+// ============================================
+// PARAMÈTRES SON
+// ============================================
+
+/**
+ * Mettre à jour le volume de la musique
+ * @param {number} value - Volume (0-100)
+ */
+window.updateMusicVolume = function(value) {
+    const valueElement = document.getElementById('music-value');
+    if (valueElement) valueElement.textContent = value + '%';
+    localStorage.setItem('musicVolume', value);
+
+    // Appliquer au système audio
+    if (window.audio && window.audio.backgroundMusic) {
+        window.audio.backgroundMusic.volume = value / 100;
+    }
+};
+
+/**
+ * Mettre à jour le volume des effets sonores
+ * @param {number} value - Volume (0-100)
+ */
+window.updateSFXVolume = function(value) {
+    const valueElement = document.getElementById('sfx-value');
+    if (valueElement) valueElement.textContent = value + '%';
+    localStorage.setItem('sfxVolume', value);
+
+    // Appliquer au système audio
+    if (window.audio) {
+        window.audio.sfxVolume = value / 100;
+    }
+};
+
+/**
+ * Basculer le mode silencieux
+ */
+window.toggleMute = function() {
+    const muteStateElement = document.getElementById('mute-state');
+    if (!muteStateElement) return;
+
+    const currentState = muteStateElement.textContent === 'OFF';
+
+    muteStateElement.textContent = currentState ? 'ON' : 'OFF';
+    localStorage.setItem('muted', currentState);
+
+    // Appliquer
+    if (window.audio) {
+        if (currentState) {
+            window.audio.muteAll();
+        } else {
+            window.audio.unmuteAll();
+        }
+    }
+};
+
+/**
+ * Charger les paramètres son depuis localStorage
+ */
+function loadSoundSettings() {
+    // Charger depuis localStorage
+    const musicVolume = localStorage.getItem('musicVolume') || '70';
+    const sfxVolume = localStorage.getItem('sfxVolume') || '85';
+    const muted = localStorage.getItem('muted') === 'true';
+
+    // Appliquer aux sliders
+    const musicVolumeSlider = document.getElementById('music-volume');
+    const musicValueElement = document.getElementById('music-value');
+    const sfxVolumeSlider = document.getElementById('sfx-volume');
+    const sfxValueElement = document.getElementById('sfx-value');
+    const muteStateElement = document.getElementById('mute-state');
+
+    if (musicVolumeSlider) musicVolumeSlider.value = musicVolume;
+    if (musicValueElement) musicValueElement.textContent = musicVolume + '%';
+
+    if (sfxVolumeSlider) sfxVolumeSlider.value = sfxVolume;
+    if (sfxValueElement) sfxValueElement.textContent = sfxVolume + '%';
+
+    if (muteStateElement) muteStateElement.textContent = muted ? 'ON' : 'OFF';
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+
+/**
+ * Basculer le mode sombre
+ */
+window.toggleDarkMode = function() {
+    const body = document.body;
+    const isDark = body.classList.toggle('dark-mode');
+
+    // Sauvegarder
+    localStorage.setItem('darkMode', isDark);
+
+    // Mettre à jour l'indicateur
+    const indicator = document.getElementById('dark-mode-indicator');
+    if (indicator) indicator.textContent = isDark ? 'ON' : 'OFF';
+
+    // Animation smooth
+    body.style.transition = 'background-color 0.3s, color 0.3s';
+
+    console.log(`🌓 Mode sombre: ${isDark ? 'Activé' : 'Désactivé'}`);
+};
+
+/**
+ * Charger le Dark Mode au démarrage
+ */
+function loadDarkMode() {
+    const darkMode = localStorage.getItem('darkMode') === 'true';
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+        const indicator = document.getElementById('dark-mode-indicator');
+        if (indicator) indicator.textContent = 'ON';
+    }
+}
+
+// ============================================
 // INITIALISATION
 // ============================================
+
+// Charger les paramètres au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📱 Initialisation des menus...');
+    updatePlayerProgress();
+    loadDarkMode();
+});
 
 console.log('✅ Système de navigation chargé');
 console.log('📌 Fonctions disponibles:');
@@ -386,3 +700,6 @@ console.log('   - window.quitSolo() : Quitter solo');
 console.log('   - window.abandonMulti() : Abandonner multi');
 console.log('   - window.quitMulti() : Quitter multi');
 console.log('   - window.setDiff(n) : Changer difficulté');
+console.log('   - window.showOptions() : Menu Options');
+console.log('   - window.showSound() : Menu Son');
+console.log('   - window.toggleDarkMode() : Mode sombre');

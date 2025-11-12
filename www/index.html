@@ -32,43 +32,217 @@
     </div>
 
     <div class="phone">
-        <!-- MENU PRINCIPAL FINAL -->
+        <!-- MENU PRINCIPAL REFONTE -->
         <div class="screen hidden" id="menu">
-            
-            <!-- CERCLE NIVEAU (Position absolute - en haut à gauche) -->
-            <div class="player-circle-container">
-                <div class="player-circle">
-                    <div class="player-circle-inner">
-                        <span class="player-level-text">Nv</span>
-                        <span class="player-level-number" id="player-level-num">1</span>
+            <h1 class="game-title">🐍 SNAKE ULTRA V6 🐍</h1>
+
+            <!-- Barre de progression niveau/XP -->
+            <div class="player-progress">
+                <div class="level-badge">
+                    <span class="level-icon">🏆</span>
+                    <span class="level-text">Niveau <span id="player-level">1</span></span>
+                </div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar" id="xp-bar" style="width: 0%"></div>
+                    <span class="xp-text" id="xp-text">0 / 100 XP</span>
+                </div>
+                <div class="level-badge">
+                    <span class="level-icon">🎯</span>
+                </div>
+            </div>
+
+            <!-- Boutons principaux -->
+            <div class="main-buttons">
+                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();showMultiplayer()">
+                    <span class="btn-icon">🌐</span>
+                    <span class="btn-text">JOUER EN RÉSEAU</span>
+                </button>
+
+                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();showDifficulty()">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">JOUER SOLO</span>
+                </button>
+
+                <button class="menu-btn secondary-btn" onclick="window.audio.buttonClick();showOptions()">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">OPTIONS</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Difficulté -->
+        <div class="screen hidden" id="difficulty-menu">
+            <h2>🎮 CHOISIR LA DIFFICULTÉ</h2>
+            <div class="difficulty-buttons">
+                <button class="menu-btn easy-btn" onclick="window.audio.buttonClick();startSolo(0)">
+                    <span class="btn-icon">😊</span>
+                    <span class="btn-text">FACILE</span>
+                </button>
+                <button class="menu-btn normal-btn" onclick="window.audio.buttonClick();startSolo(1)">
+                    <span class="btn-icon">😐</span>
+                    <span class="btn-text">NORMAL</span>
+                </button>
+                <button class="menu-btn hard-btn" onclick="window.audio.buttonClick();startSolo(2)">
+                    <span class="btn-icon">😈</span>
+                    <span class="btn-text">DIFFICILE</span>
+                </button>
+            </div>
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Multiplayer -->
+        <div class="screen hidden" id="multiplayer-menu">
+            <h2>🌐 MULTIJOUEUR</h2>
+            <div class="multiplayer-buttons">
+                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();startLocalMultiplayer()">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">DÉMARRER</span>
+                </button>
+            </div>
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Options -->
+        <div class="screen hidden" id="options-menu">
+            <h2>⚙️ OPTIONS</h2>
+            <div class="options-buttons">
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showCareer()">
+                    <span class="btn-icon">📊</span>
+                    <span class="btn-text">CARRIÈRE</span>
+                </button>
+
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showRules()">
+                    <span class="btn-icon">📖</span>
+                    <span class="btn-text">RÈGLES</span>
+                </button>
+
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showSound()">
+                    <span class="btn-icon">🔊</span>
+                    <span class="btn-text">SON</span>
+                </button>
+
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();toggleDarkMode()">
+                    <span class="btn-icon">🌓</span>
+                    <span class="btn-text">MODE SOMBRE</span>
+                    <span class="toggle-indicator" id="dark-mode-indicator">OFF</span>
+                </button>
+
+                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showCredits()">
+                    <span class="btn-icon">ℹ️</span>
+                    <span class="btn-text">CRÉDITS</span>
+                </button>
+            </div>
+
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Son -->
+        <div class="screen hidden" id="sound-menu">
+            <h2>🔊 SON</h2>
+
+            <div class="sound-controls">
+                <!-- Volume Musique -->
+                <div class="sound-control-item">
+                    <label for="music-volume">
+                        <span class="sound-icon">🎵</span>
+                        <span class="sound-label">Musique</span>
+                    </label>
+                    <div class="slider-container">
+                        <input
+                            type="range"
+                            id="music-volume"
+                            class="volume-slider"
+                            min="0"
+                            max="100"
+                            value="70"
+                            oninput="updateMusicVolume(this.value)"
+                        >
+                        <span class="volume-value" id="music-value">70%</span>
                     </div>
-                    <svg class="player-circle-progress" viewBox="0 0 100 100">
-                        <circle class="player-circle-bg" cx="50" cy="50" r="45" />
-                        <circle class="player-circle-fill" id="player-circle-fill" cx="50" cy="50" r="45" />
-                    </svg>
+                </div>
+
+                <!-- Volume Effets -->
+                <div class="sound-control-item">
+                    <label for="sfx-volume">
+                        <span class="sound-icon">🔔</span>
+                        <span class="sound-label">Effets Sonores</span>
+                    </label>
+                    <div class="slider-container">
+                        <input
+                            type="range"
+                            id="sfx-volume"
+                            class="volume-slider"
+                            min="0"
+                            max="100"
+                            value="85"
+                            oninput="updateSFXVolume(this.value)"
+                        >
+                        <span class="volume-value" id="sfx-value">85%</span>
+                    </div>
+                </div>
+
+                <!-- Mode Silencieux -->
+                <div class="sound-control-item">
+                    <label>
+                        <span class="sound-icon">🔇</span>
+                        <span class="sound-label">Mode Silencieux</span>
+                    </label>
+                    <button class="toggle-btn" id="mute-toggle" onclick="window.audio.buttonClick();toggleMute()">
+                        <span class="toggle-state" id="mute-state">OFF</span>
+                    </button>
                 </div>
             </div>
-            
-            <!-- TITRE -->
-            <div class="subtitle">Deluxe Edition</div>
-            
-            <!-- TOUS LES BOUTONS -->
-            <div class="menu-content">
-                <button class="menu-btn play-btn" onclick="window.audio.buttonClick();window.start()">🎮 JOUER SOLO</button>
-                <button class="menu-btn play-btn" onclick="window.audio.buttonClick();startLocalMultiplayer()">🌐 MULTIJOUEUR RÉSEAU</button>
-                
-                <div class="diff-selector" role="radiogroup" aria-label="Sélection du niveau de difficulté">
-                    <button class="diff-btn active" onclick="window.audio.buttonClick();setDiff(0)" aria-label="Mode Facile" role="radio" aria-checked="true">🟢 FACILE</button>
-                    <button class="diff-btn" onclick="window.audio.buttonClick();setDiff(1)" aria-label="Mode Normal" role="radio" aria-checked="false">🟡 NORMAL</button>
-                    <button class="diff-btn" onclick="window.audio.buttonClick();setDiff(2)" aria-label="Mode Difficile" role="radio" aria-checked="false">🔴 DIFFICILE</button>
-                </div>
-               
-                
-                <button class="menu-btn" onclick="window.audio.buttonClick();career()" aria-label="Voir votre carrière">🏆 CARRIERE</button>
-                <button class="menu-btn" onclick="window.audio.buttonClick();showRules()" aria-label="Voir les règles du jeu">📋 RÈGLES</button>
-                <button class="menu-btn" onclick="window.audio.buttonClick();showCredits()" aria-label="Voir les crédits">🎬 CRÉDITS</button>
-                <button class="menu-btn sound-btn" id="soundToggle" onclick="window.audio.buttonClick();toggleSound()" aria-label="Activer ou désactiver le son">🔊 SON : <span id="sound-status">ACTIVÉ</span></button>
+
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Carrière (placeholder) -->
+        <div class="screen hidden" id="career-menu">
+            <h2>📊 CARRIÈRE</h2>
+            <div class="career-content">
+                <p>Statistiques de carrière à venir...</p>
             </div>
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Règles (placeholder) -->
+        <div class="screen hidden" id="rules-menu">
+            <h2>📖 RÈGLES</h2>
+            <div class="rules-content">
+                <p>Règles du jeu à venir...</p>
+            </div>
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+        <!-- Menu Crédits (placeholder) -->
+        <div class="screen hidden" id="credits-menu">
+            <h2>ℹ️ CRÉDITS</h2>
+            <div class="credits-content">
+                <p>Snake Ultra V6</p>
+                <p>Développé avec ❤️</p>
+            </div>
+            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+                <span class="btn-icon">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
         </div>
 
         <!-- ÉCRAN JEU SOLO -->
