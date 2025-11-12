@@ -1782,36 +1782,64 @@ canvas.invincible-power {
    ============================================ */
 
 /* CSS Variables for Light/Dark themes */
+/* ============================================
+   THÈME OR/ARGENT + GLOSS EFFECT
+   ============================================ */
+
 :root {
-    /* Light theme (default) */
-    --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --bg-menu: rgba(255, 255, 255, 0.95);
-    --bg-card: rgba(255, 255, 255, 0.9);
-    --text-primary: #1a202c;
-    --text-secondary: #4a5568;
-    --text-muted: #718096;
-    --btn-primary-bg: #667eea;
-    --btn-primary-text: #ffffff;
-    --btn-primary-hover: #5568d3;
-    --btn-secondary-bg: #e2e8f0;
-    --btn-secondary-text: #2d3748;
-    --btn-secondary-hover: #cbd5e0;
-    --btn-option-bg: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    --btn-option-border: #cbd5e0;
-    --btn-back-bg: #48bb78;
-    --btn-back-text: #ffffff;
-    --xp-bar-bg: rgba(0, 0, 0, 0.1);
-    --xp-bar-fill: linear-gradient(90deg, #48bb78, #38a169);
-    --level-badge-bg: rgba(255, 215, 0, 0.1);
-    --level-badge-border: #ffd700;
+    /* ===== THÈME OR (Mode Normal) ===== */
+
+    /* Fond principal */
+    --bg-primary: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    --bg-secondary: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+
+    /* Fond des menus */
+    --bg-menu: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    --bg-card: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    --bg-menu-hover: rgba(255, 255, 255, 0.15);
+
+    /* Texte */
+    --text-primary: #2d3436;
+    --text-secondary: #636e72;
+    --text-light: #b2bec3;
+    --text-muted: #95a5a6;
+
+    /* Boutons principaux - OR */
+    --btn-primary-bg: linear-gradient(145deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    --btn-primary-border: #d4af37;
+    --btn-primary-shadow: rgba(255, 215, 0, 0.5);
+    --btn-primary-shine: rgba(255, 255, 255, 0.6);
+    --btn-primary-text: #2d3436;
+
+    /* Boutons secondaires - OR CLAIR */
+    --btn-secondary-bg: linear-gradient(145deg, #ffed4e 0%, #ffe88a 50%, #ffed4e 100%);
+    --btn-secondary-border: #e6c35f;
+    --btn-secondary-shadow: rgba(255, 237, 78, 0.5);
+    --btn-secondary-text: #2d3436;
+
+    /* Cercle XP - OR */
+    --xp-gradient-start: #ffd700;
+    --xp-gradient-end: #ffed4e;
+    --xp-bar-bg: rgba(212, 175, 55, 0.2);
+    --xp-glow: rgba(255, 215, 0, 0.6);
+
+    /* Sliders */
     --slider-track: #e2e8f0;
-    --slider-thumb: #667eea;
-    --slider-fill: #667eea;
+    --slider-thumb: #ffd700;
+    --slider-fill: #ffd700;
+
+    /* Effets */
     --shadow: rgba(0, 0, 0, 0.15);
+    --shadow-strong: rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    --border: #cbd5e0;
+    --border: rgba(212, 175, 55, 0.3);
+    --gloss-gradient: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.05) 100%);
+
+    /* Badges */
+    --level-badge-bg: rgba(255, 215, 0, 0.1);
+    --level-badge-border: #ffd700;
 
     /* Variables pour harmonisation des boutons */
     --btn-unified-height: 68px;
@@ -1820,35 +1848,59 @@ canvas.invincible-power {
 }
 
 body.dark-mode {
-    /* Dark theme overrides */
-    --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
-    --bg-menu: rgba(30, 30, 46, 0.95);
-    --bg-card: rgba(40, 40, 60, 0.9);
-    --text-primary: #e2e8f0;
-    --text-secondary: #cbd5e0;
-    --text-muted: #a0aec0;
-    --btn-primary-bg: #805ad5;
-    --btn-primary-text: #ffffff;
-    --btn-primary-hover: #6b46c1;
-    --btn-secondary-bg: #2d3748;
-    --btn-secondary-text: #e2e8f0;
-    --btn-secondary-hover: #4a5568;
-    --btn-option-bg: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-    --btn-option-border: #4a5568;
-    --btn-back-bg: #48bb78;
-    --btn-back-text: #ffffff;
-    --xp-bar-bg: rgba(255, 255, 255, 0.1);
-    --xp-bar-fill: linear-gradient(90deg, #ffd700, #ffed4e);
-    --level-badge-bg: rgba(255, 215, 0, 0.15);
-    --level-badge-border: #ffd700;
+    /* ===== THÈME ARGENT (Mode Dark) ===== */
+
+    /* Fond principal */
+    --bg-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    --bg-secondary: linear-gradient(135deg, #34495e 0%, #4a5f7f 100%);
+
+    /* Fond des menus */
+    --bg-menu: linear-gradient(145deg, #2c3e50 0%, #34495e 100%);
+    --bg-card: linear-gradient(145deg, #34495e 0%, #3e5366 100%);
+    --bg-menu-hover: rgba(255, 255, 255, 0.08);
+
+    /* Texte */
+    --text-primary: #ecf0f1;
+    --text-secondary: #bdc3c7;
+    --text-light: #7f8c8d;
+    --text-muted: #95a5a6;
+
+    /* Boutons principaux - ARGENT */
+    --btn-primary-bg: linear-gradient(145deg, #c0c0c0 0%, #e8e8e8 50%, #c0c0c0 100%);
+    --btn-primary-border: #95a5a6;
+    --btn-primary-shadow: rgba(192, 192, 192, 0.4);
+    --btn-primary-shine: rgba(255, 255, 255, 0.5);
+    --btn-primary-text: #2d3436;
+
+    /* Boutons secondaires - ARGENT CLAIR */
+    --btn-secondary-bg: linear-gradient(145deg, #d3d3d3 0%, #f5f5f5 50%, #d3d3d3 100%);
+    --btn-secondary-border: #a8a8a8;
+    --btn-secondary-shadow: rgba(211, 211, 211, 0.4);
+    --btn-secondary-text: #2d3436;
+
+    /* Cercle XP - ARGENT */
+    --xp-gradient-start: #c0c0c0;
+    --xp-gradient-end: #e8e8e8;
+    --xp-bar-bg: rgba(149, 165, 166, 0.2);
+    --xp-glow: rgba(192, 192, 192, 0.5);
+
+    /* Sliders */
     --slider-track: #4a5568;
-    --slider-thumb: #805ad5;
-    --slider-fill: #805ad5;
-    --shadow: rgba(0, 0, 0, 0.3);
+    --slider-thumb: #c0c0c0;
+    --slider-fill: #c0c0c0;
+
+    /* Effets */
+    --shadow: rgba(0, 0, 0, 0.5);
+    --shadow-strong: rgba(0, 0, 0, 0.7);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
-    --border: #4a5568;
+    --border: rgba(149, 165, 166, 0.3);
+    --gloss-gradient: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.08) 50%, rgba(0,0,0,0.1) 100%);
+
+    /* Badges */
+    --level-badge-bg: rgba(192, 192, 192, 0.15);
+    --level-badge-border: #c0c0c0;
 }
 
 /* Apply dark mode background transition */
@@ -2336,13 +2388,16 @@ body.dark-mode .xp-bar {
     color: var(--text-primary);
     text-align: center;
     margin: 20px 0;
-    letter-spacing: 2px;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    letter-spacing: 3px;
+    text-shadow:
+        0 2px 4px var(--shadow),
+        0 0 20px var(--xp-glow);
 }
 
 body.dark-mode .game-title {
-    color: var(--text-primary);
-    text-shadow: 0 0 20px rgba(128, 90, 213, 0.5);
+    text-shadow:
+        0 2px 4px var(--shadow),
+        0 0 30px rgba(192, 192, 192, 0.5);
 }
 
 /* ============================================
@@ -2703,20 +2758,19 @@ body.dark-mode .credit-section.version {
 
 .level-circle-bg {
     transition: stroke 0.3s ease;
-}
-
-body.dark-mode .level-circle-bg {
-    stroke: rgba(255, 255, 255, 0.05);
+    stroke: var(--xp-bar-bg);
 }
 
 .level-circle-fill {
     transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 0 8px var(--xp-glow));
 }
 
 .level-number {
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
-    opacity: 1 !important;  /* Meilleure visibilité */
+    opacity: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .xp-text-svg {
@@ -2731,6 +2785,18 @@ body.dark-mode .level-circle-bg {
     color: var(--text-secondary);
     letter-spacing: 2px;
     text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Classes pour les stops du gradient XP dynamique */
+.xp-stop-start {
+    stop-color: var(--xp-gradient-start);
+    stop-opacity: 1;
+}
+
+.xp-stop-end {
+    stop-color: var(--xp-gradient-end);
+    stop-opacity: 1;
 }
 
 /* ============================================
@@ -2753,54 +2819,62 @@ body.dark-mode .level-circle-bg {
     align-items: center;
     gap: 5px;
     padding: 10px 15px;
-    background: var(--bg-card);
-    border: 2px solid rgba(212, 175, 55, 0.3);
-    border-radius: 10px;
+    background: var(--btn-secondary-bg);
+    border: 2px solid var(--btn-secondary-border);
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet gloss sur difficulté */
+.diff-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gloss-gradient);
+    pointer-events: none;
+    border-radius: 10px;
 }
 
 .diff-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-3px);
+    box-shadow:
+        0 6px 20px var(--btn-secondary-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.diff-btn.easy {
-    border-color: #48bb78;
-}
-
-.diff-btn.easy:hover {
-    background: #48bb78;
-    color: white;
-}
-
-.diff-btn.normal {
-    border-color: #ed8936;
-}
-
-.diff-btn.normal:hover {
-    background: #ed8936;
-    color: white;
-}
-
-.diff-btn.hard {
-    border-color: #f56565;
-}
-
-.diff-btn.hard:hover {
-    background: #f56565;
-    color: white;
+.diff-btn:active {
+    transform: translateY(-1px);
 }
 
 .diff-icon {
-    font-size: 1.8em;
+    font-size: 2em;  /* Emoji bien visible */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    position: relative;
+    z-index: 1;
 }
 
 .diff-text {
     font-size: 0.9em;
     font-weight: 600;
+    color: var(--btn-secondary-text);
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Pas de changement de couleur au hover, juste l'effet gloss */
+.diff-btn.easy:hover,
+.diff-btn.normal:hover,
+.diff-btn.hard:hover {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
 }
 
 /* ============================================
@@ -3002,160 +3076,267 @@ body.dark-mode .level-circle-bg {
    HARMONISATION DES HAUTEURS - Basé sur .diff-btn
    ============================================ */
 
-/* Classe pour boutons principaux (Solo/Réseau) avec hauteur fixe */
+/* Classe pour boutons principaux (Solo/Réseau) avec hauteur fixe + GLOSS */
 .primary-btn-unified {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 0 30px;  /* Padding horizontal seulement */
-    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    gap: 8px;  /* ← Réduit pour rapprocher emoji et texte */
+    padding: 0 30px;
+    height: var(--btn-unified-height);
     margin: 10px auto;
     max-width: 400px;
     width: 90%;
     font-size: 1.1em;
-    font-weight: bold;
-    border: none;
+    font-weight: 700;
+    border: 2px solid var(--btn-primary-border);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px var(--shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, var(--btn-primary-bg), var(--btn-primary-hover));
-    color: white;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet gloss interne */
+.primary-btn-unified::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gloss-gradient);
+    pointer-events: none;
+    border-radius: 10px;
+}
+
+/* Highlight brillant en haut */
+.primary-btn-unified::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 10%;
+    right: 10%;
+    height: 30%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%);
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
 }
 
 .primary-btn-unified:hover {
-    background: var(--btn-primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--shadow);
+    box-shadow:
+        0 6px 25px var(--btn-primary-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    border-color: var(--btn-primary-border);
+}
+
+.primary-btn-unified:active {
+    transform: translateY(-1px);
+    box-shadow:
+        0 3px 12px var(--btn-primary-shadow),
+        inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .primary-btn-unified .btn-icon {
-    font-size: 1.3em;
+    font-size: 1.4em;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    position: relative;
+    z-index: 1;
 }
 
 .primary-btn-unified .btn-text {
-    font-weight: 700;
-    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Bouton Options - MÊME TAILLE qu'un bouton difficulté */
+/* Bouton Options - Icon seule avec rotation + GLOSS */
 .options-btn-small {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: var(--btn-unified-padding-v) var(--btn-unified-padding-h);
-    height: var(--btn-unified-height);  /* ← Même hauteur */
-    width: 120px;  /* ← Même largeur approximative qu'un diff-btn */
+    padding: 0;
+    height: var(--btn-unified-height);
+    width: var(--btn-unified-height);  /* Carré parfait */
     margin: 20px auto 10px;
-    font-size: 0.9em;
+    font-size: 1em;
     font-weight: 600;
-    border: 2px solid rgba(212, 175, 55, 0.3);
+    border: 2px solid var(--btn-secondary-border);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
-    background: var(--bg-card);
-    color: var(--text-primary);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    position: relative;
+    overflow: hidden;
+}
+
+.options-btn-small::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gloss-gradient);
+    pointer-events: none;
+    border-radius: 10px;
 }
 
 .options-btn-small:hover {
-    background: var(--btn-secondary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    border-color: rgba(212, 175, 55, 0.5);
+    transform: translateY(-3px) rotate(90deg);  /* Rotation de l'engrenage ! */
+    box-shadow:
+        0 6px 20px var(--btn-secondary-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.options-btn-small:active {
+    transform: translateY(-1px) rotate(90deg);
 }
 
 .options-btn-small .btn-icon {
-    font-size: 1.8em;  /* ← Même taille que diff-icon */
+    font-size: 2em;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease;
 }
 
+/* Cacher le texte "Options" */
 .options-btn-small .btn-text {
-    font-size: 0.9em;  /* ← Même taille que diff-text */
-    font-weight: 600;
+    display: none;
 }
 
-/* Boutons du menu Options - Hauteur réduite */
+/* Boutons du menu Options + GLOSS */
 .option-btn-compact {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 0 30px;  /* Padding horizontal seulement */
-    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    gap: 8px;  /* ← Réduit */
+    padding: 0 30px;
+    height: var(--btn-unified-height);
     margin: 8px auto;
     max-width: 400px;
     width: 90%;
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border: 2px solid var(--border);
-    font-size: 1em;
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 2px solid var(--btn-secondary-border);
+    font-size: 1.1em;
     font-weight: 600;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.option-btn-compact::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gloss-gradient);
+    pointer-events: none;
+    border-radius: 10px;
 }
 
 .option-btn-compact:hover {
     background: var(--btn-primary-bg);
-    color: white;
-    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-border);
     transform: translateX(5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow:
+        0 6px 20px var(--btn-primary-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .option-btn-compact .btn-icon {
-    font-size: 1.2em;
+    font-size: 1.4em;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    position: relative;
+    z-index: 1;
 }
 
 .option-btn-compact .btn-text {
-    flex: 1;
-    text-align: center;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .option-btn-compact .toggle-indicator {
     font-size: 0.85em;
     opacity: 0.8;
     margin-left: auto;
+    position: relative;
+    z-index: 1;
 }
 
-/* Bouton Retour compact */
+/* Bouton Retour + GLOSS */
 .back-btn-compact {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 0 20px;  /* Padding horizontal seulement */
-    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    padding: 0 20px;
+    height: var(--btn-unified-height);
     margin: 20px auto 10px;
     max-width: 200px;
-    background: rgba(229, 62, 62, 0.8);
+    background: linear-gradient(145deg, #e74c3c 0%, #c0392b 100%);
     color: white;
     font-size: 0.95em;
     font-weight: 600;
-    border: none;
+    border: 2px solid #c0392b;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
-    box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.back-btn-compact::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+    pointer-events: none;
+    border-radius: 8px;
 }
 
 .back-btn-compact:hover {
-    background: rgba(229, 62, 62, 1);
+    background: linear-gradient(145deg, #c0392b 0%, #a93226 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+    box-shadow:
+        0 6px 20px rgba(231, 76, 60, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.back-btn-compact:active {
+    transform: translateY(0);
 }
 
 .back-btn-compact .btn-icon {
     font-size: 1.1em;
+    position: relative;
+    z-index: 1;
+}
+
+.back-btn-compact .btn-text {
+    position: relative;
+    z-index: 1;
 }
 
 /* ============================================
