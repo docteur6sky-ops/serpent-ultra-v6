@@ -192,6 +192,12 @@ class Room {
                 startTime: 0,
                 lastStealTime: 0,
                 stolenCount: 0
+            },
+            stats: {                    // 📊 Stats de la partie
+                powerupsCollected: 0,
+                segmentsEaten: 0,
+                segmentsLost: 0,
+                headToHeadCollisions: 0
             }
         });
 
@@ -312,12 +318,18 @@ class Room {
         // 1. Déterminer qui perd un segment
         if (player1.snake.length < player2.snake.length) {
             player1.snake.shrink(1);
+            player1.stats.segmentsLost++;
             logger.debug('GAME', `Player ${player1.number} perd 1 segment (plus petit)`);
         } else if (player2.snake.length < player1.snake.length) {
             player2.snake.shrink(1);
+            player2.stats.segmentsLost++;
             logger.debug('GAME', `Player ${player2.number} perd 1 segment (plus petit)`);
         }
         // Si égalité : personne ne perd
+
+        // Tracker la collision
+        player1.stats.headToHeadCollisions++;
+        player2.stats.headToHeadCollisions++;
 
         // 2. Importer les helpers
         const { getPerpendicularLeft, getPerpendicularRight } = require('./SnakeServer.js');
@@ -498,6 +510,28 @@ class Room {
 
         this.stopMatchTimer();
 
+        // 📊 Logger les stats de la partie
+        if (this.gameState.matchStartTime) {
+            const duration = Date.now() - this.gameState.matchStartTime;
+            const stats = {
+                duration: `${(duration / 1000).toFixed(1)}s`,
+                players: {}
+            };
+
+            for (let [id, player] of this.players) {
+                stats.players[`Player ${player.number}`] = {
+                    finalLength: player.snake.length,
+                    alive: player.snake.alive,
+                    powerupsCollected: player.stats.powerupsCollected,
+                    segmentsEaten: player.stats.segmentsEaten,
+                    segmentsLost: player.stats.segmentsLost,
+                    headToHeadCollisions: player.stats.headToHeadCollisions
+                };
+            }
+
+            logger.info('GAME', `📊 Stats de la partie - Salle ${this.id}`, stats);
+        }
+
         this.gameState.gameStarted = false;
         this.gameState.matchStartTime = null;
         this.gameState.matchTimeRemaining = CONFIG.MATCH_DURATION;
@@ -645,6 +679,8 @@ class Room {
                             opponent.snake.shrink(2);
                             player.snake.grow();
                             player.snake.grow();
+                            player.stats.segmentsEaten += 2;
+                            opponent.stats.segmentsLost += 2;
                             this.gameState.scores[player.id] = player.snake.score;
                             this.gameState.segments[player.id] = player.snake.length;
 
@@ -691,6 +727,7 @@ class Room {
                     // Activer le power-up
                     player.activePowerup = powerup.type;
                     player.powerupEndTime = Date.now() + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
+                    player.stats.powerupsCollected++;
 
                     const symbol = POWERUP_TYPES[powerup.type.toUpperCase()].symbol;
                     const duration = POWERUP_TYPES[powerup.type.toUpperCase()].duration;
@@ -744,6 +781,8 @@ class Room {
                             player.snake.grow();
                             player.queueContact.lastStealTime = now;
                             player.queueContact.stolenCount++;
+                            player.stats.segmentsEaten++;
+                            opponent.stats.segmentsLost++;
 
                             logger.debug('GAME', `🍴 Player ${player.number} vole segment #${player.queueContact.stolenCount}`);
 
