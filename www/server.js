@@ -39,8 +39,7 @@ class Room {
         this.players = new Map();
         this.gameState = {
             food: null,
-            bad: null, // 🎯 Crâne
-            obstacles: [], // 🎯 Murs
+            powerups: [], // ✅ NOUVEAU pour les power-ups
             scores: {},
             segments: {},
             gameStarted: false,
@@ -67,46 +66,9 @@ class Room {
         return food;
     }
 
-    generateBad() {
-        let attempts = 0;
-        let bad;
-        do {
-            bad = {
-                x: Math.floor(Math.random() * CONFIG.GRID_SIZE),
-                y: Math.floor(Math.random() * CONFIG.GRID_SIZE)
-            };
-            attempts++;
-            if (attempts > 200) break;
-        } while (this.isPositionOccupied(bad.x, bad.y));
-        return bad;
-    }
-
-    generateObstacles(count) {
-        const obstacles = [];
-        for (let i = 0; i < count; i++) {
-            let attempts = 0;
-            let obstacle;
-            do {
-                obstacle = {
-                    x: Math.floor(Math.random() * CONFIG.GRID_SIZE),
-                    y: Math.floor(Math.random() * CONFIG.GRID_SIZE)
-                };
-                attempts++;
-                if (attempts > 100) break;
-            } while (this.isPositionOccupied(obstacle.x, obstacle.y));
-            
-            if (attempts <= 100) {
-                obstacles.push(obstacle);
-            }
-        }
-        return obstacles;
-    }
-
     isPositionOccupied(x, y) {
         // Vérifier si une position est occupée
         if (this.gameState.food && this.gameState.food.x === x && this.gameState.food.y === y) return true;
-        if (this.gameState.bad && this.gameState.bad.x === x && this.gameState.bad.y === y) return true;
-        if (this.gameState.obstacles.some(o => o.x === x && o.y === y)) return true;
 
         for (let player of this.players.values()) {
             if (player.snake.isAt(x, y)) return true;
@@ -259,10 +221,8 @@ class Room {
             playerNum++;
         }
 
-        // 🎯 Générer étoile, crâne et obstacles
+        // ⭐ Générer étoile uniquement
         this.gameState.food = this.generateFood();
-        this.gameState.bad = this.generateBad();
-        this.gameState.obstacles = this.generateObstacles(3); // Commencer avec 3 murs
 
         this.notifyPlayers({
             type: 'game_start',
@@ -386,8 +346,7 @@ class Room {
         // Réinitialiser l'état du jeu
         this.gameState = {
             food: null,
-            bad: null,
-            obstacles: [],
+            powerups: [],
             scores: {},
             segments: {},
             gameStarted: false,
@@ -458,14 +417,6 @@ class Room {
                 after: { x: newHead.x, y: newHead.y }
             });
 
-            // Vérifier collision avec obstacles
-            const collisionType = player.snake.checkCollision(CONFIG.GRID_SIZE, this.gameState.obstacles);
-            if (collisionType) {
-                player.snake.die();
-                logger.info('GAME', `💀 Player ${player.number} éliminé`, { cause: collisionType });
-                continue;
-            }
-
             // Vérifier collision avec adversaire
             let hitOpponent = false;
             for (let opponent of this.players.values()) {
@@ -480,47 +431,20 @@ class Room {
 
             if (hitOpponent) continue;
 
-            // 🎯 Manger l'étoile
+            // ⭐ Manger l'étoile
             if (player.snake.headAt(this.gameState.food.x, this.gameState.food.y)) {
                 player.snake.grow();
                 player.snake.addScore(10);
                 this.gameState.scores[player.id] = player.snake.score;
                 this.gameState.segments[player.id] = player.snake.length;
 
-                // Générer nouvelle étoile et crâne
+                // Générer nouvelle étoile
                 this.gameState.food = this.generateFood();
-                this.gameState.bad = this.generateBad();
-
-                // 🎯 Ajouter des obstacles tous les 5 étoiles
-                if (this.gameState.segments[player.id] % 5 === 0) {
-                    const newObstacles = this.generateObstacles(2);
-                    this.gameState.obstacles.push(...newObstacles);
-                }
 
                 logger.debug('GAME', `⭐ Player ${player.number} mange`, {
                     score: player.snake.score,
                     length: player.snake.length
                 });
-            }
-            // 🎯 Manger le crâne
-            else if (player.snake.headAt(this.gameState.bad.x, this.gameState.bad.y)) {
-                logger.debug('GAME', `💀 Player ${player.number} mange crâne`, {
-                    lengthBefore: player.snake.length
-                });
-
-                // Retirer 5 segments (shrink gère la mort si trop petit)
-                player.snake.shrink(5);
-                player.snake.addScore(-5);
-
-                this.gameState.scores[player.id] = player.snake.score;
-                this.gameState.segments[player.id] = player.snake.length;
-
-                // Générer nouveau crâne
-                this.gameState.bad = this.generateBad();
-
-                if (!player.snake.alive) {
-                    logger.info('GAME', `💀 Player ${player.number} éliminé`, { cause: 'skull-shrink' });
-                }
             }
             // Pas de nourriture mangée - le move() a déjà géré le pop()
         }
@@ -572,8 +496,7 @@ class Room {
         return {
             players: players,
             food: this.gameState.food,
-            bad: this.gameState.bad, // 🎯 Crâne
-            obstacles: this.gameState.obstacles, // 🎯 Murs
+            powerups: this.gameState.powerups, // ✅ Power-ups (vide pour l'instant)
             scores: this.gameState.scores,
             segments: this.gameState.segments,
             gameStarted: this.gameState.gameStarted,
@@ -771,8 +694,7 @@ server.listen(CONFIG.PORT, () => {
     console.log('');
     console.log('Fonctionnalités:');
     console.log('  ⭐ Étoiles');
-    console.log('  💀 Crânes (-5 segments)');
-    console.log('  🧱 Murs');
+    console.log('  🎮 Prêt pour power-ups');
     console.log('');
 
     logger.info('SERVER', '🚀 Serveur démarré', {
