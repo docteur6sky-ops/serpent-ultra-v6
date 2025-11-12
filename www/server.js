@@ -23,7 +23,9 @@ const wss = new WebSocket.Server({ server });
 const CONFIG = {
     PORT: process.env.PORT || 8080,
     GRID_SIZE: 30,
-    TICK_RATE: 275,              // Vitesse constante (275ms) - sweet spot
+    BASE_TICK_RATE: 275,         // ✅ Vitesse normale (275ms)
+    FIRE_TICK_RATE: 140,         // ✅ FIRE: x2 vitesse (275/2)
+    ICE_TICK_RATE: 550,          // ✅ ICE: ÷2 vitesse (275*2)
     MAX_PLAYERS_PER_ROOM: 2,
     ROOM_TIMEOUT: 300000,
     MATCH_DURATION: 300000       // 5 minutes
@@ -270,6 +272,29 @@ class Room {
         return true;
     }
 
+    getCurrentTickRate(player) {
+        // Vérifier si le power-up est toujours actif
+        if (player.activePowerup && Date.now() < player.powerupEndTime) {
+            switch (player.activePowerup) {
+                case 'fire':
+                    return CONFIG.FIRE_TICK_RATE;  // 140ms - x2 vitesse
+                case 'ice':
+                    return CONFIG.ICE_TICK_RATE;   // 550ms - ÷2 vitesse
+                default:
+                    return CONFIG.BASE_TICK_RATE;  // 275ms - normal
+            }
+        }
+
+        // Power-up expiré ou aucun
+        if (player.activePowerup && Date.now() >= player.powerupEndTime) {
+            player.activePowerup = null;
+            player.powerupEndTime = 0;
+            logger.debug('GAME', `⏱️ Power-up expiré pour player ${player.number}`);
+        }
+
+        return CONFIG.BASE_TICK_RATE;
+    }
+
     // Boucle de jeu avec setTimeout
     gameLoopTick() {
         // Vérifier EN PREMIER
@@ -284,10 +309,21 @@ class Room {
         logger.debug('GAME', `Tick #${this.tickCount} - Salle ${this.id}`);
         this.update();
 
-        // Reprogrammer avec la vitesse constante
+        // 🎮 Trouver le tick rate le plus rapide parmi les joueurs actifs
+        let fastestTickRate = CONFIG.BASE_TICK_RATE;
+        for (let player of this.players.values()) {
+            if (player.snake.alive) {
+                const playerTickRate = this.getCurrentTickRate(player);
+                if (playerTickRate < fastestTickRate) {
+                    fastestTickRate = playerTickRate;
+                }
+            }
+        }
+
+        // Scheduler le prochain tick au tick rate le plus rapide
         this.gameLoopTimeout = setTimeout(() => {
             this.gameLoopTick();
-        }, CONFIG.TICK_RATE);
+        }, fastestTickRate);
     }
 
     startGame() {
@@ -512,18 +548,40 @@ class Room {
             });
 
             // Vérifier collision avec adversaire
-            let hitOpponent = false;
-            for (let opponent of this.players.values()) {
-                if (opponent.id === player.id || !opponent.snake.alive) continue;
-                if (player.snake.collidesWithSnake(opponent.snake)) {
-                    player.snake.die();
-                    logger.info('GAME', `💀 Player ${player.number} éliminé`, { cause: 'opponent' });
-                    hitOpponent = true;
-                    break;
-                }
-            }
+            // 👻 GHOST = Peut traverser les adversaires
+            if (player.activePowerup !== 'ghost') {
+                let hitOpponent = false;
+                for (let opponent of this.players.values()) {
+                    if (opponent.id === player.id || !opponent.snake.alive) continue;
 
-            if (hitOpponent) continue;
+                    if (player.snake.collidesWithSnake(opponent.snake)) {
+                        // 🪨 ROCK : Mange 2 segments à l'adversaire au lieu de mourir
+                        if (player.activePowerup === 'rock') {
+                            opponent.snake.shrink(2);
+                            player.snake.grow();
+                            player.snake.grow();
+                            this.gameState.scores[player.id] = player.snake.score;
+                            this.gameState.segments[player.id] = player.snake.length;
+
+                            logger.info('GAME', `🪨 Player ${player.number} ROCK mange 2 segments de Player ${opponent.number}`);
+
+                            if (!opponent.snake.alive) {
+                                logger.info('GAME', `💀 Player ${opponent.number} éliminé par ROCK`);
+                            }
+                        } else {
+                            // Collision normale - joueur meurt
+                            player.snake.die();
+                            logger.info('GAME', `💀 Player ${player.number} éliminé`, { cause: 'opponent' });
+                            hitOpponent = true;
+                        }
+                        break;
+                    }
+                }
+
+                if (hitOpponent) continue;
+            } else {
+                logger.debug('GAME', `👻 Player ${player.number} GHOST traverse adversaire`);
+            }
 
             // ⭐ Manger l'étoile
             if (player.snake.headAt(this.gameState.food.x, this.gameState.food.y)) {
@@ -549,8 +607,12 @@ class Room {
                     player.activePowerup = powerup.type;
                     player.powerupEndTime = Date.now() + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
 
-                    logger.info('GAME', `🎮 Player ${player.number} ramasse ${powerup.type}`, {
-                        duration: POWERUP_TYPES[powerup.type.toUpperCase()].duration
+                    const symbol = POWERUP_TYPES[powerup.type.toUpperCase()].symbol;
+                    const duration = POWERUP_TYPES[powerup.type.toUpperCase()].duration;
+
+                    logger.info('GAME', `${symbol} Player ${player.number} active ${powerup.type.toUpperCase()}`, {
+                        duration: `${duration}ms (${duration / 1000}s)`,
+                        endsAt: new Date(player.powerupEndTime).toISOString()
                     });
 
                     // Retirer ce power-up et en générer un nouveau
@@ -802,21 +864,27 @@ app.get('/health', (req, res) => {
 server.listen(CONFIG.PORT, () => {
     console.log('');
     console.log('╔════════════════════════════════════════╗');
-    console.log('║  🐍 SNAKE ULTRA V6 - LOGGER 🎮       ║');
+    console.log('║  🐍 SNAKE ULTRA V6 - POWER-UPS 🎮   ║');
     console.log('╚════════════════════════════════════════╝');
     console.log('');
     console.log(`✅ Serveur: http://localhost:${CONFIG.PORT}`);
     console.log(`⏱️  Timer: ${CONFIG.MATCH_DURATION / 1000}s`);
-    console.log(`⚡ Vitesse: ${CONFIG.TICK_RATE}ms (constante)`);
+    console.log(`⚡ Vitesse normale: ${CONFIG.BASE_TICK_RATE}ms`);
+    console.log(`   🔥 FIRE: ${CONFIG.FIRE_TICK_RATE}ms (x2 vitesse)`);
+    console.log(`   ❄️  ICE:  ${CONFIG.ICE_TICK_RATE}ms (÷2 vitesse)`);
     console.log('');
-    console.log('Fonctionnalités:');
-    console.log('  ⭐ Étoiles');
-    console.log('  🎮 Prêt pour power-ups');
+    console.log('Power-ups:');
+    console.log('  🔥 FIRE  - Speed boost (5s)');
+    console.log('  ❄️  ICE   - Slow (8s)');
+    console.log('  👻 GHOST - Intangible (6s)');
+    console.log('  🪨 ROCK  - Tank, mange 2 segments (8s)');
     console.log('');
 
-    logger.info('SERVER', '🚀 Serveur démarré', {
+    logger.info('SERVER', '🚀 Serveur démarré avec power-ups', {
         port: CONFIG.PORT,
-        tickRate: CONFIG.TICK_RATE,
+        baseTickRate: CONFIG.BASE_TICK_RATE,
+        fireTickRate: CONFIG.FIRE_TICK_RATE,
+        iceTickRate: CONFIG.ICE_TICK_RATE,
         matchDuration: CONFIG.MATCH_DURATION
     });
 });
