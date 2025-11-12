@@ -1792,8 +1792,10 @@ canvas.invincible-power {
     --text-muted: #718096;
     --btn-primary-bg: #667eea;
     --btn-primary-text: #ffffff;
+    --btn-primary-hover: #5568d3;
     --btn-secondary-bg: #e2e8f0;
     --btn-secondary-text: #2d3748;
+    --btn-secondary-hover: #cbd5e0;
     --btn-option-bg: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
     --btn-option-border: #cbd5e0;
     --btn-back-bg: #48bb78;
@@ -1805,9 +1807,16 @@ canvas.invincible-power {
     --slider-track: #e2e8f0;
     --slider-thumb: #667eea;
     --slider-fill: #667eea;
+    --shadow: rgba(0, 0, 0, 0.15);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --border: #cbd5e0;
+
+    /* Variables pour harmonisation des boutons */
+    --btn-unified-height: 68px;
+    --btn-unified-padding-v: 10px;
+    --btn-unified-padding-h: 15px;
 }
 
 body.dark-mode {
@@ -1820,8 +1829,10 @@ body.dark-mode {
     --text-muted: #a0aec0;
     --btn-primary-bg: #805ad5;
     --btn-primary-text: #ffffff;
+    --btn-primary-hover: #6b46c1;
     --btn-secondary-bg: #2d3748;
     --btn-secondary-text: #e2e8f0;
+    --btn-secondary-hover: #4a5568;
     --btn-option-bg: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
     --btn-option-border: #4a5568;
     --btn-back-bg: #48bb78;
@@ -1833,9 +1844,11 @@ body.dark-mode {
     --slider-track: #4a5568;
     --slider-thumb: #805ad5;
     --slider-fill: #805ad5;
+    --shadow: rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+    --border: #4a5568;
 }
 
 /* Apply dark mode background transition */
@@ -2983,4 +2996,212 @@ body.dark-mode .level-circle-bg {
     color: var(--text-secondary);
     font-style: italic;
     opacity: 0.7;
+}
+
+/* ============================================
+   HARMONISATION DES HAUTEURS - Basé sur .diff-btn
+   ============================================ */
+
+/* Classe pour boutons principaux (Solo/Réseau) avec hauteur fixe */
+.primary-btn-unified {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 30px;  /* Padding horizontal seulement */
+    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    margin: 10px auto;
+    max-width: 400px;
+    width: 90%;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow);
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, var(--btn-primary-bg), var(--btn-primary-hover));
+    color: white;
+}
+
+.primary-btn-unified:hover {
+    background: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+.primary-btn-unified .btn-icon {
+    font-size: 1.3em;
+}
+
+.primary-btn-unified .btn-text {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Bouton Options - MÊME TAILLE qu'un bouton difficulté */
+.options-btn-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: var(--btn-unified-padding-v) var(--btn-unified-padding-h);
+    height: var(--btn-unified-height);  /* ← Même hauteur */
+    width: 120px;  /* ← Même largeur approximative qu'un diff-btn */
+    margin: 20px auto 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.options-btn-small:hover {
+    background: var(--btn-secondary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+.options-btn-small .btn-icon {
+    font-size: 1.8em;  /* ← Même taille que diff-icon */
+}
+
+.options-btn-small .btn-text {
+    font-size: 0.9em;  /* ← Même taille que diff-text */
+    font-weight: 600;
+}
+
+/* Boutons du menu Options - Hauteur réduite */
+.option-btn-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 30px;  /* Padding horizontal seulement */
+    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    margin: 8px auto;
+    max-width: 400px;
+    width: 90%;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.option-btn-compact:hover {
+    background: var(--btn-primary-bg);
+    color: white;
+    border-color: var(--btn-primary-bg);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.option-btn-compact .btn-icon {
+    font-size: 1.2em;
+}
+
+.option-btn-compact .btn-text {
+    flex: 1;
+    text-align: center;
+}
+
+.option-btn-compact .toggle-indicator {
+    font-size: 0.85em;
+    opacity: 0.8;
+    margin-left: auto;
+}
+
+/* Bouton Retour compact */
+.back-btn-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 20px;  /* Padding horizontal seulement */
+    height: var(--btn-unified-height);  /* ← HAUTEUR FIXE */
+    margin: 20px auto 10px;
+    max-width: 200px;
+    background: rgba(229, 62, 62, 0.8);
+    color: white;
+    font-size: 0.95em;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
+}
+
+.back-btn-compact:hover {
+    background: rgba(229, 62, 62, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+}
+
+.back-btn-compact .btn-icon {
+    font-size: 1.1em;
+}
+
+/* ============================================
+   RESPONSIVE MOBILE - Harmonisation
+   ============================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --btn-unified-height: 60px;  /* Un peu plus petit sur mobile */
+    }
+
+    .primary-btn-unified {
+        max-width: 90%;
+        font-size: 1em;
+    }
+
+    .options-btn-small {
+        width: 100px;
+    }
+
+    .option-btn-compact {
+        max-width: 90%;
+        font-size: 0.95em;
+    }
+
+    .difficulty-selector {
+        flex-direction: row;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --btn-unified-height: 56px;  /* Encore plus petit sur très petit écran */
+    }
+
+    .primary-btn-unified {
+        font-size: 0.95em;
+        gap: 8px;
+    }
+
+    .options-btn-small {
+        width: 90px;
+    }
+
+    .option-btn-compact {
+        font-size: 0.9em;
+    }
 }

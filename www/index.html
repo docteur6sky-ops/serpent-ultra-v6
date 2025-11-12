@@ -113,18 +113,18 @@
 
             <!-- Boutons principaux -->
             <div class="main-buttons">
-                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();showMultiplayer()">
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();showMultiplayer()">
                     <span class="btn-icon">🌐</span>
                     <span class="btn-text">JOUER EN RÉSEAU</span>
                 </button>
 
                 <!-- Bouton Jouer Solo -->
-                <button class="menu-btn primary-btn" id="solo-btn">
+                <button class="primary-btn-unified" id="solo-btn">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">JOUER SOLO</span>
                 </button>
 
-                <!-- Boutons de difficulté (TOUJOURS VISIBLES) -->
+                <!-- Boutons de difficulté (TOUJOURS VISIBLES - NE PAS MODIFIER) -->
                 <div class="difficulty-selector">
                     <button class="diff-btn easy" onclick="window.audio.buttonClick();startSolo(0)">
                         <span class="diff-icon">😊</span>
@@ -140,9 +140,9 @@
                     </button>
                 </div>
 
-                <button class="menu-btn secondary-btn" onclick="window.audio.buttonClick();showOptions()">
+                <button class="options-btn-small" onclick="window.audio.buttonClick();showOptions()">
                     <span class="btn-icon">⚙️</span>
-                    <span class="btn-text">OPTIONS</span>
+                    <span class="btn-text">Options</span>
                 </button>
             </div>
         </div>
@@ -151,12 +151,12 @@
         <div class="screen hidden" id="multiplayer-menu">
             <h2>🌐 MULTIJOUEUR</h2>
             <div class="multiplayer-buttons">
-                <button class="menu-btn primary-btn" onclick="window.audio.buttonClick();startLocalMultiplayer()">
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();startLocalMultiplayer()">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">DÉMARRER</span>
                 </button>
             </div>
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToMain()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -166,39 +166,39 @@
         <div class="screen hidden" id="options-menu">
             <h2>⚙️ OPTIONS</h2>
             <div class="options-buttons">
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showCareer()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();showCareer()">
                     <span class="btn-icon">📊</span>
                     <span class="btn-text">CARRIÈRE</span>
                 </button>
 
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showRules()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();showRules()">
                     <span class="btn-icon">📖</span>
                     <span class="btn-text">RÈGLES</span>
                 </button>
 
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showSound()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();showSound()">
                     <span class="btn-icon">🔊</span>
                     <span class="btn-text">SON</span>
                 </button>
 
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();toggleDarkMode()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();toggleDarkMode()">
                     <span class="btn-icon">🌓</span>
                     <span class="btn-text">MODE SOMBRE</span>
                     <span class="toggle-indicator" id="dark-mode-indicator">OFF</span>
                 </button>
 
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showCredits()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();showCredits()">
                     <span class="btn-icon">ℹ️</span>
                     <span class="btn-text">CRÉDITS</span>
                 </button>
 
-                <button class="menu-btn option-btn" onclick="window.audio.buttonClick();showLanguage()">
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();showLanguage()">
                     <span class="btn-icon">🌍</span>
                     <span class="btn-text">LANGUE</span>
                 </button>
             </div>
 
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToMain()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToMain()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -233,7 +233,7 @@
                 </button>
             </div>
 
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -296,7 +296,7 @@
                 </div>
             </div>
 
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -308,7 +308,7 @@
             <div class="career-content">
                 <p>Statistiques de carrière à venir...</p>
             </div>
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -320,7 +320,7 @@
             <div class="rules-content">
                 <p>Règles du jeu à venir...</p>
             </div>
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -373,7 +373,7 @@
                 </div>
             </div>
 
-            <button class="menu-btn back-btn" onclick="window.audio.buttonClick();backToOptions()">
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
@@ -507,8 +507,14 @@
                         <div class="no-highscore-text" id="proximity-info">Votre score n'entre pas dans le top 3. Continuez à jouer pour vous améliorer !</div>
                     </div>
                 </div>
-                <button class="menu-btn" onclick="window.audio.buttonClick();window.start()" aria-label="Rejouer une nouvelle partie">Rejouer</button>
-                <button class="menu-btn" onclick="window.audio.buttonClick();toMenu()" aria-label="Retourner au menu">Menu</button>
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();window.start()" aria-label="Rejouer une nouvelle partie">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Rejouer</span>
+                </button>
+                <button class="back-btn-compact" onclick="window.audio.buttonClick();toMenu()" aria-label="Retourner au menu">
+                    <span class="btn-icon">🏠</span>
+                    <span class="btn-text">Menu</span>
+                </button>
             </div>
         </div>
     </div>
@@ -530,8 +536,12 @@
             <div class="modal-title">Quitter la partie ?</div>
             <div class="info">Voulez-vous vraiment retourner au menu ? Votre progression sera perdue.</div>
             <div class="modal-buttons">
-                <button class="menu-btn" onclick="window.audio.buttonClick();confirmQuit(true)" aria-label="Confirmer quitter la partie">Oui</button>
-                <button class="menu-btn" onclick="window.audio.buttonClick();confirmQuit(false)" aria-label="Annuler quitter la partie">Non</button>
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();confirmQuit(true)" aria-label="Confirmer quitter la partie">
+                    <span class="btn-text">Oui</span>
+                </button>
+                <button class="back-btn-compact" onclick="window.audio.buttonClick();confirmQuit(false)" aria-label="Annuler quitter la partie">
+                    <span class="btn-text">Non</span>
+                </button>
             </div>
         </div>
     </div>
