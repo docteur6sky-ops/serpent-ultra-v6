@@ -14,20 +14,13 @@ class ScreenManager {
     constructor() {
         this.currentScreen = null;
         this.overlays = new Set();
+        // ONLY main screens - sub-menus are managed by showMenu/hideAllMenus
         this.screens = [
             'loading',
             'menu',
             'game-solo',
             'game-multi',
-            'over',
-            // Sub-menus
-            'multiplayer-menu',
-            'options-menu',
-            'language-menu',
-            'sound-menu',
-            'career-menu',
-            'rules-menu',
-            'credits-menu'
+            'over'
         ];
 
         console.log('🖥️ [ScreenManager] ScreenManager initialisé');
