@@ -1846,51 +1846,51 @@ canvas.invincible-power {
 }
 
 body.dark-mode {
-    /* ===== THÈME PLATINE (Mode Dark) ===== */
+    /* ===== THÈME BLEU ÉLECTRIQUE (Mode Dark) ===== */
 
-    /* Fond principal - Sombre et élégant */
-    --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    --bg-overlay: rgba(26, 26, 46, 0.1);
+    /* Fond principal - Nuit profonde avec touche bleue */
+    --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    --bg-overlay: rgba(15, 23, 42, 0.1);
 
     /* Texte */
-    --text-primary: #f5f5f5;
-    --text-secondary: #c7c7c7;
-    --text-light: #9e9e9e;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-light: #94a3b8;
 
-    /* Boutons - PLATINE avec contraste fort */
-    --platinum-dark: #708090;   /* Acier foncé (SlateGray) */
-    --platinum-medium: #C0C0C0; /* Argent classique (Silver) */
-    --platinum-light: #F8F8FF;  /* Blanc nacré (GhostWhite) */
-    --platinum-shine: #FFFFFF;  /* Reflet platine pur */
-    --platinum-border: #5A6A7A; /* Bordure acier */
+    /* Boutons - BLEU ÉLECTRIQUE avec contraste fort */
+    --platinum-dark: #1e3a8a;   /* Bleu nuit profond */
+    --platinum-medium: #06b6d4; /* Cyan électrique */
+    --platinum-light: #38bdf8;  /* Bleu ciel brillant */
+    --platinum-shine: #7dd3fc;  /* Reflet cyan clair */
+    --platinum-border: #0e7490; /* Bordure cyan foncé */
 
-    /* Gradient diagonal pour boutons - Contraste visible */
+    /* Gradient diagonal pour boutons - Bleu électrique */
     --btn-gradient: linear-gradient(135deg,
         var(--platinum-dark) 0%,
         var(--platinum-medium) 50%,
         var(--platinum-light) 100%
     );
 
-    /* Effet biseauté diagonal - Plus marqué */
+    /* Effet biseauté diagonal - Plus lumineux */
     --bevel-light: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.45) 0%,
+        rgba(125, 211, 252, 0.4) 0%,
         transparent 50%,
-        rgba(90, 106, 122, 0.25) 100%
+        rgba(30, 58, 138, 0.3) 100%
     );
 
-    /* Cercle XP - Platine avec contraste */
+    /* Cercle XP - Bleu électrique */
     --xp-gradient-start: var(--platinum-dark);
     --xp-gradient-end: var(--platinum-light);
-    --xp-bar-bg: rgba(112, 128, 144, 0.2);
-    --xp-glow: rgba(192, 192, 192, 0.6);
+    --xp-bar-bg: rgba(30, 58, 138, 0.2);
+    --xp-glow: rgba(6, 182, 212, 0.7);
 
-    /* Ombres */
-    --shadow-soft: 0 8px 16px rgba(0, 0, 0, 0.35);
-    --shadow-strong: 0 12px 24px rgba(0, 0, 0, 0.45);
-    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+    /* Ombres - Plus bleutées */
+    --shadow-soft: 0 8px 16px rgba(6, 182, 212, 0.2);
+    --shadow-strong: 0 12px 24px rgba(6, 182, 212, 0.3);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 
     /* Bordures */
-    --border-color: rgba(90, 106, 122, 0.4);
+    --border-color: rgba(14, 116, 144, 0.4);
 
     /* Sliders */
     --slider-track: #4a5568;
