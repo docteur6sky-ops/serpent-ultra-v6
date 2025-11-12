@@ -688,21 +688,52 @@ window.toggleDarkMode = function() {
     const indicator = document.getElementById('dark-mode-indicator');
     if (indicator) indicator.textContent = isDark ? 'ON' : 'OFF';
 
-    // Changer le gradient du cercle XP
-    const circleFill = document.getElementById('player-circle-fill');
-    if (circleFill) {
-        if (isDark) {
-            circleFill.setAttribute('stroke', 'url(#gradient-dark)');
-        } else {
-            circleFill.setAttribute('stroke', 'url(#gradient)');
-        }
-    }
-
     // Animation smooth
-    body.style.transition = 'background-color 0.3s, color 0.3s';
+    body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
 
-    console.log(`🌓 Mode sombre: ${isDark ? 'Activé' : 'Désactivé'}`);
+    // Notification visuelle du changement de thème
+    showThemeChangeNotification(isDark ? 'ARGENT' : 'OR');
+
+    console.log(`🌓 Mode ${isDark ? 'ARGENT' : 'OR'} activé`);
 };
+
+/**
+ * Afficher une notification de changement de thème
+ */
+function showThemeChangeNotification(theme) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: var(--bg-menu);
+        padding: 30px 50px;
+        border-radius: 20px;
+        box-shadow: 0 10px 50px var(--shadow-strong);
+        border: 3px solid var(--btn-primary-border);
+        font-family: 'Poppins', sans-serif;
+        font-size: 2em;
+        font-weight: 700;
+        color: var(--text-primary);
+        z-index: 10000;
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    `;
+    notification.textContent = `✨ THÈME ${theme} ✨`;
+
+    document.body.appendChild(notification);
+
+    // Animation d'apparition
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+    }, 50);
+
+    // Animation de disparition
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0)';
+        setTimeout(() => notification.remove(), 300);
+    }, 1500);
+}
 
 /**
  * Charger le Dark Mode au démarrage
@@ -713,12 +744,6 @@ function loadDarkMode() {
         document.body.classList.add('dark-mode');
         const indicator = document.getElementById('dark-mode-indicator');
         if (indicator) indicator.textContent = 'ON';
-
-        // Mettre à jour le gradient du cercle XP
-        const circleFill = document.getElementById('player-circle-fill');
-        if (circleFill) {
-            circleFill.setAttribute('stroke', 'url(#gradient-dark)');
-        }
     }
 }
 
