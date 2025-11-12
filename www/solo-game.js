@@ -696,6 +696,12 @@ class SoloSnakeGame {
         const seconds = gameDuration % 60;
         const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
+        // Calculer et attribuer XP basé sur le score
+        const xpGained = Math.floor(this.score / 10); // 1 XP par 10 points
+        if (typeof window.awardXP === 'function' && xpGained > 0) {
+            window.awardXP(xpGained);
+        }
+
         // Appeler callback si existe
         if (typeof window.handleSoloGameOver === 'function') {
             window.handleSoloGameOver({

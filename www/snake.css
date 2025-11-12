@@ -2486,3 +2486,183 @@ body.dark-mode .xp-bar {
         letter-spacing: 2px;
     }
 }
+
+/* ============================================
+   MENU CRÉDITS
+   ============================================ */
+
+.credits-content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.credit-section {
+    margin: 25px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    transition: all 0.3s ease;
+}
+
+.credit-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .credit-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+.credit-section h3 {
+    color: var(--btn-primary-bg);
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.credit-section p {
+    color: var(--text-secondary);
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.credit-section p strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.credit-section.version {
+    border: 2px solid var(--btn-primary-bg);
+    background: rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
+}
+
+body.dark-mode .credit-section.version {
+    background: rgba(128, 90, 213, 0.15);
+    box-shadow: 0 0 20px rgba(128, 90, 213, 0.3);
+}
+
+.credit-section.version p {
+    color: var(--text-primary);
+    font-size: 1.1em;
+}
+
+/* ============================================
+   NOTIFICATION LEVEL UP
+   ============================================ */
+
+.level-up-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 10000;
+    background: var(--bg-menu);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    border: 3px solid var(--btn-primary-bg);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.level-up-notification.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.level-up-content {
+    text-align: center;
+}
+
+.level-up-icon {
+    font-size: 4em;
+    display: block;
+    margin-bottom: 20px;
+    animation: bounce 0.6s ease-in-out 3;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+.level-up-content h2 {
+    color: var(--btn-primary-bg);
+    margin: 10px 0;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, var(--btn-primary-bg), var(--color-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.level-up-content p {
+    color: var(--text-secondary);
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+/* Responsive Crédits */
+@media (max-width: 768px) {
+    .credits-content {
+        padding: 15px;
+    }
+
+    .credit-section {
+        margin: 20px 0;
+        padding: 15px;
+    }
+
+    .credit-section h3 {
+        font-size: 1.1em;
+    }
+
+    .credit-section p {
+        font-size: 0.95em;
+    }
+}
+
+@media (max-width: 480px) {
+    .credits-content {
+        padding: 10px;
+    }
+
+    .credit-section {
+        margin: 15px 0;
+        padding: 12px;
+    }
+
+    .credit-section h3 {
+        font-size: 1em;
+    }
+
+    .credit-section p {
+        font-size: 0.9em;
+    }
+
+    .level-up-notification {
+        padding: 30px 20px;
+    }
+
+    .level-up-icon {
+        font-size: 3em;
+    }
+
+    .level-up-content h2 {
+        font-size: 1.8em;
+    }
+
+    .level-up-content p {
+        font-size: 1em;
+    }
+}

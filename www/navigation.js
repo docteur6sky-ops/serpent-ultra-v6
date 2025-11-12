@@ -681,6 +681,65 @@ function loadDarkMode() {
 }
 
 // ============================================
+// SYSTÈME XP ET LEVEL UP
+// ============================================
+
+// Fonction appelée après une partie solo pour gagner XP
+window.awardXP = function(amount) {
+    let currentXP = parseInt(localStorage.getItem('playerXP') || '0');
+    let currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
+
+    currentXP += amount;
+
+    // Vérifier level up
+    const xpForNextLevel = currentLevel * 100;
+    if (currentXP >= xpForNextLevel) {
+        currentLevel++;
+        currentXP -= xpForNextLevel;
+
+        // Animation level up
+        showLevelUpNotification(currentLevel);
+    }
+
+    // Sauvegarder
+    localStorage.setItem('playerXP', currentXP);
+    localStorage.setItem('playerLevel', currentLevel);
+
+    // Rafraîchir l'affichage
+    updatePlayerProgress();
+
+    console.log(`✨ XP awarded: +${amount} (Total: ${currentXP}/${xpForNextLevel})`);
+};
+
+function showLevelUpNotification(newLevel) {
+    // Créer notification temporaire
+    const notification = document.createElement('div');
+    notification.className = 'level-up-notification';
+    notification.innerHTML = `
+        <div class="level-up-content">
+            <span class="level-up-icon">🎉</span>
+            <h2>NIVEAU ${newLevel} !</h2>
+            <p>Félicitations !</p>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+
+    // Retirer après 3 secondes
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 500);
+    }, 3000);
+
+    console.log(`🎉 LEVEL UP! Nouveau niveau: ${newLevel}`);
+}
+
+// ============================================
 // INITIALISATION
 // ============================================
 
