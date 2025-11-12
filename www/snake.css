@@ -2795,16 +2795,15 @@ body.dark-mode .credit-section.version {
 }
 
 /* ============================================
-   BOUTONS DE DIFFICULTÉ (SOUS JOUER SOLO)
+   BOUTONS DIFFICULTÉ - Gris avec hover coloré
    ============================================ */
 
 .difficulty-selector {
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin: 5px auto 20px;
+    margin: 10px auto 20px;  /* ← 10px entre Solo et Difficulté */
     max-width: 400px;
-    width: 90%;
 }
 
 .diff-btn {
@@ -2814,67 +2813,69 @@ body.dark-mode .credit-section.version {
     align-items: center;
     gap: 5px;
     padding: 10px 15px;
-    background: var(--btn-gradient);
-    border: 2px solid var(--border-color);
-    border-radius: 50px;  /* ← Pilule */
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Poppins', sans-serif;
+    color: var(--text-primary);
+
+    /* GRIS par défaut */
+    background: linear-gradient(145deg, #e0e0e0 0%, #f5f5f5 100%);
+    border: 2px solid #bdbdbd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    cursor: pointer;
     position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow-soft);
-}
-
-/* Effet biseauté diagonal */
-.diff-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--bevel-light);
-    pointer-events: none;
-    border-radius: 50px;
-}
-
-/* Highlight brillant */
-.diff-btn::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
-    border-radius: 50px 50px 0 0;
-    pointer-events: none;
+    transition: all 0.3s ease;
 }
 
 .diff-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-strong);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-.diff-btn:active {
-    transform: translateY(0px);
-    box-shadow: var(--shadow-inner);
+/* FACILE - Vert au hover */
+.diff-btn.easy:hover {
+    background: linear-gradient(145deg, #66bb6a 0%, #81c784 100%);
+    border-color: #4caf50;
+    color: white;
+}
+
+/* NORMAL - Orange au hover */
+.diff-btn.normal:hover {
+    background: linear-gradient(145deg, #ffa726 0%, #ffb74d 100%);
+    border-color: #ff9800;
+    color: white;
+}
+
+/* DIFFICILE - Rouge au hover */
+.diff-btn.hard:hover {
+    background: linear-gradient(145deg, #ef5350 0%, #e57373 100%);
+    border-color: #f44336;
+    color: white;
 }
 
 .diff-icon {
-    font-size: 2em;  /* Emoji bien visible */
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    font-size: 2em;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .diff-text {
     font-size: 0.9em;
     font-weight: 600;
-    color: var(--text-color);
     position: relative;
-    z-index: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+}
+
+/* Mode Dark - Gris plus foncé */
+body.dark-mode .diff-btn {
+    background: linear-gradient(145deg, #424242 0%, #616161 100%);
+    border-color: #757575;
+    color: var(--text-primary);
+}
+
+body.dark-mode .diff-btn:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================
@@ -3084,7 +3085,7 @@ body.dark-mode .credit-section.version {
     gap: 8px;
     padding: 0 30px;
     height: var(--btn-unified-height);
-    margin: 10px auto;
+    margin: 10px auto 20px;  /* ← 10px en haut, 20px en bas */
     max-width: 400px;
     width: 90%;
     font-size: 1.1em;
