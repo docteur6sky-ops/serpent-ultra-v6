@@ -23,7 +23,8 @@
       "Bash(node:*)",
       "Bash(nul)",
       "Bash(taskkill /F /PID 18232)",
-      "Bash(powershell -Command \"Stop-Process -Id 18232 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 18232 -Force\")",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

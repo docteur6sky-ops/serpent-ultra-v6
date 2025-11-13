@@ -51,6 +51,12 @@ class MultiplayerSnakeGame {
         this.client.onRoomJoined = (message) => {
             console.log(`🏠 Salle rejointe - Joueur ${message.playerNumber}`);
 
+            // ✅ Envoyer le pseudo immédiatement après avoir rejoint la salle
+            const pseudo = window.getValidPseudo ? window.getValidPseudo() : null;
+            if (pseudo) {
+                this.client.sendPseudo(pseudo);
+            }
+
             if (message.playersInRoom === 1) {
                 this.showWaitingOverlay();
             } else {
@@ -316,6 +322,8 @@ class MultiplayerSnakeGame {
                         this.CELL_SIZE
                     );
                 }
+
+                // ❌ SUPPRIMÉ - Pseudo maintenant affiché dans le tableau de scores
             }
         }
 
@@ -461,16 +469,20 @@ class MultiplayerSnakeGame {
             const mySegments = segments[myId] || 1;
             const oppSegments = segments[opponentId] || 1;
 
+            // ✅ NOUVEAU - Récupérer les pseudos depuis serverState.players
+            const myPseudo = this.serverState.players?.[myId]?.pseudo || `J${this.client.playerNumber}`;
+            const oppPseudo = this.serverState.players?.[opponentId]?.pseudo || `J${this.client.playerNumber === 1 ? 2 : 1}`;
+
             const p1El = document.getElementById('multi-player1-score');
             const p2El = document.getElementById('multi-player2-score');
 
-            // J1 ou J2 selon le playerNumber
+            // Afficher avec pseudos au lieu de "J1" et "J2"
             if (this.client.playerNumber === 1) {
-                if (p1El) p1El.textContent = `J1: ${mySegments}`;
-                if (p2El) p2El.textContent = `J2: ${oppSegments}`;
+                if (p1El) p1El.textContent = `${myPseudo}: ${mySegments}`;
+                if (p2El) p2El.textContent = `${oppPseudo}: ${oppSegments}`;
             } else {
-                if (p1El) p1El.textContent = `J1: ${oppSegments}`;
-                if (p2El) p2El.textContent = `J2: ${mySegments}`;
+                if (p1El) p1El.textContent = `${oppPseudo}: ${oppSegments}`;
+                if (p2El) p2El.textContent = `${myPseudo}: ${mySegments}`;
             }
         }
     }

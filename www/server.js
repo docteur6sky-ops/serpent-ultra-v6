@@ -165,7 +165,7 @@ class Room {
         return false;
     }
 
-    addPlayer(playerId, ws) {
+    addPlayer(playerId, ws, pseudo = null) {
         if (this.players.size >= CONFIG.MAX_PLAYERS_PER_ROOM) {
             return false;
         }
@@ -180,6 +180,7 @@ class Room {
 
         this.players.set(playerId, {
             id: playerId,
+            pseudo: pseudo || `Joueur ${playerNumber}`, // ✅ NOUVEAU - Pseudo du joueur
             ws: ws,
             number: playerNumber,
             snake: snake,
@@ -214,6 +215,9 @@ class Room {
                 message: 'Salle complète ! Préparez-vous...'
             });
         }
+
+        // ✅ Notifier tous les joueurs du lobby
+        this.broadcastLobbyUpdate();
 
         return true;
     }
@@ -259,14 +263,107 @@ class Room {
 
     setPlayerReady(playerId) {
         const player = this.players.get(playerId);
-        if (player) {
-            player.ready = true;
-            logger.info('ROOM', `Joueur ${player.number} prêt (${this.countReady()}/${this.players.size}) - Salle ${this.id}`);
+        if (!player) return;
 
-            if (this.allPlayersReady()) {
+        player.ready = true;
+        logger.info('ROOM', `Joueur ${player.pseudo} prêt`, {
+            playerId,
+            roomId: this.id
+        });
+
+        // Broadcaster le lobby update
+        this.broadcastLobbyUpdate();
+
+        // Vérifier si tous les joueurs sont prêts
+        const allReady = Array.from(this.players.values()).every(p => p.ready);
+        const allPlayersPresent = this.players.size === CONFIG.MAX_PLAYERS_PER_ROOM;
+
+        if (allReady && allPlayersPresent) {
+            logger.info('ROOM', `Tous les joueurs sont prêts ! Démarrage dans 3s...`, {
+                roomId: this.id
+            });
+
+            // ✅ Démarrer après 3 secondes (sera countdown à l'étape 3)
+            setTimeout(() => {
                 this.startGame();
+            }, 3000);
+        }
+    }
+
+    // ============================================
+    // PSEUDO MANAGEMENT
+    // ============================================
+
+    isPseudoTaken(pseudo, excludePlayerId = null) {
+        const normalizedPseudo = pseudo.trim().toLowerCase();
+        for (let [playerId, player] of this.players.entries()) {
+            if (playerId !== excludePlayerId) {
+                if (player.pseudo.toLowerCase() === normalizedPseudo) {
+                    return true;
+                }
             }
         }
+        return false;
+    }
+
+    setPseudo(playerId, pseudo) {
+        const player = this.players.get(playerId);
+        if (!player) {
+            return { success: false, error: 'Joueur introuvable' };
+        }
+
+        const trimmed = pseudo.trim();
+
+        // Valider format
+        if (trimmed.length < 3 || trimmed.length > 12) {
+            return { success: false, error: 'Le pseudo doit contenir entre 3 et 12 caractères' };
+        }
+
+        const regex = /^[a-zA-Z0-9_-]+$/;
+        if (!regex.test(trimmed)) {
+            return { success: false, error: 'Caractères autorisés: lettres, chiffres, _ et -' };
+        }
+
+        // Vérifier unicité
+        if (this.isPseudoTaken(trimmed, playerId)) {
+            return { success: false, error: 'Ce pseudo est déjà pris dans cette salle' };
+        }
+
+        // Mettre à jour
+        player.pseudo = trimmed;
+        logger.info('ROOM', `Pseudo mis à jour: ${playerId} → "${trimmed}"`);
+
+        // Notifier tous les joueurs
+        this.notifyPlayers({
+            type: 'pseudo_updated',
+            playerId: playerId,
+            pseudo: trimmed
+        });
+
+        return { success: true, pseudo: trimmed };
+    }
+
+    /**
+     * Broadcaster l'état du lobby à tous les joueurs
+     */
+    broadcastLobbyUpdate() {
+        const players = Array.from(this.players.entries()).map(([id, p]) => ({
+            playerId: id,
+            number: p.number,
+            pseudo: p.pseudo,
+            ready: p.ready
+        }));
+
+        this.notifyPlayers({
+            type: 'lobby_update',
+            players: players,
+            playerCount: this.players.size
+        });
+
+        logger.info('ROOM', `Lobby update broadcasté`, {
+            roomId: this.id,
+            playerCount: this.players.size
+        });
     }
 
     countReady() {
@@ -404,7 +501,47 @@ class Room {
     }
 
     startGame() {
-        logger.info('GAME', `🎮 Partie démarrée - Salle ${this.id}`);
+        logger.info('GAME', `🎮 Démarrage countdown - Salle ${this.id}`);
+
+        // ✅ Notifier les clients que le jeu va démarrer
+        this.notifyPlayers({
+            type: 'game_starting'
+        });
+
+        // 🔢 Countdown 5-4-3-2-1-GO
+        const countdownSequence = [5, 4, 3, 2, 1];
+        let index = 0;
+
+        const countdownInterval = setInterval(() => {
+            if (index < countdownSequence.length) {
+                // Envoyer le tick du countdown
+                this.notifyPlayers({
+                    type: 'countdown_tick',
+                    number: countdownSequence[index]
+                });
+                logger.info('GAME', `Countdown: ${countdownSequence[index]}`, { roomId: this.id });
+                index++;
+            } else {
+                // Fin du countdown
+                clearInterval(countdownInterval);
+
+                // Envoyer GO
+                this.notifyPlayers({
+                    type: 'countdown_go'
+                });
+                logger.info('GAME', `🎮 GO! - Salle ${this.id}`);
+
+                // Initialiser le jeu après un petit délai
+                setTimeout(() => {
+                    this.initializeGame();
+                }, 500);
+            }
+        }, 1000);
+    }
+
+    initializeGame() {
+        logger.info('GAME', `🎮 Partie initialisée - Salle ${this.id}`);
+
         this.gameState.gameStarted = true;
         this.gameState.matchStartTime = Date.now();
         this.gameState.matchTimeRemaining = CONFIG.MATCH_DURATION;
@@ -859,6 +996,7 @@ class Room {
             const snakeData = player.snake.toJSON();
             players[id] = {
                 ...snakeData,
+                pseudo: player.pseudo,              // ✅ NOUVEAU - Pseudo du joueur
                 number: player.number,              // Ajouter le numéro du joueur
                 activePowerup: player.activePowerup,    // ✅ Power-up actif
                 powerupEndTime: player.powerupEndTime   // ✅ Temps de fin du power-up
@@ -1004,7 +1142,38 @@ wss.on('connection', (ws) => {
             if (!room) return;
 
             switch (message.type) {
-                case 'ready':
+                case 'set_pseudo':
+                    const result = room.setPseudo(playerId, message.pseudo);
+
+                    if (!result.success) {
+                        // Envoyer le message d'erreur
+                        ws.send(JSON.stringify({
+                            type: 'pseudo_taken',
+                            error: result.error
+                        }));
+
+                        logger.warn('NETWORK', 'Pseudo refusé - déconnexion', {
+                            playerId,
+                            pseudo: message.pseudo,
+                            reason: result.error
+                        });
+
+                        // Attendre que le message soit envoyé puis fermer
+                        setTimeout(() => {
+                            ws.close(1008, 'Pseudo already taken');
+                            roomManager.removePlayer(playerId);
+                        }, 100);
+                    } else {
+                        // Pseudo accepté
+                        ws.send(JSON.stringify({
+                            type: 'pseudo_response',
+                            success: true,
+                            pseudo: result.pseudo
+                        }));
+                    }
+                    break;
+
+                case 'player_ready':
                     room.setPlayerReady(playerId);
                     break;
 

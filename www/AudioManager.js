@@ -13,6 +13,7 @@ class AudioManager {
 
         this.config = {
             menu: 'assets/audio/menu.mp3',
+            'lobby-screen': 'assets/audio/gameover.mp3',  // ✅ Lobby = musique gameover (calme)
             'game-solo': 'assets/audio/game.mp3',
             'game-multi': 'assets/audio/game.mp3',
             over: 'assets/audio/gameover.mp3',

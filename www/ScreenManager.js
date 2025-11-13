@@ -18,6 +18,8 @@ class ScreenManager {
         this.screens = [
             'loading',
             'menu',
+            'multiplayer-menu',
+            'lobby-screen',
             'game-solo',
             'game-multi',
             'over'
@@ -42,8 +44,9 @@ class ScreenManager {
             window.backgroundManager.setBackground(screenId);
         }
 
-        // Changer l'audio selon l'écran
-        if (window.audioManager) {
+        // Changer l'audio selon l'écran (sauf pour game-multi)
+        // La musique de game-multi sera lancée manuellement au countdown GO
+        if (window.audioManager && screenId !== 'game-multi') {
             window.audioManager.setAudio(screenId);
         }
 

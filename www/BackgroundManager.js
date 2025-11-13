@@ -12,6 +12,7 @@ class BackgroundManager {
 
         this.config = {
             menu: 'assets/backgrounds/menu.jpg',
+            'lobby-screen': 'assets/backgrounds/gameover.jpg',  // ✅ Lobby = fond gameover (calme)
             'game-solo': 'assets/backgrounds/game.jpg',
             'game-multi': 'assets/backgrounds/game.jpg',
             over: 'assets/backgrounds/gameover.jpg',

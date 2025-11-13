@@ -145,6 +145,21 @@
         <!-- Menu Multiplayer -->
         <div class="screen hidden" id="multiplayer-menu">
             <h2>🌐 MULTIJOUEUR</h2>
+
+            <!-- Input Pseudo -->
+            <div class="pseudo-container">
+                <h3>👤 TON PSEUDO</h3>
+                <input
+                    type="text"
+                    id="pseudo-input"
+                    placeholder="Entrez votre pseudo"
+                    maxlength="12"
+                    autocomplete="off"
+                >
+                <span class="pseudo-hint">3-12 caractères (lettres, chiffres, _ et -)</span>
+                <span class="pseudo-error" id="pseudo-error" style="display:none;"></span>
+            </div>
+
             <div class="multiplayer-buttons">
                 <button class="primary-btn-unified" onclick="window.audio.buttonClick();startLocalMultiplayer()">
                     <span class="btn-icon">🎮</span>
@@ -155,6 +170,66 @@
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
+        </div>
+
+        <!-- Lobby Multijoueur -->
+        <div id="lobby-screen" class="screen hidden">
+            <div class="lobby-container">
+
+                <!-- Header -->
+                <div class="lobby-header">
+                    <h2>🎮 LOBBY MULTIJOUEUR</h2>
+                    <div class="room-info">
+                        <span class="room-id">Salle: <span id="lobby-room-id">---</span></span>
+                        <span class="player-count">Joueurs: <span id="lobby-player-count">0/2</span></span>
+                    </div>
+                </div>
+
+                <!-- Liste des joueurs -->
+                <div class="players-list">
+                    <div class="player-slot" id="player-slot-1">
+                        <div class="player-avatar">
+                            <span class="player-number">1</span>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-name" id="lobby-player1-name">En attente...</div>
+                            <div class="player-status" id="lobby-player1-status">⏳ Connexion...</div>
+                        </div>
+                        <div class="player-ready-indicator" id="lobby-player1-ready">
+                            ⏳
+                        </div>
+                    </div>
+
+                    <div class="player-slot" id="player-slot-2">
+                        <div class="player-avatar">
+                            <span class="player-number">2</span>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-name" id="lobby-player2-name">En attente...</div>
+                            <div class="player-status" id="lobby-player2-status">⏳ Connexion...</div>
+                        </div>
+                        <div class="player-ready-indicator" id="lobby-player2-ready">
+                            ⏳
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="lobby-message" id="lobby-message">
+                    En attente d'un adversaire...
+                </div>
+
+                <!-- Boutons -->
+                <div class="lobby-actions">
+                    <button class="btn-ready" id="btn-ready" onclick="window.audio.buttonClick();window.setReady()">
+                        ✅ PRÊT
+                    </button>
+                    <button class="btn-cancel" onclick="window.audio.buttonClick();window.leaveLobby()">
+                        ❌ QUITTER
+                    </button>
+                </div>
+
+            </div>
         </div>
 
         <!-- Menu Options -->
@@ -570,6 +645,11 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- COUNTDOWN OVERLAY -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+        <div class="countdown-number" id="countdown-number">5</div>
     </div>
 
 

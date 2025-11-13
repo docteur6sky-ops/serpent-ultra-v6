@@ -2406,6 +2406,76 @@ body.dark-mode .xp-bar {
     letter-spacing: 3px;
 }
 
+/* ============================================
+   PSEUDO INPUT (Multiplayer)
+   ============================================ */
+
+.pseudo-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.pseudo-container h3 {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+#pseudo-input {
+    width: 100%;
+    max-width: 300px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+}
+
+#pseudo-input:focus {
+    border-color: var(--color-gold);
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+#pseudo-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.pseudo-hint {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+.pseudo-error {
+    display: block;
+    color: #ff4444;
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: 500;
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
 .game-title {
     font-family: 'Poppins', sans-serif;
     font-size: 3em;
@@ -3622,5 +3692,240 @@ body.dark-mode .game-over-progression {
 
     .xp-bar-container-gameover {
         height: 25px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/* LOBBY MULTIJOUEUR */
+/* ═══════════════════════════════════════════════════════════ */
+
+.lobby-container {
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.lobby-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.lobby-header h2 {
+    color: #ffd700;
+    font-size: 2em;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.room-info {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 1.1em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.room-info span {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Liste des joueurs */
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.player-slot {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4));
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+}
+
+.player-slot:hover {
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+}
+
+.player-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+#player-slot-1 .player-avatar {
+    background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%);
+}
+
+#player-slot-2 .player-avatar {
+    background: linear-gradient(135deg, #ff00ff 0%, #ff0099 100%);
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.player-status {
+    font-size: 0.95em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.player-ready-indicator {
+    font-size: 2em;
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Messages */
+.lobby-message {
+    text-align: center;
+    font-size: 1.2em;
+    color: #ffd700;
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+/* Actions */
+.lobby-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.lobby-actions button {
+    padding: 15px 40px;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-ready {
+    background: linear-gradient(135deg, #00ff00, #00aa00);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.4);
+}
+
+.btn-ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 255, 0, 0.6);
+}
+
+.btn-ready:disabled {
+    background: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-cancel {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+}
+
+.btn-cancel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 68, 68, 0.6);
+}
+
+/* ============================================
+   COUNTDOWN OVERLAY
+   ============================================ */
+
+.countdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.countdown-overlay.hidden {
+    display: none;
+}
+
+.countdown-number {
+    font-size: 200px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow:
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 215, 0, 0.6),
+        0 0 60px rgba(255, 215, 0, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.5);
+    animation: countdownPulse 1s ease-in-out;
+}
+
+.countdown-number.go {
+    font-size: 150px;
+    color: #4CAF50;
+    text-shadow:
+        0 0 20px rgba(76, 175, 80, 0.8),
+        0 0 40px rgba(76, 175, 80, 0.6),
+        0 0 60px rgba(76, 175, 80, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes countdownPulse {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .countdown-number {
+        font-size: 120px;
+    }
+
+    .countdown-number.go {
+        font-size: 90px;
     }
 }

@@ -145,30 +145,45 @@ window.handleSoloGameOver = function(stats) {
  * Démarre le mode multijoueur
  */
 window.startLocalMultiplayer = function() {
-    console.log('🌐 Démarrage mode MULTIJOUEUR');
+    try {
+        // Valider le pseudo avant de démarrer
+        const pseudo = window.getValidPseudo ? window.getValidPseudo() : null;
 
-    // Afficher l'écran multijoueur
-    window.screenManager.show('game-multi');
-
-    // Créer l'instance si elle n'existe pas
-    if (!multiGameInstance) {
-        try {
-            multiGameInstance = new MultiplayerSnakeGame();
-            window.multiGame = multiGameInstance; // Exposer globalement pour index.html
-            console.log('✅ MultiplayerSnakeGame créé');
-        } catch (error) {
-            console.error('❌ Erreur création MultiplayerSnakeGame:', error);
-            alert('Erreur: Impossible de créer le jeu multijoueur');
+        if (!pseudo) {
+            alert('Veuillez entrer un pseudo valide (3-12 caractères: lettres, chiffres, _ et -)');
             return;
         }
-    }
 
-    // Démarrer le jeu
-    multiGameInstance.start();
+        // Créer l'instance si elle n'existe pas
+        if (!multiGameInstance) {
+            try {
+                multiGameInstance = new MultiplayerSnakeGame();
+                window.multiGame = multiGameInstance;
+            } catch (error) {
+                alert('Erreur: Impossible de créer le jeu multijoueur');
+                throw error;
+            }
+        }
 
-    // Lancer la musique de jeu si disponible
-    if (window.audio && window.audio.playMusic) {
-        window.audio.playMusic('game');
+        // Démarrer la connexion au serveur
+        // Le serveur enverra 'room_joined' qui affichera le lobby
+        multiGameInstance.start();
+
+        // Envoyer le pseudo après la connexion
+        setTimeout(() => {
+            if (multiGameInstance.client && multiGameInstance.client.connected) {
+                multiGameInstance.client.sendPseudo(pseudo);
+            }
+        }, 500);
+
+        // Lancer la musique de jeu si disponible
+        if (window.audio && window.audio.playMusic) {
+            window.audio.playMusic('game');
+        }
+
+    } catch (error) {
+        alert('Erreur critique: ' + error.message);
+        throw error;
     }
 };
 
@@ -202,6 +217,48 @@ window.quitMulti = function() {
     // Lancer la musique du menu
     if (window.audio && window.audio.playMusic) {
         window.audio.playMusic('menu');
+    }
+};
+
+/**
+ * Quitter le lobby et retourner au menu multijoueur
+ */
+window.leaveLobby = function() {
+    console.log('❌ Quitter le lobby');
+
+    // Déconnecter le client multiplayer
+    if (multiGameInstance && multiGameInstance.client) {
+        multiGameInstance.client.disconnect();
+    }
+
+    // Retourner au menu multijoueur
+    window.screenManager.show('multiplayer-menu');
+};
+
+/**
+ * Marquer le joueur comme prêt dans le lobby
+ */
+window.setReady = function() {
+    console.log('✅ Joueur prêt');
+
+    // Vérifier la connexion
+    if (!multiGameInstance || !multiGameInstance.client || !multiGameInstance.client.connected) {
+        console.error('❌ Pas connecté au serveur');
+        alert('Erreur: Non connecté au serveur');
+        return;
+    }
+
+    // Envoyer au serveur
+    multiGameInstance.client.ws.send(JSON.stringify({
+        type: 'player_ready'
+    }));
+
+    // Désactiver le bouton
+    const btn = document.getElementById('btn-ready');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '✅ PRÊT !';
+        btn.style.opacity = '0.6';
     }
 };
 
@@ -451,8 +508,21 @@ window.showDifficulty = function() {
  * Afficher le menu Multiplayer
  */
 window.showMultiplayer = function() {
-    console.log('🌐 Menu Multiplayer');
-    showMenu('multiplayer-menu', 'slide-in-right');
+    try {
+        showMenu('multiplayer-menu', 'slide-in-right');
+
+        // Lancer auto si pseudo déjà sauvegardé
+        const savedPseudo = localStorage.getItem('playerPseudo');
+
+        if (savedPseudo && savedPseudo.length >= 3) {
+            // Attendre que l'écran soit affiché, puis lancer
+            setTimeout(() => {
+                window.startLocalMultiplayer();
+            }, 500);
+        }
+    } catch (error) {
+        throw error;
+    }
 };
 
 // ============================================
@@ -788,6 +858,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePlayerProgress();
     loadDarkMode();
     loadSoundSettings(); // Charger paramètres audio au démarrage
+
+    // Initialiser l'input pseudo
+    if (window.initPseudoInput) {
+        window.initPseudoInput();
+    }
 });
 
 console.log('✅ Système de navigation chargé');
