@@ -145,16 +145,43 @@ window.handleSoloGameOver = function(stats) {
  * Démarre le mode multijoueur
  */
 window.startLocalMultiplayer = function() {
-    try {
-        // Valider le pseudo avant de démarrer
-        const pseudo = window.getValidPseudo ? window.getValidPseudo() : null;
+    console.log('🎮 Démarrage multi');
 
-        if (!pseudo) {
-            alert('Veuillez entrer un pseudo valide (3-12 caractères: lettres, chiffres, _ et -)');
-            return;
+    try {
+        // 1. VALIDER LE PSEUDO
+        const pseudoInput = document.getElementById('pseudo-input');
+        const pseudo = pseudoInput ? pseudoInput.value.trim() : '';
+
+        if (!pseudo || pseudo.length < 3 || pseudo.length > 12) {
+            const errorSpan = document.getElementById('pseudo-error');
+            if (errorSpan) {
+                errorSpan.textContent = '⚠️ Pseudo invalide (3-12 caractères)';
+                errorSpan.style.display = 'block';
+            } else {
+                alert('Veuillez entrer un pseudo valide (3-12 caractères)');
+            }
+            return; // NE PAS connecter
         }
 
-        // Créer l'instance si elle n'existe pas
+        // Valider le format avec la fonction de validation existante
+        if (window.getValidPseudo) {
+            const validatedPseudo = window.getValidPseudo();
+            if (!validatedPseudo) {
+                // L'erreur est déjà affichée par getValidPseudo()
+                return;
+            }
+        }
+
+        // 2. SAUVEGARDER LE PSEUDO (tenter, même en navigation privée)
+        try {
+            localStorage.setItem('snakeUltraPseudo', pseudo);
+            localStorage.setItem('playerPseudo', pseudo);
+        } catch (e) {
+            // Échec localStorage (navigation privée) - continuer quand même
+            console.warn('⚠️ Impossible de sauvegarder le pseudo (navigation privée)', e);
+        }
+
+        // 3. CRÉER LE JEU
         if (!multiGameInstance) {
             try {
                 multiGameInstance = new MultiplayerSnakeGame();
@@ -165,7 +192,7 @@ window.startLocalMultiplayer = function() {
             }
         }
 
-        // Démarrer la connexion au serveur
+        // 4. DÉMARRER
         // Le serveur enverra 'room_joined' qui affichera le lobby
         multiGameInstance.start();
 
@@ -508,21 +535,15 @@ window.showDifficulty = function() {
  * Afficher le menu Multiplayer
  */
 window.showMultiplayer = function() {
-    try {
-        showMenu('multiplayer-menu', 'slide-in-right');
+    console.log('🌐 Menu Multiplayer');
 
-        // Lancer auto si pseudo déjà sauvegardé
-        const savedPseudo = localStorage.getItem('playerPseudo');
-
-        if (savedPseudo && savedPseudo.length >= 3) {
-            // Attendre que l'écran soit affiché, puis lancer
-            setTimeout(() => {
-                window.startLocalMultiplayer();
-            }, 500);
-        }
-    } catch (error) {
-        throw error;
+    // Afficher l'écran menu multi (c'est un SCREEN, pas un sous-menu)
+    if (window.screenManager) {
+        window.screenManager.show('multiplayer-menu');
     }
+
+    // NE PAS auto-connecter - on attend que l'utilisateur clique sur DÉMARRER
+    // Cela force l'affichage de l'écran de saisie du pseudo même en navigation privée
 };
 
 // ============================================

@@ -9,8 +9,11 @@ const WebSocket = require('ws');
 const path = require('path');
 const Snake = require('./SnakeServer.js');
 const Logger = require('./Logger.js');
+const SecurityValidator = require('./SecurityValidator.js');
 
 const logger = new Logger(true); // true = activer DEBUG
+const securityValidator = new SecurityValidator();
+logger.info('SERVER', '🛡️ SecurityValidator initialisé');
 
 const app = express();
 const server = http.createServer(app);
@@ -1115,9 +1118,22 @@ const roomManager = new RoomManager();
 // WEBSOCKET
 // ============================================
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+    // Obtenir l'IP du client
+    const ip = req.socket.remoteAddress;
+
+    // Vérifier si l'IP est bannie
+    if (securityValidator.isIPBanned(ip)) {
+        logger.warn('SECURITY', '🚫 Connexion refusée (IP bannie)', { ip });
+        ws.close(1008, 'Banned');
+        return;
+    }
+
     const playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    logger.info('NETWORK', `🔌 Connexion`, { playerId });
+    logger.info('NETWORK', `🔌 Connexion`, { playerId, ip });
+
+    // Initialiser le tracking de sécurité
+    securityValidator.initPlayer(playerId, ip);
 
     ws.send(JSON.stringify({
         type: 'connected',
@@ -1178,6 +1194,56 @@ wss.on('connection', (ws) => {
                     break;
 
                 case 'input':
+                    // ✅ VALIDER L'INPUT AVANT DE L'APPLIQUER
+                    const validation = securityValidator.validateInput(
+                        playerId,
+                        message.direction
+                    );
+
+                    if (!validation.valid) {
+                        logger.warn('SECURITY', `Input rejeté`, {
+                            playerId,
+                            reason: validation.reason
+                        });
+
+                        // Vérifier si le joueur doit être kické
+                        const stats = securityValidator.getPlayerStats(playerId);
+                        if (stats && stats.violationCount >= securityValidator.config.KICK_THRESHOLD) {
+                            logger.error('SECURITY', `🚨 Kick joueur`, { playerId });
+
+                            // ✅ Notifier le joueur kické
+                            if (ws.readyState === 1) {
+                                ws.send(JSON.stringify({
+                                    type: 'kicked',
+                                    reason: 'Violations de sécurité multiples détectées'
+                                }));
+                            }
+
+                            // ✅ Notifier les autres joueurs (adversaire)
+                            if (room) {
+                                for (let [otherPlayerId, otherPlayer] of room.players) {
+                                    if (otherPlayerId !== playerId && otherPlayer.ws.readyState === 1) {
+                                        otherPlayer.ws.send(JSON.stringify({
+                                            type: 'opponent_kicked',
+                                            reason: 'Adversaire expulsé pour triche',
+                                            winner: true,
+                                            bonusPoints: 500
+                                        }));
+                                    }
+                                }
+                            }
+
+                            // Fermer la connexion du joueur kické
+                            setTimeout(() => {
+                                ws.close(1008, 'Security violation');
+                            }, 100);
+
+                            roomManager.removePlayer(playerId);
+                        }
+                        break;
+                    }
+
+                    // Input valide, l'appliquer
                     room.handleInput(playerId, message.direction);
                     break;
 
@@ -1192,6 +1258,10 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => {
         logger.info('NETWORK', `👋 Déconnexion`, { playerId });
+
+        // Nettoyer les stats de sécurité
+        securityValidator.cleanupPlayer(playerId);
+
         roomManager.removePlayer(playerId);
     });
 

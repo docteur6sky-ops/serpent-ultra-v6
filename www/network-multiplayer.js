@@ -16,7 +16,8 @@ class MultiplayerClient {
         this.pingInterval = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
-        
+        this.wasKicked = false; // ✅ Nouveau: Tracker si le joueur a été kické
+
         this.onConnected = null;
         this.onRoomJoined = null;
         this.onRoomFull = null;
@@ -80,7 +81,13 @@ class MultiplayerClient {
             console.log('❌ Connexion fermée');
             this.connected = false;
             this.stopPing();
-            
+
+            // Si kické, ne pas reconnecter
+            if (this.wasKicked) {
+                console.log('🚫 Reconnexion désactivée (kické)');
+                return;
+            }
+
             if (this.gameActive) {
                 this.showMessage('Connexion perdue', 'error');
                 this.attemptReconnect();
@@ -247,6 +254,39 @@ class MultiplayerClient {
                 break;
 
             case 'pong':
+                break;
+
+            case 'kicked':
+                console.error('🚨 EXPULSÉ:', message.reason);
+
+                // Marquer comme kické pour éviter la reconnexion
+                this.wasKicked = true;
+
+                // Afficher message
+                alert(`⚠️ EXPULSÉ\n\nRaison: ${message.reason}\n\nVous avez été expulsé pour comportement suspect.\nSi vous pensez qu'il s'agit d'une erreur, contactez le support.`);
+
+                // Déconnecter SANS reconnexion
+                this.disconnect();
+
+                // Retour au menu
+                if (window.screenManager) {
+                    window.screenManager.show('menu');
+                }
+                break;
+
+            case 'opponent_kicked':
+                console.log('🎉 VICTOIRE - Adversaire expulsé');
+
+                // Afficher message de victoire
+                alert(`🎉 VICTOIRE !\n\nVotre adversaire a été expulsé pour triche.\n\n+${message.bonusPoints || 500} points bonus !`);
+
+                // Déconnecter proprement
+                this.disconnect();
+
+                // Retour au menu
+                if (window.screenManager) {
+                    window.screenManager.show('menu');
+                }
                 break;
 
             default:
