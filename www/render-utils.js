@@ -161,6 +161,7 @@ const RenderUtils = {
         let emoji = '❄️'; // ice par défaut
         if (type === 'fire') emoji = '🔥';
         else if (type === 'rock') emoji = '🪨';
+        else if (type === 'ghost') emoji = '👻';
 
         ctx.fillText(emoji, x * cellSize + center, y * cellSize + center);
     },
@@ -262,4 +263,3 @@ const RenderUtils = {
 
 // Export global
 window.RenderUtils = RenderUtils;
-console.log('✅ RenderUtils chargé');

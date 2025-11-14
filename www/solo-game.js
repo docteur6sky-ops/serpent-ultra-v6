@@ -39,13 +39,14 @@ class SoloSnakeGame {
         this.maxCombo = 1;
 
         // Power-ups actifs
-        this.powerupEffects = { slow: false, double: false, invincible: false };
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
         this.powerupTime = 0;
         this.powerupDuration = 8000;  // 8 secondes
         this.activePowerup = null;  // Type actif : 'ice', 'fire', ou 'rock'
         this.slowCount = 0;
         this.doubleCount = 0;
         this.invincibleCount = 0;
+        this.ghostCount = 0;
 
         // Contrôle du jeu
         this.running = false;
@@ -80,7 +81,6 @@ class SoloSnakeGame {
     // ============================================
 
     start(difficulty = 0) {
-        console.log('🎮 Démarrage mode SOLO');
         this.difficulty = difficulty;
         this.reset();
         this.running = true;
@@ -118,9 +118,10 @@ class SoloSnakeGame {
         this.slowCount = 0;
         this.doubleCount = 0;
         this.invincibleCount = 0;
+        this.ghostCount = 0;
 
         // Réinitialiser power-ups
-        this.powerupEffects = { slow: false, double: false, invincible: false };
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
         this.activePowerup = null;
         this.particles = [];
 
@@ -178,15 +179,7 @@ class SoloSnakeGame {
             this.update();
         }
 
-        // Vérifier fin des power-ups (8 secondes)
-        if (this.powerupEffects.slow || this.powerupEffects.double || this.powerupEffects.invincible) {
-            if (performance.now() - this.powerupTime > 8000) {
-                this.powerupEffects = { slow: false, double: false, invincible: false };
-                this.updateUI();
-            }
-        }
-
-        // Mettre à jour la barre power-up
+        // Mettre à jour la barre power-up (gère l'expiration via removePowerup())
         this.updatePowerupBar();
 
         // Mettre à jour particules
@@ -251,7 +244,10 @@ class SoloSnakeGame {
 
         // Vérifier collision avec obstacles
         if (this.obstacles.some(o => o.x === head.x && o.y === head.y)) {
-            if (this.powerupEffects.invincible) {
+            // ✅ Mode GHOST : traverse les murs (prioritaire)
+            if (this.powerupEffects.ghost) {
+                // Ne rien faire - passage à travers
+            } else if (this.powerupEffects.invincible) {
                 // Détruire le mur
                 const obsIndex = this.obstacles.findIndex(o => o.x === head.x && o.y === head.y);
                 if (obsIndex !== -1) {
@@ -362,6 +358,10 @@ class SoloSnakeGame {
             this.invincibleCount++;
             this.powerupEffects.invincible = true;  // Même effet que 'invincible'
             this.activePowerup = 'rock';
+        } else if (this.powerup.t === 'ghost') {
+            this.ghostCount++;
+            this.powerupEffects.ghost = true;  // ✅ Mode fantôme : traverse les murs
+            this.activePowerup = 'ghost';
         }
 
         this.powerupTime = performance.now();
@@ -393,7 +393,8 @@ class SoloSnakeGame {
         const powerupEmojis = {
             ice: '❄️',
             fire: '🔥',
-            rock: '🪨'
+            rock: '🪨',
+            ghost: '👻'
         };
 
         // ✅ Ajouter classe 'active' + type
@@ -427,14 +428,19 @@ class SoloSnakeGame {
     removePowerup() {
         const type = this.activePowerup;
 
-        // Retirer les effets
-        if (type === 'ice') {
-            // L'effet slow sera retiré dans la prochaine itération de update()
-        } else if (type === 'fire') {
-            // L'effet double sera retiré dans la prochaine itération de update()
-        } else if (type === 'rock') {
-            // L'effet invincible sera retiré dans la prochaine itération de update()
+        // Vérifier GHOST dans un mur AVANT de retirer l'effet
+        if (type === 'ghost') {
+            // ✅ Vérifier si la tête est dans un mur quand le ghost expire
+            const head = this.snake[0];
+            if (this.obstacles.some(o => o.x === head.x && o.y === head.y)) {
+                if (this.audio) this.audio.obstacle();
+                this.gameOver();
+                return;
+            }
         }
+
+        // ✅ RÉINITIALISER LES EFFETS (BUG FIX - power-ups duraient infiniment)
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
 
         // ✅ Retirer classe 'active' et type
         const container = document.getElementById('powerup-bar-container');
@@ -454,6 +460,7 @@ class SoloSnakeGame {
         }
 
         this.activePowerup = null;
+        this.updateUI();
     }
 
     // ============================================
@@ -525,7 +532,7 @@ class SoloSnakeGame {
 
         if (!this.powerup && Math.random() < powerupChance) {
             let rand = Math.random();
-            let type = rand < 0.33 ? 'ice' : rand < 0.66 ? 'fire' : 'rock';  // ✅ Renommé : ice/fire/rock
+            let type = rand < 0.25 ? 'ice' : rand < 0.50 ? 'fire' : rand < 0.75 ? 'rock' : 'ghost';  // ✅ 4 types : 25% chacun
 
             let attempts = 0;
             do {
@@ -677,7 +684,10 @@ class SoloSnakeGame {
             let bodyColor = '#008000';
 
             // Couleur selon power-up
-            if (this.powerupEffects.invincible) {
+            if (this.powerupEffects.ghost) {
+                headColor = '#FFFFFF';  // ✅ Blanc pur (fantôme)
+                bodyColor = '#FFFFFF';  // ✅ Blanc pur
+            } else if (this.powerupEffects.invincible) {
                 headColor = '#FFD700';
                 bodyColor = '#FFA500';
             } else if (this.powerupEffects.double) {
@@ -750,7 +760,8 @@ class SoloSnakeGame {
         const powerupStatus = document.getElementById('solo-powerup-status');
         if (powerupStatus) {
             let status = 'Aucun';
-            if (this.powerupEffects.invincible) status = '🛡️ Invincible';
+            if (this.powerupEffects.ghost) status = '👻 Fantôme';
+            else if (this.powerupEffects.invincible) status = '🛡️ Invincible';
             else if (this.powerupEffects.slow) status = '⏱️ Ralenti';
             else if (this.powerupEffects.double) status = '💰 Double Points';
             powerupStatus.textContent = status;
@@ -788,7 +799,6 @@ class SoloSnakeGame {
     // ============================================
 
     gameOver() {
-        console.log('💀 Game Over SOLO');
         this.running = false;
 
         if (this.raf) {
@@ -814,6 +824,7 @@ class SoloSnakeGame {
                 slowCount: this.slowCount,
                 doubleCount: this.doubleCount,
                 invincibleCount: this.invincibleCount,
+                ghostCount: this.ghostCount,
                 difficulty: this.difficulty,
                 timeString: timeString,
                 wallsDestroyed: this.wallsDestroyed,
@@ -826,4 +837,3 @@ class SoloSnakeGame {
 
 // Export
 window.SoloSnakeGame = SoloSnakeGame;
-console.log('✅ SoloSnakeGame chargé');
