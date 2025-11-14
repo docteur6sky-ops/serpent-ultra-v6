@@ -113,6 +113,12 @@
                     <span class="btn-text">JOUER EN RÉSEAU</span>
                 </button>
 
+                <!-- Bouton Jouer contre l'IA (désactivé pour l'instant) -->
+                <button class="primary-btn-unified btn-ai" id="btn-ai">
+                    <span class="btn-icon">🤖</span>
+                    <span class="btn-text">JOUER CONTRE L'IA</span>
+                </button>
+
                 <!-- Bouton Jouer Solo -->
                 <button class="primary-btn-unified" id="solo-btn">
                     <span class="btn-icon">🎮</span>
@@ -121,15 +127,15 @@
 
                 <!-- Boutons de difficulté (TOUJOURS VISIBLES - NE PAS MODIFIER) -->
                 <div class="difficulty-selector">
-                    <button class="diff-btn easy" onclick="startSolo(0)">
+                    <button class="diff-btn easy" onclick="setDiff(0)">
                         <span class="diff-icon">😊</span>
                         <span class="diff-text">Facile</span>
                     </button>
-                    <button class="diff-btn normal" onclick="startSolo(1)">
+                    <button class="diff-btn normal" onclick="setDiff(1)">
                         <span class="diff-icon">😮</span>
                         <span class="diff-text">Normal</span>
                     </button>
-                    <button class="diff-btn hard" onclick="startSolo(2)">
+                    <button class="diff-btn hard" onclick="setDiff(2)">
                         <span class="diff-icon">😈</span>
                         <span class="diff-text">Difficile</span>
                     </button>
@@ -465,13 +471,21 @@
                                     <div class="score-value" id="solo-lv" aria-live="polite">1</div>
                                 </td>
                                 <td>
-                                    <div class="score-label">Combo</div>
-                                    <div class="score-value" id="solo-cb" aria-live="polite">x1</div>
+                                    <div class="score-label">Segments</div>
+                                    <div class="score-value" id="solo-seg" aria-live="polite">3</div>
                                 </td>
                             </tr>
                         </table>
+
+                        <!-- ✅ NOUVELLE BARRE POWER-UP -->
+                        <div id="powerup-bar-container">
+                            <span id="powerup-emoji">&nbsp;</span>
+                            <div id="powerup-bar">
+                                <div id="powerup-fill"></div>
+                            </div>
+                        </div>
                     </div>
-                    <canvas id="canvas-solo" width="400" height="400" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
+                    <canvas id="canvas-solo" width="360" height="360" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
                     <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
                         <div class="dpad-btn dpad-empty"></div>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">Up</button>
@@ -481,8 +495,14 @@
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">Right</button>
                     </div>
                     <div class="game-controls">
-                        <button class="control-btn" onclick="window.audio.buttonClick();window.pauseSolo()" aria-label="Mettre le jeu en pause">Pause</button>
-                        <button class="control-btn" onclick="window.audio.buttonClick();window.quitSolo()" aria-label="Revenir au menu">Menu</button>
+                        <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.pauseSolo()" aria-label="Mettre le jeu en pause">
+                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-text">PAUSE</span>
+                        </button>
+                        <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.quitSolo()" aria-label="Revenir au menu">
+                            <span class="btn-icon">🏠</span>
+                            <span class="btn-text">MENU</span>
+                        </button>
                     </div>
                 </div>
                 <div class="panel">
@@ -517,8 +537,14 @@
                     </div>
 
                     <div class="game-controls" style="margin-top: 16px;">
-                        <button class="control-btn" onclick="window.audio.buttonClick();window.abandonMulti()" aria-label="Abandonner la partie">Abandonner</button>
-                        <button class="control-btn" onclick="window.audio.buttonClick();window.quitMulti()" aria-label="Revenir au menu">Menu</button>
+                        <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.abandonMulti()" aria-label="Abandonner la partie">
+                            <span class="btn-icon">🚫</span>
+                            <span class="btn-text">ABANDONNER</span>
+                        </button>
+                        <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.quitMulti()" aria-label="Revenir au menu">
+                            <span class="btn-icon">🏠</span>
+                            <span class="btn-text">MENU</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -616,6 +642,18 @@
                     <span class="btn-icon">🏠</span>
                     <span class="btn-text">Menu</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Quitter Solo -->
+    <div id="solo-quit-overlay" class="overlay hidden" style="display: none;">
+        <div class="overlay-content">
+            <h2>🏠 Quitter la partie ?</h2>
+            <p>Votre progression sera perdue.</p>
+            <div class="overlay-buttons">
+                <button class="menu-btn danger-btn" onclick="confirmQuitSolo()">Oui, quitter</button>
+                <button class="menu-btn" onclick="cancelQuitSolo()">Non, continuer</button>
             </div>
         </div>
     </div>

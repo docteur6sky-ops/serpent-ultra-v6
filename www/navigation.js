@@ -2,7 +2,6 @@
 // NAVIGATION - GESTION DES ÉCRANS ET MODES
 // ============================================
 
-console.log('📱 Chargement du système de navigation...');
 
 // Instances globales des jeux
 let soloGameInstance = null;
@@ -25,7 +24,6 @@ const hideAllScreens = () => window.screenManager.hideAll();
  * Démarre le mode solo
  */
 window.start = function() {
-    console.log('🎮 Démarrage mode SOLO');
 
     // Afficher l'écran de jeu solo
     window.screenManager.show('game-solo');
@@ -35,9 +33,7 @@ window.start = function() {
         try {
             soloGameInstance = new SoloSnakeGame();
             window.soloGame = soloGameInstance; // Exposer globalement pour index.html
-            console.log('✅ SoloSnakeGame créé');
         } catch (error) {
-            console.error('❌ Erreur création SoloSnakeGame:', error);
             alert('Erreur: Impossible de créer le jeu solo');
             return;
         }
@@ -56,7 +52,6 @@ window.start = function() {
  * Met en pause le jeu solo
  */
 window.pauseSolo = function() {
-    console.log('⏸️ Pause mode SOLO');
 
     if (soloGameInstance) {
         soloGameInstance.pause();
@@ -72,32 +67,70 @@ window.pauseSolo = function() {
  * Quitter le mode solo et retourner au menu
  */
 window.quitSolo = function() {
-    console.log('🏠 Quitter mode SOLO');
+    window.audio.buttonClick();
 
-    if (!confirm('Quitter la partie ? Votre progression sera perdue.')) {
-        return;
+    // Mettre le jeu en pause
+    if (soloGameInstance && soloGameInstance.isRunning()) {
+        soloGameInstance.pause();
     }
+
+    // Afficher l'overlay
+    const overlay = document.getElementById('solo-quit-overlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+};
+
+/**
+ * Confirmer la sortie du mode solo
+ */
+function confirmQuitSolo() {
+    window.audio.buttonClick();
+
+    // Cacher l'overlay
+    const overlay = document.getElementById('solo-quit-overlay');
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
 
     // Arrêter le jeu
     if (soloGameInstance) {
         soloGameInstance.stop();
     }
 
-    // Retourner au menu
+    // Retour au menu
     window.screenManager.show('menu');
 
     // Lancer la musique du menu
     if (window.audio && window.audio.playMusic) {
         window.audio.playMusic('menu');
     }
-};
+}
+
+/**
+ * Annuler la sortie et reprendre le jeu
+ */
+function cancelQuitSolo() {
+    window.audio.buttonClick();
+
+    // Cacher l'overlay
+    const overlay = document.getElementById('solo-quit-overlay');
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
+
+    // Reprendre le jeu
+    if (soloGameInstance) {
+        soloGameInstance.resume();
+    }
+}
+
+// Exposer les fonctions globalement
+window.confirmQuitSolo = confirmQuitSolo;
+window.cancelQuitSolo = cancelQuitSolo;
 
 /**
  * Gère le game over du mode solo
  * @param {object} stats - Statistiques de la partie
  */
 window.handleSoloGameOver = function(stats) {
-    console.log('💀 Game Over SOLO', stats);
 
     // Calculer l'XP gagné
     const xpGained = Math.floor(stats.score / 10);
@@ -145,7 +178,6 @@ window.handleSoloGameOver = function(stats) {
  * Démarre le mode multijoueur
  */
 window.startLocalMultiplayer = function() {
-    console.log('🎮 Démarrage multi');
 
     try {
         // 1. VALIDER LE PSEUDO
@@ -178,7 +210,6 @@ window.startLocalMultiplayer = function() {
             localStorage.setItem('playerPseudo', pseudo);
         } catch (e) {
             // Échec localStorage (navigation privée) - continuer quand même
-            console.warn('⚠️ Impossible de sauvegarder le pseudo (navigation privée)', e);
         }
 
         // 3. CRÉER LE JEU
@@ -218,7 +249,6 @@ window.startLocalMultiplayer = function() {
  * Abandonner la partie multijoueur
  */
 window.abandonMulti = function() {
-    console.log('🏳️ Abandon mode MULTIJOUEUR');
 
     if (!confirm('Abandonner la partie ?')) {
         return;
@@ -231,7 +261,6 @@ window.abandonMulti = function() {
  * Quitter le mode multijoueur et retourner au menu
  */
 window.quitMulti = function() {
-    console.log('🏠 Quitter mode MULTIJOUEUR');
 
     // Arrêter le jeu
     if (multiGameInstance) {
@@ -251,7 +280,6 @@ window.quitMulti = function() {
  * Quitter le lobby et retourner au menu multijoueur
  */
 window.leaveLobby = function() {
-    console.log('❌ Quitter le lobby');
 
     // Déconnecter le client multiplayer
     if (multiGameInstance && multiGameInstance.client) {
@@ -266,11 +294,9 @@ window.leaveLobby = function() {
  * Marquer le joueur comme prêt dans le lobby
  */
 window.setReady = function() {
-    console.log('✅ Joueur prêt');
 
     // Vérifier la connexion
     if (!multiGameInstance || !multiGameInstance.client || !multiGameInstance.client.connected) {
-        console.error('❌ Pas connecté au serveur');
         alert('Erreur: Non connecté au serveur');
         return;
     }
@@ -298,7 +324,6 @@ window.setReady = function() {
  * @param {number} difficulty - 0 = Facile, 1 = Normal, 2 = Difficile
  */
 window.setDiff = function(difficulty) {
-    console.log(`🎚️ Difficulté: ${difficulty}`);
 
     currentDifficulty = difficulty;
 
@@ -442,16 +467,12 @@ document.addEventListener('keydown', (e) => {
 // ============================================
 
 window.d = function(dx, dy) {
-    console.log(`🎮 window.d(${dx}, ${dy}) appelé`);
 
     if (soloGameInstance && soloGameInstance.running) {
-        console.log('   → Mode SOLO actif, envoi à soloGameInstance');
         soloGameInstance.changeDirection(dx, dy);
     } else if (multiGameInstance && multiGameInstance.isActive) {
-        console.log('   → Mode MULTI actif, envoi à multiGameInstance');
         multiGameInstance.changeDirection(dx, dy);
     } else {
-        console.log('   ⚠️  Aucun jeu actif!', {
             soloRunning: soloGameInstance?.running,
             multiActive: multiGameInstance?.isActive
         });
@@ -510,7 +531,6 @@ function showMenu(menuId, direction = 'slide-in-right') {
  * Retour au menu principal
  */
 window.backToMain = function() {
-    console.log('🏠 Retour au menu principal');
     showMenu('menu', 'slide-in-left');
     updatePlayerProgress();
 };
@@ -519,7 +539,6 @@ window.backToMain = function() {
  * Afficher le menu Options
  */
 window.showOptions = function() {
-    console.log('⚙️ Menu Options');
     showMenu('options-menu', 'slide-in-right');
 };
 
@@ -527,7 +546,6 @@ window.showOptions = function() {
  * Afficher le menu Difficulté
  */
 window.showDifficulty = function() {
-    console.log('🎮 Menu Difficulté');
     showMenu('difficulty-menu', 'slide-in-right');
 };
 
@@ -535,7 +553,6 @@ window.showDifficulty = function() {
  * Afficher le menu Multiplayer
  */
 window.showMultiplayer = function() {
-    console.log('🌐 Menu Multiplayer');
 
     // Afficher l'écran menu multi (c'est un SCREEN, pas un sous-menu)
     if (window.screenManager) {
@@ -554,7 +571,6 @@ window.showMultiplayer = function() {
  * Retour au menu Options
  */
 window.backToOptions = function() {
-    console.log('⚙️ Retour Options');
     showMenu('options-menu', 'slide-in-left');
 };
 
@@ -562,7 +578,6 @@ window.backToOptions = function() {
  * Afficher le menu Son
  */
 window.showSound = function() {
-    console.log('🔊 Menu Son');
     showMenu('sound-menu', 'slide-in-right');
     loadSoundSettings();
 };
@@ -571,7 +586,6 @@ window.showSound = function() {
  * Afficher le menu Carrière
  */
 window.showCareer = function() {
-    console.log('📊 Menu Carrière');
     showMenu('career-menu', 'slide-in-right');
 };
 
@@ -579,7 +593,6 @@ window.showCareer = function() {
  * Afficher le menu Règles
  */
 window.showRules = function() {
-    console.log('📖 Menu Règles');
     showMenu('rules-menu', 'slide-in-right');
 };
 
@@ -587,7 +600,6 @@ window.showRules = function() {
  * Afficher le menu Crédits
  */
 window.showCredits = function() {
-    console.log('ℹ️ Menu Crédits');
     showMenu('credits-menu', 'slide-in-right');
 };
 
@@ -595,7 +607,6 @@ window.showCredits = function() {
  * Afficher le menu Langue
  */
 window.showLanguage = function() {
-    console.log('🌍 Menu Langue');
     showMenu('language-menu', 'slide-in-right');
     loadLanguageSettings();
 };
@@ -604,7 +615,6 @@ window.showLanguage = function() {
  * Retourner au menu Options depuis un sous-menu
  */
 window.backToOptions = function() {
-    console.log('⚙️ Retour au menu Options');
     showMenu('options-menu', 'slide-in-left');
 };
 
@@ -613,11 +623,9 @@ window.backToOptions = function() {
  * @param {string} lang - Code de langue ('fr', 'en', 'es', 'de')
  */
 window.setLanguage = function(lang) {
-    console.log(`🌍 Langue sélectionnée: ${lang}`);
 
     // Pour l'instant, seul le français est disponible
     if (lang !== 'fr') {
-        console.log('⚠️ Cette langue n\'est pas encore disponible');
         return;
     }
 
@@ -625,7 +633,6 @@ window.setLanguage = function(lang) {
     localStorage.setItem('language', lang);
 
     // TODO: Implémenter la traduction de l'interface
-    console.log('✅ Langue sauvegardée (traduction à venir)');
 };
 
 /**
@@ -633,7 +640,6 @@ window.setLanguage = function(lang) {
  */
 function loadLanguageSettings() {
     const savedLang = localStorage.getItem('language') || 'fr';
-    console.log(`🌍 Langue chargée: ${savedLang}`);
     // TODO: Appliquer la traduction
 }
 
@@ -646,7 +652,6 @@ function loadLanguageSettings() {
  * @param {number} difficulty - 0 = Facile, 1 = Normal, 2 = Difficile
  */
 window.startSolo = function(difficulty) {
-    console.log(`🎮 Démarrer SOLO - Difficulté: ${difficulty}`);
     currentDifficulty = difficulty;
     window.start(); // Utilise la fonction existante
 };
@@ -821,7 +826,6 @@ window.toggleDarkMode = function() {
     // Animation smooth
     body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
 
-    console.log(`🌓 Mode ${isDark ? 'BLEU ÉLECTRIQUE' : 'OR'} activé`);
 };
 
 /**
@@ -864,7 +868,6 @@ window.awardXP = function(amount) {
     // Rafraîchir l'affichage
     updatePlayerProgress();
 
-    console.log(`✨ XP awarded: +${amount} (Total: ${currentXP}/${xpForNextLevel})`);
 
     return { leveledUp, newLevel: currentLevel, xpGained: amount };
 };
@@ -875,7 +878,6 @@ window.awardXP = function(amount) {
 
 // Charger les paramètres au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📱 Initialisation des menus...');
     updatePlayerProgress();
     loadDarkMode();
     loadSoundSettings(); // Charger paramètres audio au démarrage
@@ -884,17 +886,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initPseudoInput) {
         window.initPseudoInput();
     }
+
+    // Event listener pour le bouton JOUER SOLO
+    const soloBtnEl = document.getElementById('solo-btn');
+    if (soloBtnEl) {
+        soloBtnEl.addEventListener('click', () => {
+            startSolo(currentDifficulty);
+        });
+    }
+
+    // Event listener pour le bouton IA (placeholder)
+    const btnAI = document.getElementById('btn-ai');
+    if (btnAI) {
+        btnAI.addEventListener('click', () => {
+
+            // Son du bouton
+            if (window.audio && window.audio.buttonClick) {
+                window.audio.buttonClick();
+            }
+
+            // TODO: Implémenter le mode IA dans la Phase 3
+            alert('🤖 Mode contre l\'IA - Bientôt disponible !');
+        });
+    }
+
+    // Sélectionner FACILE par défaut au chargement
+    setDiff(0);
 });
 
-console.log('✅ Système de navigation chargé');
-console.log('📌 Fonctions disponibles:');
-console.log('   - window.start() : Démarrer mode solo');
-console.log('   - window.startLocalMultiplayer() : Démarrer mode multijoueur');
-console.log('   - window.pauseSolo() : Pause solo');
-console.log('   - window.quitSolo() : Quitter solo');
-console.log('   - window.abandonMulti() : Abandonner multi');
-console.log('   - window.quitMulti() : Quitter multi');
-console.log('   - window.setDiff(n) : Changer difficulté');
-console.log('   - window.showOptions() : Menu Options');
-console.log('   - window.showSound() : Menu Son');
-console.log('   - window.toggleDarkMode() : Mode sombre');
