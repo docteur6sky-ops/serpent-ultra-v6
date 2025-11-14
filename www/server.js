@@ -1513,24 +1513,6 @@ logger.info('SERVER', '📊 Endpoint /security activé');
 // ============================================
 
 server.listen(CONFIG.PORT, () => {
-    console.log('');
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║  🐍 SNAKE ULTRA V6 - POWER-UPS 🎮   ║');
-    console.log('╚════════════════════════════════════════╝');
-    console.log('');
-    console.log(`✅ Serveur: http://localhost:${CONFIG.PORT}`);
-    console.log(`⏱️  Timer: ${CONFIG.MATCH_DURATION / 1000}s`);
-    console.log(`⚡ Vitesse normale: ${CONFIG.BASE_TICK_RATE}ms`);
-    console.log(`   🔥 FIRE: ${CONFIG.FIRE_TICK_RATE}ms (x2 vitesse)`);
-    console.log(`   ❄️  ICE:  ${CONFIG.ICE_TICK_RATE}ms (÷2 vitesse)`);
-    console.log('');
-    console.log('Power-ups:');
-    console.log('  🔥 FIRE  - Speed boost (5s)');
-    console.log('  ❄️  ICE   - Slow (8s)');
-    console.log('  👻 GHOST - Intangible (6s)');
-    console.log('  🪨 ROCK  - Tank, mange 2 segments (8s)');
-    console.log('');
-
     logger.info('SERVER', '🚀 Serveur démarré avec power-ups', {
         port: CONFIG.PORT,
         baseTickRate: CONFIG.BASE_TICK_RATE,
