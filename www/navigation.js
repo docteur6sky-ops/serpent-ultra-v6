@@ -182,6 +182,38 @@ window.handleSoloGameOver = function(stats) {
                 xpBar.style.width = xpPercentage + '%';
             }
         }, 500);
+
+        // Afficher les stats de jeu
+        const elements = {
+            fsc: document.getElementById('fsc'),
+            flv: document.getElementById('flv'),
+            fcb: document.getElementById('fcb'),
+            ffood: document.getElementById('ffood'),
+            ftime: document.getElementById('ftime'),
+            fmaxlength: document.getElementById('fmaxlength'),
+            fwalls: document.getElementById('fwalls'),
+            fskulls: document.getElementById('fskulls'),
+            fdiff: document.getElementById('fdiff'),
+            fslow: document.getElementById('fslow'),
+            fdouble: document.getElementById('fdouble'),
+            finvincible: document.getElementById('finvincible'),
+            fghost: document.getElementById('fghost')
+        };
+
+        // Mettre à jour les valeurs
+        if (elements.fsc) elements.fsc.textContent = stats.score || 0;
+        if (elements.flv) elements.flv.textContent = stats.level || 1;
+        if (elements.fcb) elements.fcb.textContent = stats.combo || 1;
+        if (elements.ffood) elements.ffood.textContent = stats.foodCount || 0;
+        if (elements.ftime) elements.ftime.textContent = stats.timeString || '0:00';
+        if (elements.fmaxlength) elements.fmaxlength.textContent = stats.maxSnakeLength || 1;
+        if (elements.fwalls) elements.fwalls.textContent = stats.wallsDestroyed || 0;
+        if (elements.fskulls) elements.fskulls.textContent = stats.skullsEaten || 0;
+        if (elements.fdiff) elements.fdiff.textContent = stats.difficulty || 'Facile';
+        if (elements.fslow) elements.fslow.textContent = stats.slowCount || 0;
+        if (elements.fdouble) elements.fdouble.textContent = stats.doubleCount || 0;
+        if (elements.finvincible) elements.finvincible.textContent = stats.invincibleCount || 0;
+        if (elements.fghost) elements.fghost.textContent = stats.ghostCount || 0;
     }, 500);
 };
 
