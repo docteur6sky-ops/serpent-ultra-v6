@@ -29,9 +29,9 @@ const RenderUtils = {
         }
 
         // Bordure dynamique
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 1;  // ✅ Affinée: 3px → 1px
         ctx.strokeStyle = colors.border || '#d8d800ff';
-        ctx.strokeRect(1.5, 1.5, canvasSize - 3, canvasSize - 3);
+        ctx.strokeRect(0.5, 0.5, canvasSize - 1, canvasSize - 1);
     },
 
     /**
@@ -158,9 +158,9 @@ const RenderUtils = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        let emoji = '⏱️'; // slow par défaut
-        if (type === 'double') emoji = '💰';
-        else if (type === 'invincible') emoji = '🛡️';
+        let emoji = '❄️'; // ice par défaut
+        if (type === 'fire') emoji = '🔥';
+        else if (type === 'rock') emoji = '🪨';
 
         ctx.fillText(emoji, x * cellSize + center, y * cellSize + center);
     },

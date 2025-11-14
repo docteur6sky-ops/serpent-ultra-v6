@@ -13,8 +13,8 @@ class SoloSnakeGame {
 
         // Configuration (depuis CONFIG)
         this.GRID_SIZE = 30;
-        this.CANVAS_SIZE = 400;
-        this.CELL_SIZE = 400 / 30;
+        this.CANVAS_SIZE = 360;  // ✅ CORRIGÉ: 360 au lieu de 400
+        this.CELL_SIZE = 360 / 30;  // ✅ CORRIGÉ: 360/30 = 12px
         this.SNAKE_EYE_SIZE = 3;
         this.SNAKE_EYE_OFFSET = 4;
 
@@ -41,6 +41,8 @@ class SoloSnakeGame {
         // Power-ups actifs
         this.powerupEffects = { slow: false, double: false, invincible: false };
         this.powerupTime = 0;
+        this.powerupDuration = 8000;  // 8 secondes
+        this.activePowerup = null;  // Type actif : 'ice', 'fire', ou 'rock'
         this.slowCount = 0;
         this.doubleCount = 0;
         this.invincibleCount = 0;
@@ -119,7 +121,25 @@ class SoloSnakeGame {
 
         // Réinitialiser power-ups
         this.powerupEffects = { slow: false, double: false, invincible: false };
+        this.activePowerup = null;
         this.particles = [];
+
+        // ✅ Réinitialiser la barre power-up
+        const container = document.getElementById('powerup-bar-container');
+        const emoji = document.getElementById('powerup-emoji');
+        const fill = document.getElementById('powerup-fill');
+
+        if (container) {
+            container.className = '';  // ✅ Retirer classes
+        }
+
+        if (emoji) {
+            emoji.textContent = '\u00A0';  // ✅ Espace insécable (garde la largeur fixe)
+        }
+
+        if (fill) {
+            fill.style.width = '0%';   // ✅ Vider barre
+        }
 
         // Générer nourriture et crâne
         this.spawnFood();
@@ -165,6 +185,9 @@ class SoloSnakeGame {
                 this.updateUI();
             }
         }
+
+        // Mettre à jour la barre power-up
+        this.updatePowerupBar();
 
         // Mettre à jour particules
         this.updateParticles();
@@ -326,26 +349,111 @@ class SoloSnakeGame {
     eatPowerup(head) {
         if (this.audio) this.audio.powerup();
 
-        // Activer power-up
-        if (this.powerup.t === 'slow') {
+        // Activer power-up (nouveaux noms : ice/fire/rock)
+        if (this.powerup.t === 'ice') {
             this.slowCount++;
-            this.powerupEffects.slow = true;
-        } else if (this.powerup.t === 'double') {
+            this.powerupEffects.slow = true;  // Même effet que 'slow'
+            this.activePowerup = 'ice';
+        } else if (this.powerup.t === 'fire') {
             this.doubleCount++;
-            this.powerupEffects.double = true;
-        } else if (this.powerup.t === 'invincible') {
+            this.powerupEffects.double = true;  // Même effet que 'double'
+            this.activePowerup = 'fire';
+        } else if (this.powerup.t === 'rock') {
             this.invincibleCount++;
-            this.powerupEffects.invincible = true;
+            this.powerupEffects.invincible = true;  // Même effet que 'invincible'
+            this.activePowerup = 'rock';
         }
 
         this.powerupTime = performance.now();
+        this.powerupDuration = 8000;  // 8 secondes
         this.powerup = null;
+
+        // Afficher la barre power-up
+        this.showPowerupBar(this.activePowerup);
 
         // Déplacement normal
         this.snake.unshift(head);
         this.snake.pop();
 
         this.updateUI();
+    }
+
+    // ============================================
+    // GESTION BARRE POWER-UP
+    // ============================================
+
+    showPowerupBar(type) {
+        const container = document.getElementById('powerup-bar-container');
+        const emoji = document.getElementById('powerup-emoji');
+        const fill = document.getElementById('powerup-fill');
+
+        if (!container) return;
+
+        // Définir les emojis selon le type
+        const powerupEmojis = {
+            ice: '❄️',
+            fire: '🔥',
+            rock: '🪨'
+        };
+
+        // ✅ Ajouter classe 'active' + type
+        container.className = 'active ' + type;
+
+        // ✅ Afficher emoji
+        emoji.textContent = powerupEmojis[type] || '⚡';
+
+        // ✅ Remplir à 100%
+        fill.style.width = '100%';
+    }
+
+    updatePowerupBar() {
+        if (!this.activePowerup) return;
+
+        const elapsed = performance.now() - this.powerupTime;
+        const remaining = this.powerupDuration - elapsed;
+        const percentage = Math.max(0, (remaining / this.powerupDuration) * 100);
+
+        const fill = document.getElementById('powerup-fill');
+        if (fill) {
+            fill.style.width = percentage + '%';
+        }
+
+        // Si le timer est écoulé
+        if (remaining <= 0) {
+            this.removePowerup();
+        }
+    }
+
+    removePowerup() {
+        const type = this.activePowerup;
+
+        // Retirer les effets
+        if (type === 'ice') {
+            // L'effet slow sera retiré dans la prochaine itération de update()
+        } else if (type === 'fire') {
+            // L'effet double sera retiré dans la prochaine itération de update()
+        } else if (type === 'rock') {
+            // L'effet invincible sera retiré dans la prochaine itération de update()
+        }
+
+        // ✅ Retirer classe 'active' et type
+        const container = document.getElementById('powerup-bar-container');
+        const emoji = document.getElementById('powerup-emoji');
+        const fill = document.getElementById('powerup-fill');
+
+        if (container) {
+            container.className = '';  // ✅ Retirer classes
+        }
+
+        if (emoji) {
+            emoji.textContent = '\u00A0';  // ✅ Espace insécable (garde la largeur fixe)
+        }
+
+        if (fill) {
+            fill.style.width = '0%';   // ✅ Vider barre
+        }
+
+        this.activePowerup = null;
     }
 
     // ============================================
@@ -417,7 +525,7 @@ class SoloSnakeGame {
 
         if (!this.powerup && Math.random() < powerupChance) {
             let rand = Math.random();
-            let type = rand < 0.33 ? 'slow' : rand < 0.66 ? 'double' : 'invincible';
+            let type = rand < 0.33 ? 'ice' : rand < 0.66 ? 'fire' : 'rock';  // ✅ Renommé : ice/fire/rock
 
             let attempts = 0;
             do {
@@ -524,11 +632,9 @@ class SoloSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
-        // Couleur bordure selon power-up
-        let borderColor = '#d8d800ff';
-        if (this.powerupEffects.slow) borderColor = '#00FF87';
-        else if (this.powerupEffects.double) borderColor = '#873e87ff';
-        else if (this.powerupEffects.invincible) borderColor = '#ff1900ff';
+        // ✅ Couleur bordure adaptée au mode dark/light
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        let borderColor = isDarkMode ? '#00CED1' : '#d8d800ff';
 
         // Dessiner grille
         RenderUtils.drawGrid(
@@ -636,9 +742,9 @@ class SoloSnakeGame {
         const lv = document.getElementById('solo-lv');
         if (lv) lv.textContent = this.level;
 
-        // Combo
-        const cb = document.getElementById('solo-cb');
-        if (cb) cb.textContent = 'x' + this.combo;
+        // Segments (longueur du serpent)
+        const seg = document.getElementById('solo-seg');
+        if (seg) seg.textContent = this.snake.length;
 
         // Power-up status
         const powerupStatus = document.getElementById('solo-powerup-status');
