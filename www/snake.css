@@ -28,13 +28,22 @@
     z-index: 10000 !important;
 }
 
+/* Empêche le scroll sur html pour que les overlays restent fixes */
+html {
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;              /* height au lieu de min-height */
+    width: 100vw;
     padding: 0;
     margin: 0;
+    overflow: hidden;            /* Empêche le scroll sur body */
     font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     /* Géré par BackgroundManager */
     background-size: cover;
@@ -168,10 +177,11 @@ body::before {
     padding: 0;                      /* ← 10px → 0 */
     width: 100vw;
     max-width: none;
-    min-height: 100vh;               /* ← 90vh → 100vh (plein écran) */
+    height: 100vh;                   /* ← Hauteur fixe au lieu de min-height */
+    max-height: 100vh;               /* ← Ne pas dépasser viewport */
     box-shadow: none;                /* ← Supprimé les ombres */
     position: relative;
-    /* overflow-y: auto supprimé - cassait position: fixed des overlays */
+    overflow: hidden;                /* ← Empêche .phone de scroller (overlays fixes) */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -180,9 +190,11 @@ body::before {
 
 .screen {
     width: 100%;
+    height: 100%;                /* Prend toute la hauteur de .phone */
     position: relative;
     z-index: 1;
     opacity: 1;
+    overflow-y: auto;            /* Permet scroll si contenu dépasse */
     transition: opacity 0.3s ease-in-out;
 }
 
