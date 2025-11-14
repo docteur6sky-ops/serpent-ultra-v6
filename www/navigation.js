@@ -187,7 +187,6 @@ window.handleSoloGameOver = function(stats) {
         const elements = {
             fsc: document.getElementById('fsc'),
             flv: document.getElementById('flv'),
-            fcb: document.getElementById('fcb'),
             ffood: document.getElementById('ffood'),
             ftime: document.getElementById('ftime'),
             fmaxlength: document.getElementById('fmaxlength'),
@@ -203,7 +202,6 @@ window.handleSoloGameOver = function(stats) {
         // Mettre à jour les valeurs
         if (elements.fsc) elements.fsc.textContent = stats.score || 0;
         if (elements.flv) elements.flv.textContent = stats.level || 1;
-        if (elements.fcb) elements.fcb.textContent = stats.combo || 1;
         if (elements.ffood) elements.ffood.textContent = stats.foodCount || 0;
         if (elements.ftime) elements.ftime.textContent = stats.timeString || '0:00';
         if (elements.fmaxlength) elements.fmaxlength.textContent = stats.maxSnakeLength || 1;
