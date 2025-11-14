@@ -24,9 +24,8 @@ class AudioManager {
     }
 
     log(message, level = 'info') {
-        if (!this.debug) return;
-        const prefix = '🎵 [AudioManager]';
-        console.log(`${prefix} ${message}`);
+        // Debug logging désactivé (mode production)
+        // Utilise window.diagAudio() pour diagnostiquer
     }
 
     /**
@@ -151,6 +150,28 @@ class AudioManager {
     }
 
     /**
+     * Mettre en pause la musique actuelle
+     */
+    pause() {
+        if (this.currentAudio && !this.currentAudio.paused) {
+            this.currentAudio.pause();
+            this.log('Musique en pause ⏸️');
+        }
+    }
+
+    /**
+     * Reprendre la musique en pause
+     */
+    resume() {
+        if (this.currentAudio && this.currentAudio.paused && !this.muted) {
+            this.currentAudio.play().catch(e => {
+                this.log(`❌ Erreur play: ${e.message}`, 'error');
+            });
+            this.log('Musique reprise ▶️');
+        }
+    }
+
+    /**
      * Arrêter tout
      */
     stopAll() {
@@ -172,19 +193,15 @@ class AudioManager {
 
 // Instance globale
 window.audioManager = new AudioManager();
-console.log('✅ AudioManager chargé');
-console.log('💡 Utilise window.diagAudio() pour diagnostiquer');
 
-// Fonction de diagnostic
+// Fonction de diagnostic (retourne un objet au lieu de logger)
 window.diagAudio = function() {
     const am = window.audioManager;
-    console.log('═══════════════════════════════════════');
-    console.log('🎵 DIAGNOSTIC AUDIOMANAGER');
-    console.log('═══════════════════════════════════════');
-    console.log('Préchargé:', am.preloaded);
-    console.log('Volume:', Math.round(am.volume * 100) + '%');
-    console.log('Muted:', am.muted);
-    console.log('Audios chargés:', Object.keys(am.audios));
-    console.log('Audio actif:', am.currentAudio ? 'Oui' : 'Non');
-    console.log('═══════════════════════════════════════');
+    return {
+        preloaded: am.preloaded,
+        volume: Math.round(am.volume * 100) + '%',
+        muted: am.muted,
+        audiosLoaded: Object.keys(am.audios),
+        currentAudioActive: am.currentAudio ? 'Oui' : 'Non'
+    };
 };

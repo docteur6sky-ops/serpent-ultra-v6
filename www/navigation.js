@@ -49,16 +49,31 @@ window.start = function() {
 };
 
 /**
- * Met en pause le jeu solo
+ * Met en pause / reprend le jeu solo
  */
 window.pauseSolo = function() {
 
     if (soloGameInstance) {
+        // Vérifier l'état AVANT de toggler
+        const wasPaused = soloGameInstance.paused;
+
+        // Toggle pause
         soloGameInstance.pause();
 
         // Son de pause
         if (window.audio && window.audio.buttonClick) {
             window.audio.buttonClick();
+        }
+
+        // Gérer la musique selon le nouvel état
+        if (window.audioManager) {
+            if (wasPaused) {
+                // Le jeu était en pause, on reprend
+                window.audioManager.resume();
+            } else {
+                // Le jeu tourne, on met en pause
+                window.audioManager.pause();
+            }
         }
     }
 };

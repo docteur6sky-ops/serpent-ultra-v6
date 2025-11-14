@@ -765,12 +765,28 @@ class SoloSnakeGame {
         // Overlay pause
         if (this.paused) {
             this.ctx.save();
-            this.ctx.globalAlpha = 0.85;
-            this.ctx.fillStyle = this.COLORS.GOLD;
-            this.ctx.font = '40px "Press Start 2P"';
+
+            // Police moderne et lisible
+            this.ctx.font = 'bold 72px "Courier New", monospace';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('PAUSE', this.CANVAS_SIZE / 2, this.CANVAS_SIZE / 2);
+
+            // Couleur adaptative selon le thème
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const pauseColor = isDarkMode ? '#FFFFFF' : '#000000';
+
+            // Ombre pour meilleure lisibilité
+            this.ctx.shadowColor = isDarkMode ? '#000000' : '#FFFFFF';
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowOffsetX = 4;
+            this.ctx.shadowOffsetY = 4;
+
+            this.ctx.fillStyle = pauseColor;
+            this.ctx.fillText('⏸️ PAUSE', this.CANVAS_SIZE / 2, this.CANVAS_SIZE / 2);
+
+            // Réinitialiser l'ombre
+            this.ctx.shadowBlur = 0;
+
             this.ctx.restore();
         }
     }
