@@ -188,24 +188,25 @@ function showProgressionOverlay(stats) {
 
     // Afficher overlay
     const overlay = document.getElementById('progression-overlay');
-    document.getElementById('xp-gained').textContent = `+${xpGained} XP`;
-    document.getElementById('current-level').textContent = `Niveau ${currentLevel}`;
-    document.getElementById('xp-text').textContent = `${finalXP} / ${newLevel * 100} XP`;
+    document.getElementById('xp-gained-overlay').textContent = `+${xpGained} XP`;
+    document.getElementById('current-level-overlay').textContent = `Niveau ${currentLevel}`;
+    document.getElementById('xp-text-overlay-prog').textContent = `${finalXP} / ${newLevel * 100} XP`;
 
     // Barre XP
-    const xpBar = document.getElementById('xp-bar');
+    const xpBar = document.getElementById('xp-bar-overlay');
     xpBar.style.width = '0%'; // Reset
     setTimeout(() => {
         xpBar.style.width = `${(finalXP / (newLevel * 100)) * 100}%`;
     }, 100);
 
     // Animation level up
-    const levelUpAnim = document.getElementById('level-up-animation');
+    const levelUpBanner = document.getElementById('level-up-banner-overlay');
     const nextBtn = document.getElementById('progression-next-btn');
 
     if (leveledUp) {
-        document.getElementById('new-level').textContent = newLevel;
-        levelUpAnim.classList.remove('hidden');
+        document.getElementById('level-up-text-overlay').textContent = `🎉 NIVEAU ${newLevel} ATTEINT ! 🎉`;
+        levelUpBanner.classList.remove('hidden');
+        levelUpBanner.style.display = 'block';
         document.getElementById('progression-btn-text').textContent = `NIVEAU ${newLevel}`;
 
         // Jouer son level up
@@ -219,7 +220,8 @@ function showProgressionOverlay(stats) {
             nextBtn.disabled = false;
         }, 2000);
     } else {
-        levelUpAnim.classList.add('hidden');
+        levelUpBanner.classList.add('hidden');
+        levelUpBanner.style.display = 'none';
         document.getElementById('progression-btn-text').textContent = 'Suivant';
         nextBtn.disabled = false;
     }
@@ -250,29 +252,8 @@ function showFinalStats() {
     // Récupérer les stats stockées
     const stats = window.lastGameStats;
 
-    // Récupérer les données XP/niveau actuelles
-    const currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
-    const currentXP = parseInt(localStorage.getItem('playerXP') || '0');
-    const xpForNextLevel = currentLevel * 100;
-    const xpPercentage = (currentXP / xpForNextLevel) * 100;
-    const xpGained = Math.floor(stats.score / 5);
-
-    // Remplir les stats XP dans l'écran "over"
+    // Afficher les stats de jeu
     setTimeout(() => {
-        document.getElementById('xp-gained-value').textContent = `+${xpGained} XP`;
-        document.getElementById('current-level-text').textContent = `Niveau ${currentLevel}`;
-        document.getElementById('xp-text-overlay').textContent = `${currentXP} / ${xpForNextLevel} XP`;
-
-        // Animer la barre XP
-        setTimeout(() => {
-            const xpBar = document.getElementById('xp-bar-gameover');
-            if (xpBar) {
-                xpBar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
-                xpBar.style.width = xpPercentage + '%';
-            }
-        }, 500);
-
-        // Afficher les stats de jeu
         const elements = {
             fsc: document.getElementById('fsc'),
             flv: document.getElementById('flv'),
