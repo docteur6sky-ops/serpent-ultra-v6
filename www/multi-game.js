@@ -45,12 +45,9 @@ class MultiplayerSnakeGame {
 
     setupCallbacks() {
         this.client.onConnected = (message) => {
-            console.log('🎮 Connecté au serveur multijoueur');
         };
 
         this.client.onRoomJoined = (message) => {
-            console.log(`🏠 Salle rejointe - Joueur ${message.playerNumber}`);
-
             // ✅ Envoyer le pseudo immédiatement après avoir rejoint la salle
             const pseudo = window.getValidPseudo ? window.getValidPseudo() : null;
             if (pseudo) {
@@ -66,13 +63,11 @@ class MultiplayerSnakeGame {
         };
 
         this.client.onRoomFull = (message) => {
-            console.log('🎉 Salle complète - 2 joueurs');
             this.hideWaitingOverlay();
             setTimeout(() => this.client.sendReady(), 1000);
         };
 
         this.client.onGameStart = (message) => {
-            console.log('🎮 Démarrage de la partie!');
             this.hideWaitingOverlay();
             this.isActive = true;
 
@@ -88,7 +83,6 @@ class MultiplayerSnakeGame {
             if (multiMenu) {
                 multiMenu.classList.add('hidden');
                 multiMenu.classList.remove('active');
-                console.log('🧹 Menu multijoueur caché');
             }
         };
 
@@ -97,14 +91,12 @@ class MultiplayerSnakeGame {
         };
 
         this.client.onGameOver = (message) => {
-            console.log('🏁 Fin de partie multijoueur');
             this.stopRenderLoop();
             this.stopTimerUpdate();
             this.showGameOver(message);
         };
 
         this.client.onPlayerLeft = (message) => {
-            console.log('👋 Adversaire déconnecté');
             this.stopRenderLoop();
             this.stopTimerUpdate();
             this.client.showMessage('Adversaire déconnecté', 'warning');
@@ -117,7 +109,6 @@ class MultiplayerSnakeGame {
     // ============================================
 
     start() {
-        console.log('🎮 Démarrage mode multijoueur');
         this.isActive = false;
         this.serverState = null;
 
@@ -126,7 +117,6 @@ class MultiplayerSnakeGame {
     }
 
     stop() {
-        console.log('🛑 Arrêt mode multijoueur');
         this.isActive = false;
 
         this.stopRenderLoop();
@@ -144,7 +134,6 @@ class MultiplayerSnakeGame {
             const element = document.getElementById(id);
             if (element) {
                 element.remove();
-                console.log(`🧹 Overlay ${id} supprimé`);
             }
         });
     }
@@ -154,8 +143,6 @@ class MultiplayerSnakeGame {
     // ============================================
 
     startRenderLoop() {
-        console.log('🎨 Démarrage boucle de rendu');
-
         const render = () => {
             if (!this.isActive) return;
             this.draw();
@@ -492,8 +479,6 @@ class MultiplayerSnakeGame {
     // ============================================
 
     changeDirection(dx, dy) {
-        console.log(`🎮 MultiplayerSnakeGame.changeDirection(${dx}, ${dy})`);
-
         // Convertir { dx, dy } en string pour le serveur
         let directionString;
         if (dy === -1) directionString = 'up';
@@ -502,7 +487,6 @@ class MultiplayerSnakeGame {
         else if (dx === 1) directionString = 'right';
         else return; // Direction invalide
 
-        console.log(`   → Direction convertie: "${directionString}"`);
         this.client.sendInput(directionString);
     }
 
@@ -574,8 +558,6 @@ class MultiplayerSnakeGame {
     }
 
     showGameOver(message) {
-        console.log('🏁 Affichage écran Game Over');
-
         this.isActive = false;
 
         const myId = this.client.playerId;
@@ -673,15 +655,12 @@ class MultiplayerSnakeGame {
     }
 
     replay() {
-        console.log('🔄 Rejouer');
         // Redémarrer une nouvelle partie
         this.stop();
         setTimeout(() => this.start(), 500);
     }
 
     returnToMenu() {
-        console.log('🏠 Retour au menu');
-
         // Arrêter le jeu (cleanup des overlays inclus)
         this.stop();
 
@@ -695,4 +674,3 @@ class MultiplayerSnakeGame {
 // ============================================
 
 window.MultiplayerSnakeGame = MultiplayerSnakeGame;
-console.log('✅ MultiplayerSnakeGame chargé!');
