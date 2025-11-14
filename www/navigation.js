@@ -186,51 +186,56 @@ function showProgressionOverlay(stats) {
         leveledUp = true;
     }
 
-    // Afficher overlay
-    const overlay = document.getElementById('progression-overlay');
-    document.getElementById('xp-gained-overlay').textContent = `+${xpGained} XP`;
-    document.getElementById('current-level-overlay').textContent = `Niveau ${currentLevel}`;
-    document.getElementById('xp-text-overlay-prog').textContent = `${finalXP} / ${newLevel * 100} XP`;
+    // ✅ NOUVEAU : Mettre à jour la barre circulaire
+    const levelNum = document.getElementById('progression-level-num');
+    const xpText = document.getElementById('progression-xp-text');
+    const circleFill = document.getElementById('progression-circle-fill');
 
-    // Barre XP
-    const xpBar = document.getElementById('xp-bar-overlay');
-    xpBar.style.width = '0%'; // Reset
-    setTimeout(() => {
-        xpBar.style.width = `${(finalXP / (newLevel * 100)) * 100}%`;
-    }, 100);
+    if (levelNum) levelNum.textContent = newLevel;
+    if (xpText) xpText.textContent = `${finalXP}/${newLevel * 100} XP`;
+
+    // Animer le cercle
+    if (circleFill) {
+        const percentage = finalXP / (newLevel * 100);
+        const circumference = 2 * Math.PI * 65;
+        const offset = circumference * (1 - percentage);
+
+        setTimeout(() => {
+            circleFill.style.strokeDashoffset = offset;
+        }, 100);
+    }
 
     // Animation level up
-    const levelUpBanner = document.getElementById('level-up-banner-overlay');
+    const levelUpAnim = document.getElementById('level-up-animation');
     const nextBtn = document.getElementById('progression-next-btn');
 
     if (leveledUp) {
-        document.getElementById('level-up-text-overlay').textContent = `🎉 NIVEAU ${newLevel} ATTEINT ! 🎉`;
-        levelUpBanner.classList.remove('hidden');
-        levelUpBanner.style.display = 'block';
+        document.getElementById('new-level').textContent = newLevel;
+        levelUpAnim.classList.remove('hidden');
         document.getElementById('progression-btn-text').textContent = `NIVEAU ${newLevel}`;
 
-        // Jouer son level up
         if (window.audio && window.audio.powerup) {
-            window.audio.powerup(); // Utilise son existant
+            window.audio.powerup();
         }
 
-        // Désactiver bouton pendant 2s
         nextBtn.disabled = true;
         setTimeout(() => {
             nextBtn.disabled = false;
         }, 2000);
     } else {
-        levelUpBanner.classList.add('hidden');
-        levelUpBanner.style.display = 'none';
+        levelUpAnim.classList.add('hidden');
         document.getElementById('progression-btn-text').textContent = 'Suivant';
-        nextBtn.disabled = false;
     }
 
     // Sauvegarder nouveau XP/niveau
     localStorage.setItem('playerXP', finalXP);
     localStorage.setItem('playerLevel', newLevel);
 
+    // ✅ NOUVEAU : Stocker XP gagné pour les stats
+    window.lastGameXPGained = xpGained;
+
     // Afficher overlay
+    const overlay = document.getElementById('progression-overlay');
     overlay.classList.remove('hidden');
     overlay.style.display = 'flex';
 }
@@ -256,6 +261,7 @@ function showFinalStats() {
     setTimeout(() => {
         const elements = {
             fsc: document.getElementById('fsc'),
+            fxp: document.getElementById('fxp'),
             flv: document.getElementById('flv'),
             ffood: document.getElementById('ffood'),
             ftime: document.getElementById('ftime'),
@@ -271,6 +277,8 @@ function showFinalStats() {
 
         // Mettre à jour les valeurs
         if (elements.fsc) elements.fsc.textContent = stats.score || 0;
+        // ✅ NOUVEAU : Afficher XP gagné
+        if (elements.fxp) elements.fxp.textContent = `+${window.lastGameXPGained || 0} XP`;
         if (elements.flv) elements.flv.textContent = stats.level || 1;
         if (elements.ffood) elements.ffood.textContent = stats.foodCount || 0;
         if (elements.ftime) elements.ftime.textContent = stats.timeString || '0:00';

@@ -562,6 +562,11 @@
                             <div class="stat-label">Score Final</div>
                             <div class="stat-value"><span id="fsc" aria-live="polite">0</span></div>
                         </div>
+                        <!-- ✅ NOUVEAU : XP Gagné -->
+                        <div class="stat-item">
+                            <div class="stat-label">💎 XP Gagné</div>
+                            <div class="stat-value xp-gained-stat"><span id="fxp" aria-live="polite">+0 XP</span></div>
+                        </div>
                         <div class="stat-item">
                             <div class="stat-label">Niveau Atteint</div>
                             <div class="stat-value"><span id="flv" aria-live="polite">1</span></div>
@@ -627,35 +632,81 @@
 
     <!-- Overlay Progression XP/Niveau -->
     <div id="progression-overlay" class="overlay hidden" style="display: none;">
-        <div class="overlay-content">
-            <div class="game-over-progression">
-                <div class="progression-header">
-                    <span class="progression-icon">🏆</span>
-                    <span class="progression-title">PROGRESSION</span>
-                </div>
+        <div class="overlay-content progression-content">
+            <h2>🏆 PROGRESSION</h2>
 
-                <div class="progression-xp-gained">
-                    <span class="xp-label">XP Gagné</span>
-                    <span class="xp-value" id="xp-gained-overlay">+0 XP</span>
-                </div>
+            <!-- Copie de la barre circulaire du menu -->
+            <div class="player-info-container">
+                <svg class="level-circle" width="150" height="150" viewBox="0 0 150 150">
+                    <!-- Cercle de fond -->
+                    <circle
+                        class="level-circle-bg"
+                        cx="75"
+                        cy="75"
+                        r="65"
+                        fill="none"
+                        stroke-width="10"
+                    />
 
-                <div class="progression-level">
-                    <span class="level-icon">🏆</span>
-                    <span class="level-text" id="current-level-overlay">Niveau 1</span>
-                </div>
+                    <!-- Cercle de progression (XP) -->
+                    <circle
+                        class="level-circle-fill"
+                        id="progression-circle-fill"
+                        cx="75"
+                        cy="75"
+                        r="65"
+                        fill="none"
+                        stroke="url(#xp-gradient-overlay)"
+                        stroke-width="10"
+                        stroke-dasharray="408.4"
+                        stroke-dashoffset="408.4"
+                        stroke-linecap="round"
+                        transform="rotate(-90 75 75)"
+                    />
 
-                <div class="xp-bar-wrapper">
-                    <div class="xp-bar-container-gameover">
-                        <div class="xp-bar-fill" id="xp-bar-overlay" style="width: 0%"></div>
-                    </div>
-                    <div class="xp-bar-text" id="xp-text-overlay-prog">0 / 100 XP</div>
-                </div>
+                    <!-- Gradient -->
+                    <defs>
+                        <linearGradient id="xp-gradient-overlay" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" class="xp-stop-start" />
+                            <stop offset="100%" class="xp-stop-end" />
+                        </linearGradient>
+                    </defs>
 
-                <div class="level-up-banner hidden" id="level-up-banner-overlay" style="display: none;">
-                    <span id="level-up-text-overlay">🎉 NIVEAU 2 ATTEINT ! 🎉</span>
-                </div>
+                    <!-- Texte niveau au centre -->
+                    <text
+                        class="level-number"
+                        id="progression-level-num"
+                        x="75"
+                        y="70"
+                        text-anchor="middle"
+                        fill="var(--text-primary)"
+                        stroke="rgba(0, 0, 0, 0.3)"
+                        stroke-width="1"
+                        font-size="36"
+                        font-weight="bold"
+                    >1</text>
+
+                    <!-- Texte XP sous le niveau -->
+                    <text
+                        class="xp-text-svg"
+                        id="progression-xp-text"
+                        x="75"
+                        y="95"
+                        text-anchor="middle"
+                        fill="var(--text-secondary)"
+                        font-size="14"
+                    >0/100 XP</text>
+                </svg>
+
+                <div class="level-text">NIVEAU</div>
             </div>
 
+            <!-- Animation level up (cachée par défaut) -->
+            <div class="level-up-animation hidden" id="level-up-animation">
+                <div class="level-up-text">🎉 NIVEAU <span id="new-level">2</span> ! 🎉</div>
+            </div>
+
+            <!-- Bouton -->
             <div class="overlay-buttons">
                 <button class="menu-btn" id="progression-next-btn" onclick="showFinalStats()">
                     <span id="progression-btn-text">Suivant</span> →
