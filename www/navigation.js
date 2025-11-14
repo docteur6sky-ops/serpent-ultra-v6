@@ -146,33 +146,122 @@ window.cancelQuitSolo = cancelQuitSolo;
  * @param {object} stats - Statistiques de la partie
  */
 window.handleSoloGameOver = function(stats) {
+    // Arrêter audio
+    if (window.audioManager) {
+        window.audioManager.stopAll();
+    }
 
-    // Calculer l'XP gagné
-    const xpGained = Math.floor(stats.score / 10);
-    const progressResult = window.awardXP(xpGained);
+    // Stocker les stats pour plus tard
+    window.lastGameStats = stats;
 
-    // Récupérer les données actuelles
+    // Afficher overlay progression (AVANT les stats)
+    showProgressionOverlay(stats);
+};
+
+/**
+ * Affiche l'overlay de progression XP/Niveau
+ */
+function showProgressionOverlay(stats) {
+    // Calculer XP gagné (score ÷ 5 = XP)
+    const xpGained = Math.floor(stats.score / 5);
+
+    // Récupérer niveau/XP actuel depuis localStorage
+    const currentXP = parseInt(localStorage.getItem('playerXP') || '0');
+    const currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
+
+    // Calculer XP max pour ce niveau
+    const xpMax = currentLevel * 100;
+
+    // Nouveau total XP
+    const newTotalXP = currentXP + xpGained;
+
+    // Level up ?
+    let newLevel = currentLevel;
+    let finalXP = newTotalXP;
+    let leveledUp = false;
+
+    if (newTotalXP >= xpMax) {
+        newLevel = currentLevel + 1;
+        finalXP = newTotalXP - xpMax; // Overflow vers nouveau niveau
+        leveledUp = true;
+    }
+
+    // Afficher overlay
+    const overlay = document.getElementById('progression-overlay');
+    document.getElementById('xp-gained').textContent = `+${xpGained} XP`;
+    document.getElementById('current-level').textContent = `Niveau ${currentLevel}`;
+    document.getElementById('xp-text').textContent = `${finalXP} / ${newLevel * 100} XP`;
+
+    // Barre XP
+    const xpBar = document.getElementById('xp-bar');
+    xpBar.style.width = '0%'; // Reset
+    setTimeout(() => {
+        xpBar.style.width = `${(finalXP / (newLevel * 100)) * 100}%`;
+    }, 100);
+
+    // Animation level up
+    const levelUpAnim = document.getElementById('level-up-animation');
+    const nextBtn = document.getElementById('progression-next-btn');
+
+    if (leveledUp) {
+        document.getElementById('new-level').textContent = newLevel;
+        levelUpAnim.classList.remove('hidden');
+        document.getElementById('progression-btn-text').textContent = `NIVEAU ${newLevel}`;
+
+        // Jouer son level up
+        if (window.audio && window.audio.powerup) {
+            window.audio.powerup(); // Utilise son existant
+        }
+
+        // Désactiver bouton pendant 2s
+        nextBtn.disabled = true;
+        setTimeout(() => {
+            nextBtn.disabled = false;
+        }, 2000);
+    } else {
+        levelUpAnim.classList.add('hidden');
+        document.getElementById('progression-btn-text').textContent = 'Suivant';
+        nextBtn.disabled = false;
+    }
+
+    // Sauvegarder nouveau XP/niveau
+    localStorage.setItem('playerXP', finalXP);
+    localStorage.setItem('playerLevel', newLevel);
+
+    // Afficher overlay
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+}
+
+/**
+ * Cache l'overlay progression et affiche les stats finales
+ */
+function showFinalStats() {
+    if (window.audio) window.audio.buttonClick();
+
+    // Cacher overlay progression
+    const progressionOverlay = document.getElementById('progression-overlay');
+    progressionOverlay.classList.add('hidden');
+    progressionOverlay.style.display = 'none';
+
+    // Afficher écran stats
+    window.screenManager.show('over');
+
+    // Récupérer les stats stockées
+    const stats = window.lastGameStats;
+
+    // Récupérer les données XP/niveau actuelles
     const currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
     const currentXP = parseInt(localStorage.getItem('playerXP') || '0');
     const xpForNextLevel = currentLevel * 100;
     const xpPercentage = (currentXP / xpForNextLevel) * 100;
+    const xpGained = Math.floor(stats.score / 5);
 
+    // Remplir les stats XP dans l'écran "over"
     setTimeout(() => {
-        window.screenManager.show('over');
-
-        // Remplir les stats XP
         document.getElementById('xp-gained-value').textContent = `+${xpGained} XP`;
         document.getElementById('current-level-text').textContent = `Niveau ${currentLevel}`;
         document.getElementById('xp-text-overlay').textContent = `${currentXP} / ${xpForNextLevel} XP`;
-
-        // Afficher/masquer le message level up
-        const levelUpMsg = document.getElementById('level-up-message');
-        if (progressResult.leveledUp) {
-            levelUpMsg.style.display = 'block';
-            document.getElementById('level-up-text').textContent = `🎉 NIVEAU ${progressResult.newLevel} ATTEINT ! 🎉`;
-        } else {
-            levelUpMsg.style.display = 'none';
-        }
 
         // Animer la barre XP
         setTimeout(() => {
@@ -212,8 +301,12 @@ window.handleSoloGameOver = function(stats) {
         if (elements.fdouble) elements.fdouble.textContent = stats.doubleCount || 0;
         if (elements.finvincible) elements.finvincible.textContent = stats.invincibleCount || 0;
         if (elements.fghost) elements.fghost.textContent = stats.ghostCount || 0;
-    }, 500);
-};
+    }, 100);
+}
+
+// Exposer globalement
+window.showProgressionOverlay = showProgressionOverlay;
+window.showFinalStats = showFinalStats;
 
 // ============================================
 // MODE MULTIJOUEUR

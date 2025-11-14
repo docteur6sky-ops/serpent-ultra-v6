@@ -4298,3 +4298,83 @@ body.dark-mode .game-over-progression {
 .overlay-buttons .danger-btn:hover {
     box-shadow: 0 6px 20px rgba(220, 20, 60, 0.6);
 }
+
+/* ============================================
+   OVERLAY PROGRESSION XP/NIVEAU
+   ============================================ */
+
+.progression-content {
+    max-width: 500px;
+    text-align: center;
+}
+
+.xp-section {
+    margin: 30px 0;
+}
+
+.xp-gained {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.xp-gained .label {
+    color: #999;
+}
+
+.xp-gained .value {
+    color: #D4AF37;
+    font-weight: bold;
+    font-size: 24px;
+}
+
+.level-info {
+    margin: 20px 0;
+    font-size: 32px;
+    font-weight: bold;
+    color: #D4AF37;
+}
+
+/* Barre XP */
+.xp-bar-container {
+    width: 100%;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    overflow: hidden;
+    margin: 15px 0;
+    border: 2px solid #D4AF37;
+}
+
+.xp-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #D4AF37, #FFD700);
+    transition: width 1s ease-out;
+    border-radius: 15px;
+}
+
+.xp-text {
+    color: #D4AF37;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+/* Animation Level Up */
+.level-up-animation {
+    margin: 30px 0;
+    animation: levelUpPulse 0.6s ease-in-out infinite alternate;
+}
+
+.level-up-text {
+    font-size: 36px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 20px #FFD700;
+}
+
+@keyframes levelUpPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+}

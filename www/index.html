@@ -654,6 +654,40 @@
         </div>
     </div>
 
+    <!-- Overlay Progression XP/Niveau -->
+    <div id="progression-overlay" class="overlay hidden" style="display: none;">
+        <div class="overlay-content progression-content">
+            <h2>🏆 PROGRESSION</h2>
+
+            <div class="xp-section">
+                <div class="xp-gained">
+                    <span class="label">XP Gagné</span>
+                    <span class="value" id="xp-gained">+0 XP</span>
+                </div>
+
+                <div class="level-info">
+                    <span class="current-level" id="current-level">Niveau 1</span>
+                </div>
+
+                <div class="xp-bar-container">
+                    <div class="xp-bar" id="xp-bar" style="width: 0%"></div>
+                </div>
+                <div class="xp-text" id="xp-text">0 / 100 XP</div>
+            </div>
+
+            <!-- Affiche SI level up -->
+            <div class="level-up-animation hidden" id="level-up-animation">
+                <div class="level-up-text">🎉 NIVEAU <span id="new-level">2</span> ! 🎉</div>
+            </div>
+
+            <div class="overlay-buttons">
+                <button class="menu-btn" id="progression-next-btn" onclick="showFinalStats()">
+                    <span id="progression-btn-text">Suivant</span> →
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODALES -->
     <div class="modal" id="modal">
         <div class="modal-box" id="mcontent"></div>
