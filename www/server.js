@@ -38,14 +38,14 @@ const POWERUP_TYPES = {
     FIRE: {
         id: 'fire',
         duration: 5000,      // 5 secondes
-        color: '#FF4500',    // Rouge orangé
+        color: '#FF5722',    // Deep Orange
         symbol: '🔥',
         spawnChance: 0.25    // 25% de chance à chaque spawn
     },
     ICE: {
         id: 'ice',
         duration: 8000,      // 8 secondes
-        color: '#00CED1',    // Bleu cyan
+        color: '#00A5A5',    // Cyan medium
         symbol: '❄️',
         spawnChance: 0.25
     },
@@ -190,13 +190,27 @@ class Room {
             ready: false,
             activePowerup: null,        // Power-up actif
             powerupEndTime: 0,          // Temps de fin du power-up
-            queueContact: {             // ✅ NOUVEAU - Contact queue
+            invincible: false,          // ✅ Invincibilité temporaire après éjection tête-à-tête
+            queueContact: {             // ✅ Contact queue (tête vs queue)
                 active: false,
                 targetId: null,
                 startTime: 0,
                 lastStealTime: 0,
                 stolenCount: 0
             },
+            bodyContact: {              // ✅ Contact corps (tête vs corps)
+                active: false,
+                targetId: null,
+                segmentIndex: -1,
+                startTime: 0,
+                lastStealTime: 0,
+                stolenCount: 0
+            },
+            frozen: false,              // ✅ NOUVEAU - Effet ICE
+            frozenUntil: 0,             // ✅ NOUVEAU - Timestamp fin gel
+            victimInvincible: false,    // ✅ NOUVEAU - Invincibilité après perte de segments
+            victimInvincibleUntil: 0,   // ✅ NOUVEAU - Timestamp fin invincibilité victime
+            headToHeadProcessed: false, // ✅ NOUVEAU - Flag pour éviter double traitement tête-à-tête
             stats: {                    // 📊 Stats de la partie
                 powerupsCollected: 0,
                 segmentsEaten: 0,
@@ -419,10 +433,12 @@ class Room {
         if (player1.snake.length < player2.snake.length) {
             player1.snake.shrink(1);
             player1.stats.segmentsLost++;
+            this.gameState.segments[player1.id] = player1.snake.length;
             logger.debug('GAME', `Player ${player1.number} perd 1 segment (plus petit)`);
         } else if (player2.snake.length < player1.snake.length) {
             player2.snake.shrink(1);
             player2.stats.segmentsLost++;
+            this.gameState.segments[player2.id] = player2.snake.length;
             logger.debug('GAME', `Player ${player2.number} perd 1 segment (plus petit)`);
         }
         // Si égalité : personne ne perd
@@ -434,42 +450,136 @@ class Room {
         // 2. Importer les helpers
         const { getPerpendicularLeft, getPerpendicularRight } = require('./SnakeServer.js');
 
-        // 3. Éjection latérale
+        // 3. Calculer directions perpendiculaires (éjection à 90°)
         const leftDir = getPerpendicularLeft(player1.snake.direction);
-        const rightDir = getPerpendicularRight(player2.snake.direction);
+        const rightDir = getPerpendicularRight(player1.snake.direction);
 
+        // 4. Changer direction ET nextDirection
         player1.snake.direction = leftDir;
+        player1.snake.nextDirection = leftDir;
         player2.snake.direction = rightDir;
+        player2.snake.nextDirection = rightDir;
 
-        // 4. Avancer de 2 cases dans la nouvelle direction
-        for (let i = 0; i < 2; i++) {
-            player1.snake.head.x += leftDir.dx;
-            player1.snake.head.y += leftDir.dy;
-
-            player2.snake.head.x += rightDir.dx;
-            player2.snake.head.y += rightDir.dy;
-
-            // Wrapping
-            player1.snake.head.x = (player1.snake.head.x + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
-            player1.snake.head.y = (player1.snake.head.y + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
-
-            player2.snake.head.x = (player2.snake.head.x + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
-            player2.snake.head.y = (player2.snake.head.y + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+        // 5. ✅ SOLUTION : Faire 3 move() pour éloigner les serpents
+        // move() déplace TOUT le serpent (tête + corps) correctement
+        for (let i = 0; i < 3; i++) {
+            player1.snake.move();
+            player2.snake.move();
         }
 
-        // 5. Invincibilité temporaire
-        player1.snake.invincible = true;
-        player2.snake.invincible = true;
+        // 6. Invincibilité temporaire (500ms au lieu de 300ms)
+        player1.invincible = true;
+        player2.invincible = true;
 
         setTimeout(() => {
-            player1.snake.invincible = false;
-            player2.snake.invincible = false;
-        }, 300);
+            player1.invincible = false;
+            player2.invincible = false;
+        }, 500);
 
-        logger.debug('GAME', `Éjection complète`, {
-            p1NewPos: player1.snake.head,
-            p2NewPos: player2.snake.head
+        logger.info('GAME', `✅ Éjection 3 cases perpendiculaires`, {
+            p1: { newPos: player1.snake.head, dir: leftDir },
+            p2: { newPos: player2.snake.head, dir: rightDir }
         });
+    }
+
+    /**
+     * Gère les collisions Tête vs Corps (sans power-up spécial)
+     * Vol progressif de segments (1/sec, max 3)
+     */
+    handleBodyCollision(attacker, defender) {
+        const now = Date.now();
+
+        // Vérifier si nouveau contact ou changement de cible
+        const isNewContact = !attacker.bodyContact.active ||
+                            attacker.bodyContact.targetId !== defender.id;
+
+        if (isNewContact) {
+            attacker.bodyContact.active = true;
+            attacker.bodyContact.targetId = defender.id;
+            attacker.bodyContact.startTime = now;
+            attacker.bodyContact.lastStealTime = now;
+            attacker.bodyContact.stolenCount = 0;
+
+            logger.info('GAME', `🍴 Player ${attacker.number} commence à voler des segments de Player ${defender.number}`);
+        }
+
+        // Vol progressif : 1er segment instantané, puis toutes les 600ms, max 3
+        const timeSinceLastSteal = now - attacker.bodyContact.lastStealTime;
+
+        // Vol instantané au premier contact, puis toutes les 600ms
+        if ((attacker.bodyContact.stolenCount === 0 || timeSinceLastSteal >= 600) &&
+            attacker.bodyContact.stolenCount < 3) {
+            if (defender.snake.body.length > 3) {
+                defender.snake.shrink(1);
+                attacker.snake.grow();
+
+                attacker.bodyContact.lastStealTime = now;
+                attacker.bodyContact.stolenCount++;
+                attacker.stats.segmentsEaten++;
+                defender.stats.segmentsLost++;
+
+                // ✅ Mettre à jour le tableau de scores
+                this.gameState.segments[attacker.id] = attacker.snake.length;
+                this.gameState.segments[defender.id] = defender.snake.length;
+
+                logger.info('GAME', `🎯 Player ${attacker.number} vole segment #${attacker.bodyContact.stolenCount}/3 à Player ${defender.number}`);
+
+                // Activer invincibilité victime pendant 3 secondes
+                defender.victimInvincible = true;
+                defender.victimInvincibleUntil = now + 3000;
+
+                logger.debug('GAME', `🛡️ Player ${defender.number} devient invincible 3 secondes`);
+
+                if (!defender.snake.alive) {
+                    logger.info('GAME', `💀 Player ${defender.number} éliminé (vol de segments)`);
+                }
+            }
+        }
+    }
+
+    /**
+     * Gère l'effet du power-up ICE sur un adversaire
+     * Gèle l'adversaire pendant 3 secondes (immobile)
+     */
+    handleIceEffect(attacker, defender) {
+        const now = Date.now();
+
+        // Geler l'adversaire
+        if (!defender.frozen) {
+            defender.frozen = true;
+            defender.frozenUntil = now + 3000;
+
+            logger.info('GAME', `❄️ Player ${attacker.number} gèle Player ${defender.number} pendant 3 secondes`);
+        }
+    }
+
+    /**
+     * Gère l'effet du power-up FIRE sur un adversaire
+     * Brûle 1 segment + boost pour l'attaquant
+     */
+    handleFireEffect(attacker, defender) {
+        if (defender.snake.body.length > 3) {
+            defender.snake.shrink(1);
+            attacker.snake.grow();
+
+            attacker.stats.segmentsEaten++;
+            defender.stats.segmentsLost++;
+
+            // ✅ Mettre à jour le tableau de scores
+            this.gameState.segments[attacker.id] = attacker.snake.length;
+            this.gameState.segments[defender.id] = defender.snake.length;
+
+            logger.info('GAME', `🔥 Player ${attacker.number} brûle 1 segment de Player ${defender.number}`);
+
+            // Activer invincibilité victime pendant 3 secondes
+            const now = Date.now();
+            defender.victimInvincible = true;
+            defender.victimInvincibleUntil = now + 3000;
+
+            if (!defender.snake.alive) {
+                logger.info('GAME', `💀 Player ${defender.number} éliminé par FIRE`);
+            }
+        }
     }
 
     // Boucle de jeu avec setTimeout
@@ -733,6 +843,23 @@ class Room {
             return;
         }
 
+        const now = Date.now();
+
+        // ===== GÉRER LES EFFETS TEMPORAIRES =====
+        for (let player of this.players.values()) {
+            // Dégeler les joueurs
+            if (player.frozen && now >= player.frozenUntil) {
+                player.frozen = false;
+                logger.debug('GAME', `❄️ Player ${player.number} dégelé`);
+            }
+
+            // Fin invincibilité victime
+            if (player.victimInvincible && now >= player.victimInvincibleUntil) {
+                player.victimInvincible = false;
+                logger.debug('GAME', `🛡️ Player ${player.number} perd invincibilité victime`);
+            }
+        }
+
         const alivePlayers = Array.from(this.players.values()).filter(p => p.snake.alive);
         
         if (alivePlayers.length === 0) {
@@ -771,192 +898,235 @@ class Room {
             return;
         }
 
-        // 💥 Détecter collisions tête-à-tête AVANT les déplacements
-        if (alivePlayers.length === 2) {
-            const [p1, p2] = alivePlayers;
+        // ===== COLLISION TÊTE-À-TÊTE PRÉDICTIVE (AVANT MOVE) =====
+        // ✅ Détecter si deux serpents VONT se rencontrer à la prochaine position
+        const players = Array.from(this.players.values());
 
-            // Calculer les PROCHAINES positions des têtes (après mouvement)
-            const nextP1Head = {
-                x: (p1.snake.head.x + p1.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE,
-                y: (p1.snake.head.y + p1.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE
-            };
+        for (let i = 0; i < players.length; i++) {
+            for (let j = i + 1; j < players.length; j++) {
+                const p1 = players[i];
+                const p2 = players[j];
 
-            const nextP2Head = {
-                x: (p2.snake.head.x + p2.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE,
-                y: (p2.snake.head.y + p2.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE
-            };
+                if (!p1.snake.alive || !p2.snake.alive) continue;
+                if (p1.frozen || p2.frozen) continue;
+                if (p1.activePowerup === 'ghost' || p2.activePowerup === 'ghost') continue;
+                if (p1.invincible || p2.invincible) continue;
+                if (p1.victimInvincible || p2.victimInvincible) continue;
 
-            // Vérifier si collision tête-à-tête va se produire
-            if (nextP1Head.x === nextP2Head.x &&
-                nextP1Head.y === nextP2Head.y &&
-                !p1.snake.invincible && !p2.snake.invincible) {
+                // Calculer les prochaines positions des têtes
+                const p1Head = p1.snake.head;
+                const p2Head = p2.snake.head;
 
-                logger.info('GAME', `💥 TÊTE-À-TÊTE DÉTECTÉE - Éjection`, {
-                    p1: { current: p1.snake.head, next: nextP1Head, dir: p1.snake.direction, length: p1.snake.length },
-                    p2: { current: p2.snake.head, next: nextP2Head, dir: p2.snake.direction, length: p2.snake.length }
-                });
+                const p1NextX = (p1Head.x + p1.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+                const p1NextY = (p1Head.y + p1.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
 
-                this.handleHeadToHeadCollision(p1, p2);
+                const p2NextX = (p2Head.x + p2.snake.direction.dx + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
+                const p2NextY = (p2Head.y + p2.snake.direction.dy + CONFIG.GRID_SIZE) % CONFIG.GRID_SIZE;
 
-                // Skip le reste de l'update ce tick (ne pas bouger)
-                this.notifyPlayers({
-                    type: 'game_update',
-                    gameState: this.getGameStateForClients()
-                });
-                return;
+                // 🔍 DEBUG : Log positions prédictives
+                logger.debug('PREDICTIVE', `P${p1.number} (${p1Head.x},${p1Head.y}) dir(${p1.snake.direction.dx},${p1.snake.direction.dy}) → (${p1NextX},${p1NextY}) | P${p2.number} (${p2Head.x},${p2Head.y}) dir(${p2.snake.direction.dx},${p2.snake.direction.dy}) → (${p2NextX},${p2NextY})`);
+
+                // ✅ DÉTECTION TÊTE-À-TÊTE : Deux cas possibles
+                let headToHeadDetected = false;
+
+                // CAS 1 : Les têtes vont à la même position (collision directe)
+                if (p1NextX === p2NextX && p1NextY === p2NextY) {
+                    logger.info('COLLISION', `⚠️ COLLISION DIRECTE ! P${p1.number} et P${p2.number} vont en (${p1NextX},${p1NextY})`);
+                    headToHeadDetected = true;
+                }
+
+                // CAS 2 : Les têtes ÉCHANGENT leurs positions (crossing)
+                // P1 va où P2 est, ET P2 va où P1 est = ils se croisent!
+                if (p1NextX === p2Head.x && p1NextY === p2Head.y &&
+                    p2NextX === p1Head.x && p2NextY === p1Head.y) {
+                    logger.info('COLLISION', `⚠️ CROSSING DÉTECTÉ ! P${p1.number} et P${p2.number} échangent positions (${p1Head.x},${p1Head.y}) ↔ (${p2Head.x},${p2Head.y})`);
+                    headToHeadDetected = true;
+                }
+
+                // Traiter la collision tête-à-tête si détectée
+                if (headToHeadDetected) {
+                    if (!p1.headToHeadProcessed && !p2.headToHeadProcessed) {
+                        logger.info('COLLISION', `💥 Tête-à-tête prédite entre Player ${p1.number} et Player ${p2.number}`);
+                        this.handleHeadToHeadCollision(p1, p2);
+                        p1.headToHeadProcessed = true;
+                        p2.headToHeadProcessed = true;
+                    } else {
+                        logger.warn('COLLISION', `⚠️ Match ignoré (déjà traité) : P${p1.number}.processed=${p1.headToHeadProcessed}, P${p2.number}.processed=${p2.headToHeadProcessed}`);
+                    }
+                }
             }
         }
 
-        // Déplacer chaque serpent
+        // ===== DÉPLACER LES SERPENTS =====
         for (let player of this.players.values()) {
             if (!player.snake.alive) continue;
 
-            const oldHead = { ...player.snake.head };
-
-            // Déplacer le serpent (gère automatiquement le wrapping)
-            player.snake.move();
-            const newHead = player.snake.head;
-
-            logger.debug('GAME', `Player ${player.number} move`, {
-                before: oldHead,
-                after: { x: newHead.x, y: newHead.y }
-            });
-
-            // Vérifier collision avec adversaire
-            // 👻 GHOST = Peut traverser les adversaires
-            // 🛡️ INVINCIBLE = Pas de collision pendant 300ms après tête-à-tête
-            if (player.activePowerup !== 'ghost' && !player.snake.invincible) {
-                let hitOpponent = false;
-                for (let opponent of this.players.values()) {
-                    if (opponent.id === player.id || !opponent.snake.alive) continue;
-
-                    if (player.snake.collidesWithSnake(opponent.snake)) {
-                        // 🪨 ROCK : Mange 2 segments à l'adversaire au lieu de mourir
-                        if (player.activePowerup === 'rock') {
-                            opponent.snake.shrink(2);
-                            player.snake.grow();
-                            player.snake.grow();
-                            player.stats.segmentsEaten += 2;
-                            opponent.stats.segmentsLost += 2;
-                            this.gameState.scores[player.id] = player.snake.score;
-                            this.gameState.segments[player.id] = player.snake.length;
-
-                            logger.info('GAME', `🪨 Player ${player.number} ROCK mange 2 segments de Player ${opponent.number}`);
-
-                            if (!opponent.snake.alive) {
-                                logger.info('GAME', `💀 Player ${opponent.number} éliminé par ROCK`);
-                            }
-                        } else {
-                            // Collision normale - joueur meurt
-                            player.snake.die();
-                            logger.info('GAME', `💀 Player ${player.number} éliminé`, { cause: 'opponent' });
-                            hitOpponent = true;
-                        }
-                        break;
-                    }
-                }
-
-                if (hitOpponent) continue;
-            } else {
-                logger.debug('GAME', `👻 Player ${player.number} GHOST traverse adversaire`);
+            // Ne pas bouger si gelé
+            if (player.frozen) {
+                logger.debug('GAME', `❄️ Player ${player.number} est gelé, skip move`);
+                continue;
             }
 
-            // ⭐ Manger l'étoile
+            player.snake.move();
+
+            // Vérifier collision avec soi-même
+            if (player.snake.checkSelfCollision()) {
+                player.snake.die();
+                logger.info('GAME', `💀 Player ${player.number} se mord`);
+                continue;
+            }
+
+            // Manger la nourriture
             if (player.snake.headAt(this.gameState.food.x, this.gameState.food.y)) {
                 player.snake.grow();
                 player.snake.addScore(10);
                 this.gameState.scores[player.id] = player.snake.score;
                 this.gameState.segments[player.id] = player.snake.length;
-
-                // Générer nouvelle étoile
                 this.gameState.food = this.generateFood();
 
-                logger.debug('GAME', `⭐ Player ${player.number} mange`, {
-                    score: player.snake.score,
-                    length: player.snake.length
-                });
+                logger.debug('GAME', `⭐ Player ${player.number} mange (score: ${player.snake.score})`);
             }
 
-            // 🎮 Ramasser un power-up
+            // Ramasser power-ups
             for (let i = this.gameState.powerups.length - 1; i >= 0; i--) {
                 const powerup = this.gameState.powerups[i];
                 if (player.snake.headAt(powerup.x, powerup.y)) {
-                    // Activer le power-up
                     player.activePowerup = powerup.type;
-                    player.powerupEndTime = Date.now() + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
+                    player.powerupEndTime = now + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
                     player.stats.powerupsCollected++;
 
                     const symbol = POWERUP_TYPES[powerup.type.toUpperCase()].symbol;
-                    const duration = POWERUP_TYPES[powerup.type.toUpperCase()].duration;
+                    logger.info('GAME', `${symbol} Player ${player.number} active ${powerup.type.toUpperCase()}`);
 
-                    logger.info('GAME', `${symbol} Player ${player.number} active ${powerup.type.toUpperCase()}`, {
-                        duration: `${duration}ms (${duration / 1000}s)`,
-                        endsAt: new Date(player.powerupEndTime).toISOString()
-                    });
-
-                    // Retirer ce power-up et en générer un nouveau
                     this.gameState.powerups.splice(i, 1);
                     this.gameState.powerups.push(this.generatePowerUp());
-
                     break;
                 }
             }
-
-            // Pas de nourriture mangée - le move() a déjà géré le pop()
         }
 
-        // 🍴 Contact queue : Manger segments
+        // ===== COLLISIONS ENTRE SERPENTS (APRÈS MOVE) =====
         for (let player of this.players.values()) {
             if (!player.snake.alive) continue;
-            if (player.activePowerup === 'ghost') continue; // Ghost ignore ça
+            if (player.activePowerup === 'ghost') continue; // Ghost traverse tout
+            if (player.invincible) continue; // Invincible après éjection tête-à-tête
+            if (player.victimInvincible) continue; // Invincible après perte de segments
 
             for (let opponent of this.players.values()) {
                 if (opponent.id === player.id || !opponent.snake.alive) continue;
-                if (opponent.activePowerup === 'ghost') continue; // Ne peut pas manger un ghost
+                if (opponent.activePowerup === 'ghost') continue;
 
-                // Vérifier si la tête touche la queue de l'adversaire
-                const tail = opponent.snake.body[opponent.snake.body.length - 1];
-                if (player.snake.head.x === tail.x && player.snake.head.y === tail.y) {
+                const myHead = player.snake.head;
+                const opponentHead = opponent.snake.head;
 
-                    if (!player.queueContact.active) {
-                        // Premier contact
-                        player.queueContact.active = true;
-                        player.queueContact.targetId = opponent.id;
-                        player.queueContact.startTime = Date.now();
-                        player.queueContact.lastStealTime = Date.now();
-                        player.queueContact.stolenCount = 0;
+                // Collision tête-à-tête déjà gérée AVANT move (détection prédictive)
+                // Ignorer si les têtes se touchent après move (cas rare mais possible)
+                if (myHead.x === opponentHead.x && myHead.y === opponentHead.y) {
+                    continue;
+                }
 
-                        logger.info('GAME', `🍴 Player ${player.number} commence à manger la queue de ${opponent.number}`);
-                    } else {
-                        // Contact continu
-                        const now = Date.now();
-                        if (now - player.queueContact.lastStealTime >= 1000 &&
-                            player.queueContact.stolenCount < 5) {
+                // Vérifier collision tête vs corps
+                const bodyCollision = player.snake.collidesWithBody(opponent.snake);
 
-                            // Voler 1 segment
-                            opponent.snake.shrink(1);
-                            player.snake.grow();
-                            player.queueContact.lastStealTime = now;
-                            player.queueContact.stolenCount++;
-                            player.stats.segmentsEaten++;
-                            opponent.stats.segmentsLost++;
+                if (bodyCollision) {
+                    logger.debug('COLLISION', `${player.id} touche corps de ${opponent.id} - MaT te(${myHead.x},${myHead.y}) dir(${player.snake.direction.dx},${player.snake.direction.dy}) vs OpponentTête(${opponentHead.x},${opponentHead.y}) dir(${opponent.snake.direction.dx},${opponent.snake.direction.dy})`);
 
-                            logger.debug('GAME', `🍴 Player ${player.number} vole segment #${player.queueContact.stolenCount}`);
+                    // Appliquer effet selon power-up actif
+                    if (player.activePowerup === 'rock') {
+                        // ROCK : Mange 2 segments
+                        opponent.snake.shrink(2);
+                        player.snake.grow();
+                        player.snake.grow();
+                        player.stats.segmentsEaten += 2;
+                        opponent.stats.segmentsLost += 2;
 
-                            if (!opponent.snake.alive) {
-                                logger.info('GAME', `💀 Player ${opponent.number} éliminé (queue mangée)`);
-                            }
+                        // ✅ Mettre à jour le tableau de scores
+                        this.gameState.segments[player.id] = player.snake.length;
+                        this.gameState.segments[opponent.id] = opponent.snake.length;
+
+                        logger.info('GAME', `🪨 Player ${player.number} ROCK mange 2 segments de Player ${opponent.number}`);
+
+                        if (!opponent.snake.alive) {
+                            logger.info('GAME', `💀 Player ${opponent.number} éliminé par ROCK`);
                         }
+                    } else if (player.activePowerup === 'ice') {
+                        // ICE : Geler l'adversaire
+                        this.handleIceEffect(player, opponent);
+                    } else if (player.activePowerup === 'fire') {
+                        // FIRE : Brûler 1 segment
+                        this.handleFireEffect(player, opponent);
+                    } else {
+                        // Pas de power-up : Vol progressif
+                        this.handleBodyCollision(player, opponent);
                     }
                 } else {
-                    // Contact perdu
-                    if (player.queueContact.active && player.queueContact.targetId === opponent.id) {
-                        logger.info('GAME', `Player ${player.number} perd le contact (${player.queueContact.stolenCount} segments volés)`);
-                        player.queueContact.active = false;
-                        player.queueContact.targetId = null;
+                    // Plus de contact : réinitialiser bodyContact
+                    if (player.bodyContact.active && player.bodyContact.targetId === opponent.id) {
+                        const totalStolen = player.bodyContact.stolenCount;
+                        logger.info('GAME', `📤 Player ${player.number} perd le contact (${totalStolen} segments volés)`);
+
+                        player.bodyContact.active = false;
+                        player.bodyContact.targetId = null;
+                        player.bodyContact.segmentIndex = -1;
+                        player.bodyContact.stolenCount = 0;
                     }
                 }
             }
+        }
+
+        // ✅ VALIDATION DE SÉCURITÉ (score et position)
+        for (let player of this.players.values()) {
+            if (!player.snake.alive) continue;
+
+            // ✅ Valider le score
+            const scoreValidation = securityValidator.validateScore(
+                player.id,
+                player.snake.length,  // Score = longueur
+                this.gameState.matchStartTime,
+                'multi'  // Mode multijoueur
+            );
+
+            if (!scoreValidation.valid) {
+                logger.error('SECURITY', `Score invalide détecté`, {
+                    playerId: player.id,
+                    reason: scoreValidation.reason
+                });
+
+                if (scoreValidation.shouldKick) {
+                    // Kick immédiat
+                    player.snake.die();
+                    logger.error('SECURITY', `🚨 Kick pour score invalide`, { playerId: player.id });
+                }
+            }
+
+            // ✅ Vérifier téléportation SEULEMENT si pas de wrapping
+            // Note: Le jeu a le wrapping (traversée de bords) activé,
+            // donc les sauts de position sont légitimes (x=29 → x=0)
+            const hasWrapping = true; // Ce jeu utilise le wrapping
+
+            if (!hasWrapping) {
+                const positionValidation = securityValidator.validatePosition(
+                    player.id,
+                    player.snake.head,
+                    CONFIG.GRID_SIZE
+                );
+
+                if (!positionValidation.valid) {
+                    logger.error('SECURITY', `Téléportation détectée`, {
+                        playerId: player.id,
+                        reason: positionValidation.reason
+                    });
+
+                    // Kick immédiat
+                    player.snake.die();
+                    logger.error('SECURITY', `🚨 Kick pour téléportation`, { playerId: player.id });
+                }
+            }
+        }
+
+        // ✅ Réinitialiser les flags de collision tête-à-tête pour le prochain tick
+        for (let player of this.players.values()) {
+            player.headToHeadProcessed = false;
         }
 
         // Envoyer l'état
@@ -969,6 +1139,18 @@ class Room {
     handleInput(playerId, direction) {
         const player = this.players.get(playerId);
         if (!player || !player.snake.alive) return;
+
+        // ✅ NOUVEAU : Ignorer les inputs pendant l'invincibilité
+        if (player.invincible) {
+            logger.debug('INPUT', `🛡️ Input ignoré pour Player ${player.number} (invincible)`);
+            return;
+        }
+
+        // ✅ NOUVEAU : Ignorer les inputs si gelé
+        if (player.frozen) {
+            logger.debug('INPUT', `❄️ Input ignoré pour Player ${player.number} (gelé)`);
+            return;
+        }
 
         // Convertir la direction string en objet { dx, dy }
         let newDirection;
@@ -1289,6 +1471,43 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Endpoint de monitoring de sécurité
+app.get('/security', (req, res) => {
+    const summary = securityValidator.getSecuritySummary();
+
+    // Ajouter infos sur les salles actives
+    const rooms = [];
+    for (let [roomId, room] of roomManager.rooms) {
+        const players = [];
+
+        for (let [pid, player] of room.players) {
+            const stats = securityValidator.getPlayerStats(pid);
+            players.push({
+                id: pid,
+                pseudo: player.pseudo || 'Inconnu',
+                score: player.snake ? player.snake.length : 0,
+                violations: stats ? stats.violationCount : 0
+            });
+        }
+
+        rooms.push({
+            id: roomId,
+            playerCount: room.players.size,
+            gameStarted: room.gameState.gameStarted,
+            players: players
+        });
+    }
+
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        security: summary,
+        rooms: rooms
+    });
+});
+
+logger.info('SERVER', '📊 Endpoint /security activé');
+
 // ============================================
 // DÉMARRAGE
 // ============================================
@@ -1320,6 +1539,20 @@ server.listen(CONFIG.PORT, () => {
         matchDuration: CONFIG.MATCH_DURATION
     });
 });
+
+// ============================================
+// LOGS PÉRIODIQUES DE SÉCURITÉ
+// ============================================
+
+// Logger l'état de sécurité toutes les minutes (seulement si violations)
+setInterval(() => {
+    const summary = securityValidator.getSecuritySummary();
+    if (summary.totalViolations > 0 || summary.playersWithViolations > 0) {
+        logger.info('SECURITY', '📊 État de sécurité périodique', summary);
+    }
+}, 60000); // 60 secondes = 1 minute
+
+logger.info('SECURITY', '⏰ Logs périodiques activés (1 min)');
 
 // ============================================
 // GESTIONNAIRES D'ARRÊT

@@ -205,8 +205,8 @@ class MultiplayerSnakeGame {
         // Dessiner les power-ups
         if (this.serverState.powerups && this.serverState.powerups.length > 0) {
             const powerupColors = {
-                fire: '#FF4500',
-                ice: '#00CED1',
+                fire: '#FF5722',
+                ice: '#00A5A5',
                 ghost: '#FFFFFF',
                 rock: '#D2B48C'
             };
@@ -278,8 +278,8 @@ class MultiplayerSnakeGame {
                 // Modifier la couleur selon le power-up actif
                 if (isAlive && activePowerup) {
                     const powerupColors = {
-                        fire: '#FF4500',
-                        ice: '#00CED1',
+                        fire: '#FF5722',
+                        ice: '#00A5A5',
                         ghost: '#E0E0E0',
                         rock: '#D2B48C'
                     };
@@ -351,7 +351,7 @@ class MultiplayerSnakeGame {
             const size = 2 + Math.random() * 3;
 
             // Couleur aléatoire entre orange et rouge
-            const colors = ['#FF4500', '#FF6347', '#FF8C00', '#FFA500'];
+            const colors = ['#FF5722', '#FF6347', '#FF8C00', '#FFA500'];
             this.ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
             this.ctx.globalAlpha = 0.6 + Math.random() * 0.4;
 
@@ -388,8 +388,8 @@ class MultiplayerSnakeGame {
         };
 
         const powerupColors = {
-            fire: '#FF4500',
-            ice: '#00CED1',
+            fire: '#FF5722',
+            ice: '#008B8B',
             ghost: '#FFFFFF',
             rock: '#D2B48C'
         };

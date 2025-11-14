@@ -632,6 +632,22 @@ class SoloSnakeGame {
     // RENDU
     // ============================================
 
+    getDarkerColor(hexColor) {
+        // Convertit #RRGGBB en version plus foncée
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+
+        // Assombrir de 40%
+        const darker = (val) => Math.max(0, Math.floor(val * 0.6));
+
+        const newR = darker(r).toString(16).padStart(2, '0');
+        const newG = darker(g).toString(16).padStart(2, '0');
+        const newB = darker(b).toString(16).padStart(2, '0');
+
+        return `#${newR}${newG}${newB}`;
+    }
+
     draw() {
         const dpr = this.ctx.getTransform().a;
 
@@ -641,7 +657,7 @@ class SoloSnakeGame {
 
         // ✅ Couleur bordure adaptée au mode dark/light
         const isDarkMode = document.body.classList.contains('dark-mode');
-        let borderColor = isDarkMode ? '#00CED1' : '#d8d800ff';
+        let borderColor = isDarkMode ? '#00A5A5' : '#d8d800ff';
 
         // Dessiner grille
         RenderUtils.drawGrid(
@@ -683,19 +699,19 @@ class SoloSnakeGame {
             let headColor = '#00FF00';
             let bodyColor = '#008000';
 
-            // Couleur selon power-up
+            // Couleur selon power-up (harmonisées avec multi)
             if (this.powerupEffects.ghost) {
                 headColor = '#FFFFFF';  // ✅ Blanc pur (fantôme)
                 bodyColor = '#FFFFFF';  // ✅ Blanc pur
             } else if (this.powerupEffects.invincible) {
-                headColor = '#FFD700';
-                bodyColor = '#FFA500';
+                headColor = '#D2B48C';  // ✅ Tan (ROCK - comme multi)
+                bodyColor = '#D2B48C';
             } else if (this.powerupEffects.double) {
-                headColor = '#FF00FF';
-                bodyColor = '#800080';
+                headColor = '#FF5722';  // ✅ Deep Orange (FIRE - moins agressif)
+                bodyColor = '#FF5722';
             } else if (this.powerupEffects.slow) {
-                headColor = '#00FFFF';
-                bodyColor = '#008080';
+                headColor = '#00A5A5';  // ✅ Cyan medium (ICE)
+                bodyColor = '#00A5A5';
             }
 
             if (i === 0) {
@@ -711,10 +727,30 @@ class SoloSnakeGame {
                     eyeOffset,
                     eyeSize
                 );
+
+                // ✅ BORDURE TÊTE
+                this.ctx.strokeStyle = this.getDarkerColor(headColor);
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(
+                    s.x * this.CELL_SIZE,
+                    s.y * this.CELL_SIZE,
+                    this.CELL_SIZE,
+                    this.CELL_SIZE
+                );
             } else {
                 // Corps
                 this.ctx.fillStyle = bodyColor;
                 this.ctx.fillRect(
+                    s.x * this.CELL_SIZE,
+                    s.y * this.CELL_SIZE,
+                    this.CELL_SIZE,
+                    this.CELL_SIZE
+                );
+
+                // ✅ BORDURE CORPS
+                this.ctx.strokeStyle = this.getDarkerColor(bodyColor);
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(
                     s.x * this.CELL_SIZE,
                     s.y * this.CELL_SIZE,
                     this.CELL_SIZE,

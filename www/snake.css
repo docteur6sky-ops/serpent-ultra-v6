@@ -631,8 +631,8 @@ canvas {
 
 /* ✅ FIX : Couleurs par power-up (sélecteur corrigé) */
 #powerup-bar-container.active.ice #powerup-fill {
-    background: linear-gradient(90deg, #00CED1, #1E90FF);
-    box-shadow: 0 0 15px #00CED1;
+    background: linear-gradient(90deg, #008B8B, #1E90FF);
+    box-shadow: 0 0 15px #008B8B;
 }
 
 #powerup-bar-container.active.rock #powerup-fill {
@@ -708,16 +708,16 @@ canvas {
 
 /* ✅ Mode Dark - Pad directionnel cyan (harmonisé avec PAUSE/MENU) */
 body.dark-mode .dpad-btn {
-    background: linear-gradient(145deg, #00d4ff, #00a8cc);
-    border-color: #00d4ff;
+    background: linear-gradient(145deg, #008B8B, #00a8cc);
+    border-color: #008B8B;
     color: #0a0a1e;
-    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3), inset 0 2px 4px rgba(255,255,255,0.4);
+    box-shadow: 0 6px 20px rgba(0, 139, 139, 0.3), inset 0 2px 4px rgba(255,255,255,0.4);
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 body.dark-mode .dpad-btn:hover {
-    background: linear-gradient(145deg, #00e5ff, #00d4ff);
-    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.6);
+    background: linear-gradient(145deg, #008B8B, #008B8B);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.6);
 }
 
 body.dark-mode .dpad-btn:active {
@@ -801,8 +801,8 @@ body.dark-mode .dpad-btn:active {
 
 /* Mode Dark */
 body.dark-mode .game-control-btn {
-    background: linear-gradient(145deg, #00d4ff, #00a8cc);
-    border-color: #00d4ff;
+    background: linear-gradient(145deg, #008B8B, #00a8cc);
+    border-color: #008B8B;
     color: #0a0a1e;
 }
 
@@ -2120,10 +2120,10 @@ body.dark-mode {
 
     /* Boutons - BLEU ÉLECTRIQUE avec contraste fort */
     --platinum-dark: #1e3a8a;   /* Bleu nuit profond */
-    --platinum-medium: #06b6d4; /* Cyan électrique */
+    --platinum-medium: #008B8B; /* Cyan foncé */
     --platinum-light: #38bdf8;  /* Bleu ciel brillant */
-    --platinum-shine: #7dd3fc;  /* Reflet cyan clair */
-    --platinum-border: #0e7490; /* Bordure cyan foncé */
+    --platinum-shine: #008B8B;  /* Reflet cyan foncé */
+    --platinum-border: #008B8B; /* Bordure cyan foncé */
 
     /* Gradient diagonal pour boutons - Bleu électrique */
     --btn-gradient: linear-gradient(135deg,
@@ -2140,8 +2140,8 @@ body.dark-mode {
     );
 
     /* ✅ Ombres et bordures - Mode Dark (Cyan) */
-    --border-color: #00CED1;
-    --border-canvas-color: #00CED1;
+    --border-color: #008B8B;
+    --border-canvas-color: #008B8B;
     --score-box-border: rgba(0, 206, 209, 0.3);
     --shadow-gold: 0 0 20px rgba(0, 206, 209, 0.4);
     --shadow-primary: 0 8px 30px rgba(0, 206, 209, 0.3);
@@ -4030,7 +4030,7 @@ body.dark-mode .game-over-progression {
 }
 
 #player-slot-1 .player-avatar {
-    background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%);
+    background: linear-gradient(135deg, #008B8B 0%, #0099ff 100%);
 }
 
 #player-slot-2 .player-avatar {
