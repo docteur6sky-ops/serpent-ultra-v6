@@ -85,7 +85,7 @@ window.quitSolo = function() {
     window.audio.buttonClick();
 
     // Mettre le jeu en pause
-    if (soloGameInstance && soloGameInstance.isRunning()) {
+    if (soloGameInstance && soloGameInstance.running) {
         soloGameInstance.pause();
     }
 
