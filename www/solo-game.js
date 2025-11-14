@@ -766,8 +766,8 @@ class SoloSnakeGame {
         if (this.paused) {
             this.ctx.save();
 
-            // Police moderne et lisible
-            this.ctx.font = 'bold 72px "Courier New", monospace';
+            // Emoji seul, bien centré et plus gros
+            this.ctx.font = 'bold 120px "Courier New", monospace';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
 
@@ -775,16 +775,16 @@ class SoloSnakeGame {
             const isDarkMode = document.body.classList.contains('dark-mode');
             const pauseColor = isDarkMode ? '#FFFFFF' : '#000000';
 
-            // Ombre pour meilleure lisibilité
+            // Ombre pour lisibilité
             this.ctx.shadowColor = isDarkMode ? '#000000' : '#FFFFFF';
-            this.ctx.shadowBlur = 20;
-            this.ctx.shadowOffsetX = 4;
-            this.ctx.shadowOffsetY = 4;
+            this.ctx.shadowBlur = 30;
+            this.ctx.shadowOffsetX = 5;
+            this.ctx.shadowOffsetY = 5;
 
             this.ctx.fillStyle = pauseColor;
-            this.ctx.fillText('⏸️ PAUSE', this.CANVAS_SIZE / 2, this.CANVAS_SIZE / 2);
+            this.ctx.fillText('⏸️', this.CANVAS_SIZE / 2, this.CANVAS_SIZE / 2);
 
-            // Réinitialiser l'ombre
+            // Réinitialiser
             this.ctx.shadowBlur = 0;
 
             this.ctx.restore();
