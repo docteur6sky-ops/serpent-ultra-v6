@@ -131,9 +131,9 @@ function cancelQuitSolo() {
     overlay.classList.add('hidden');
     overlay.style.display = 'none';
 
-    // Reprendre le jeu
+    // Reprendre le jeu (pause() est un toggle)
     if (soloGameInstance) {
-        soloGameInstance.resume();
+        soloGameInstance.pause();
     }
 }
 
