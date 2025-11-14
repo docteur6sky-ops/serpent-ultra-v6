@@ -487,10 +487,6 @@ window.d = function(dx, dy) {
         soloGameInstance.changeDirection(dx, dy);
     } else if (multiGameInstance && multiGameInstance.isActive) {
         multiGameInstance.changeDirection(dx, dy);
-    } else {
-            soloRunning: soloGameInstance?.running,
-            multiActive: multiGameInstance?.isActive
-        });
     }
 };
 
