@@ -4656,45 +4656,81 @@ body.dark-mode .game-over-progression {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-/* MULTIPLAYER - TABLEAU COMPACT (3 COLONNES) */
+/* MULTIPLAYER - TABLEAU 2 LIGNES COMPACT */
 /* ═══════════════════════════════════════════════════════════ */
 
-.mp-scoreboard {
+.mp-scoreboard-2lines {
     position: absolute;
     top: 8px;
     left: 50%;
     transform: translateX(-50%);
-    width: 85%;
-    max-width: 420px;
-    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+    width: 88%;
+    max-width: 480px;
+
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.92), rgba(22, 33, 62, 0.92));
     border: 2px solid var(--color-gold, #D4AF37);
     border-radius: 8px;
-    padding: 6px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8),
-                0 0 20px rgba(212, 175, 55, 0.3);
+    padding: 6px 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8),
+                0 0 15px rgba(212, 175, 55, 0.3);
     z-index: 100;
     backdrop-filter: blur(5px);
 }
 
-.mp-players-compact {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 6px;
-    align-items: start;
-}
-
 /* ═══════════════════════════════════════════════════════════ */
-/* TIMER CENTRAL */
+/* LIGNE SUPÉRIEURE : Noms + Segments + Timer */
 /* ═══════════════════════════════════════════════════════════ */
 
-.mp-timer-center {
+.mp-top-line {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0 8px;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
 }
 
-.mp-timer-compact {
+.mp-player-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex: 1;
+}
+
+.mp-player-info.player-1 {
+    background: rgba(76, 175, 80, 0.08);
+    border-left: 2px solid #4CAF50;
+    justify-content: flex-start;
+}
+
+.mp-player-info.player-2 {
+    background: rgba(244, 67, 54, 0.08);
+    border-right: 2px solid #f44336;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.mp-name {
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.mp-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--color-gold, #D4AF37);
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
+    min-width: 22px;
+    text-align: center;
+}
+
+.mp-timer-center {
     font-size: 20px;
     font-weight: bold;
     color: var(--color-gold, #D4AF37);
@@ -4702,121 +4738,99 @@ body.dark-mode .game-over-progression {
     letter-spacing: 2px;
     font-family: 'Courier New', monospace;
     white-space: nowrap;
-}
-
-.mp-player-card {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
-    padding: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.mp-player-card.player-1 {
-    border-left: 2px solid #4CAF50;
-}
-
-.mp-player-card.player-2 {
-    border-left: 2px solid #f44336;
-}
-
-.mp-player-name {
-    font-size: 9px;
-    font-weight: bold;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 3px;
-    text-align: center;
-    padding-bottom: 3px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.mp-segments {
-    text-align: center;
-    margin: 3px 0;
-}
-
-.mp-segments-label {
-    font-size: 7px;
-    color: #999;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-}
-
-.mp-segments-value {
-    font-size: 16px;
-    font-weight: bold;
-    color: var(--color-gold, #D4AF37);
-    font-family: 'Courier New', monospace;
-    text-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+    padding: 0 10px;
+    flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-/* MINI-BARRE POWER-UP (VERSION COMPACTE) */
+/* LIGNE INFÉRIEURE : Power-ups */
 /* ═══════════════════════════════════════════════════════════ */
 
-.mp-powerup-container {
-    margin-top: 3px;
-    padding-top: 3px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+.mp-bottom-line {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-height: 18px;
+}
+
+.mp-powerup-zone {
+    flex: 1;
+    display: flex;
+}
+
+.mp-powerup-zone:first-child {
+    justify-content: flex-start;
+    padding-left: 8px;
+}
+
+.mp-powerup-zone:last-child {
+    justify-content: flex-end;
+    padding-right: 8px;
+}
+
+.mp-powerup-spacer {
+    flex: 1;
+}
+
+.mp-powerup-compact {
+    display: flex;
+    align-items: center;
     gap: 0;
-    opacity: 0.4;
+    opacity: 0.3;
     transition: opacity 0.3s ease, gap 0.3s ease;
 }
 
-.mp-powerup-container.active {
+.mp-powerup-compact.active {
     opacity: 1;
     gap: 3px;
 }
 
-.mp-powerup-emoji {
-    font-size: 10px;
+.mp-pw-emoji {
+    font-size: 11px;
     display: none;
     line-height: 1;
 }
 
-.mp-powerup-container.active .mp-powerup-emoji {
+.mp-powerup-compact.active .mp-pw-emoji {
     display: inline-block;
 }
 
-.mp-powerup-bar {
-    width: 60px;
+.mp-pw-bar {
+    width: 55px;
     height: 6px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.mp-powerup-fill {
+.mp-pw-fill {
     height: 100%;
     width: 0%;
     transition: width 0.1s linear;
     border-radius: 3px;
 }
 
-/* Couleurs par type de power-up (même que solo) */
-.mp-powerup-container.ice .mp-powerup-fill {
+/* Couleurs power-ups */
+.mp-powerup-compact.ice .mp-pw-fill {
     background: linear-gradient(90deg, #008B8B, #1E90FF);
-    box-shadow: 0 0 8px rgba(30, 144, 255, 0.6);
+    box-shadow: 0 0 6px rgba(30, 144, 255, 0.5);
 }
 
-.mp-powerup-container.rock .mp-powerup-fill {
+.mp-powerup-compact.rock .mp-pw-fill {
     background: linear-gradient(90deg, #FFD700, #FFA500);
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
 }
 
-.mp-powerup-container.fire .mp-powerup-fill {
+.mp-powerup-compact.fire .mp-pw-fill {
     background: linear-gradient(90deg, #FF4500, #FF6347);
-    box-shadow: 0 0 8px rgba(255, 69, 0, 0.6);
+    box-shadow: 0 0 6px rgba(255, 69, 0, 0.5);
 }
 
-.mp-powerup-container.ghost .mp-powerup-fill {
+.mp-powerup-compact.ghost .mp-pw-fill {
     background: linear-gradient(90deg, #9370DB, #BA55D3);
-    box-shadow: 0 0 8px rgba(186, 85, 211, 0.6);
+    box-shadow: 0 0 6px rgba(186, 85, 211, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -4824,26 +4838,30 @@ body.dark-mode .game-over-progression {
 /* ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 600px) {
-    .mp-scoreboard {
+    .mp-scoreboard-2lines {
         width: 95%;
-        padding: 4px;
+        padding: 5px 6px;
     }
 
-    .mp-players-compact {
-        gap: 4px;
+    .mp-name {
+        font-size: 9px;
     }
 
-    .mp-timer-compact {
+    .mp-value {
         font-size: 16px;
-        padding: 0 4px;
     }
 
-    .mp-segments-value {
-        font-size: 14px;
+    .mp-timer-center {
+        font-size: 18px;
+        padding: 0 6px;
     }
 
-    .mp-powerup-bar {
-        width: 50px;
+    .mp-pw-bar {
+        width: 45px;
         height: 5px;
+    }
+
+    .mp-pw-emoji {
+        font-size: 10px;
     }
 }

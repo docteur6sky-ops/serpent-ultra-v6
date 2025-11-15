@@ -494,15 +494,14 @@ class MultiplayerSnakeGame {
         const container = document.getElementById(containerId);
         if (!container || !playerData) return;
 
-        const emoji = container.querySelector('.mp-powerup-emoji');
-        const fill = container.querySelector('.mp-powerup-fill');
+        const emoji = container.querySelector('.mp-pw-emoji');
+        const fill = container.querySelector('.mp-pw-fill');
 
         if (!emoji || !fill) return;
 
         const powerupType = playerData.activePowerup;
         const powerupEndTime = playerData.powerupEndTime;
 
-        // Emojis par type
         const powerupEmojis = {
             ice: '❄️',
             fire: '🔥',
@@ -511,23 +510,16 @@ class MultiplayerSnakeGame {
         };
 
         if (powerupType && powerupEndTime) {
-            // ✅ POWER-UP ACTIF
             const timeRemaining = Math.max(0, powerupEndTime - Date.now());
-            const duration = 5000; // 5 secondes (ajuste selon ton jeu)
+            const duration = 5000;
             const percentage = (timeRemaining / duration) * 100;
 
-            // Activer le conteneur
-            container.className = `mp-powerup-container active ${powerupType}`;
-
-            // Afficher l'emoji
+            container.className = `mp-powerup-compact active ${powerupType}`;
             emoji.textContent = powerupEmojis[powerupType] || '';
-
-            // Mettre à jour la barre
             fill.style.width = Math.max(0, percentage) + '%';
         } else {
-            // ❌ PAS DE POWER-UP
-            container.className = 'mp-powerup-container';
-            emoji.textContent = '\u00A0'; // Espace insécable
+            container.className = 'mp-powerup-compact';
+            emoji.textContent = '\u00A0';
             fill.style.width = '0%';
         }
     }

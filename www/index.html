@@ -518,41 +518,44 @@
         <div class="screen hidden" id="game-multi">
             <div class="game-area">
                 <div class="game-column">
-                    <!-- Tableau Compact : J1 | Timer | J2 (3 colonnes) -->
-                    <div id="multi-score-board" class="mp-scoreboard">
-                        <div class="mp-players-compact">
-                            <!-- Joueur 1 (Gauche) -->
-                            <div class="mp-player-card player-1">
-                                <div class="mp-player-name" id="multi-player1-name">Joueur 1</div>
-                                <div class="mp-segments">
-                                    <div class="mp-segments-label">Segments</div>
-                                    <div class="mp-segments-value" id="multi-player1-segments">1</div>
-                                </div>
-                                <div class="mp-powerup-container" id="multi-player1-powerup">
-                                    <span class="mp-powerup-emoji"></span>
-                                    <div class="mp-powerup-bar">
-                                        <div class="mp-powerup-fill"></div>
-                                    </div>
+                    <!-- Tableau 2 Lignes : Info | Power-ups -->
+                    <div id="multi-score-board" class="mp-scoreboard-2lines">
+                        <!-- Ligne supérieure : Noms + Segments + Timer -->
+                        <div class="mp-top-line">
+                            <!-- Joueur 1 -->
+                            <div class="mp-player-info player-1">
+                                <div class="mp-name" id="multi-player1-name">Joueur 1</div>
+                                <div class="mp-value" id="multi-player1-segments">1</div>
+                            </div>
+
+                            <!-- Timer centre -->
+                            <div class="mp-timer-center" id="multi-timer">5:00</div>
+
+                            <!-- Joueur 2 -->
+                            <div class="mp-player-info player-2">
+                                <div class="mp-value" id="multi-player2-segments">1</div>
+                                <div class="mp-name" id="multi-player2-name">Joueur 2</div>
+                            </div>
+                        </div>
+
+                        <!-- Ligne inférieure : Power-ups -->
+                        <div class="mp-bottom-line">
+                            <!-- Power-up Joueur 1 (gauche) -->
+                            <div class="mp-powerup-zone">
+                                <div class="mp-powerup-compact" id="multi-player1-powerup">
+                                    <span class="mp-pw-emoji"></span>
+                                    <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
                                 </div>
                             </div>
 
-                            <!-- Timer (Centre) -->
-                            <div class="mp-timer-center">
-                                <div id="multi-timer" class="mp-timer-compact">5:00</div>
-                            </div>
+                            <!-- Espace central vide -->
+                            <div class="mp-powerup-spacer"></div>
 
-                            <!-- Joueur 2 (Droite) -->
-                            <div class="mp-player-card player-2">
-                                <div class="mp-player-name" id="multi-player2-name">Joueur 2</div>
-                                <div class="mp-segments">
-                                    <div class="mp-segments-label">Segments</div>
-                                    <div class="mp-segments-value" id="multi-player2-segments">1</div>
-                                </div>
-                                <div class="mp-powerup-container" id="multi-player2-powerup">
-                                    <span class="mp-powerup-emoji"></span>
-                                    <div class="mp-powerup-bar">
-                                        <div class="mp-powerup-fill"></div>
-                                    </div>
+                            <!-- Power-up Joueur 2 (droite) -->
+                            <div class="mp-powerup-zone">
+                                <div class="mp-powerup-compact" id="multi-player2-powerup">
+                                    <span class="mp-pw-emoji"></span>
+                                    <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
                                 </div>
                             </div>
                         </div>
