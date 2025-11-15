@@ -4532,3 +4532,98 @@ body.dark-mode .game-over-progression {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* MULTIPLAYER - GAME OVER OVERLAY */
+/* ═══════════════════════════════════════════════════════════ */
+
+#mp-gameover-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.mp-gameover-content {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    border: 2px solid var(--color-gold, #D4AF37);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
+.mp-gameover-title {
+    font-size: 36px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: var(--color-gold, #D4AF37);
+    text-shadow: 0 0 10px var(--color-gold, #D4AF37);
+}
+
+.mp-gameover-result {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.mp-gameover-stats {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.mp-stat {
+    text-align: center;
+}
+
+.mp-stat-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.mp-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-gold, #D4AF37);
+}
+
+.mp-gameover-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.mp-gameover-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border: 2px solid var(--color-gold, #D4AF37);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.mp-gameover-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+}
+
+.mp-gameover-btn.secondary {
+    background: linear-gradient(135deg, #333, #555);
+}

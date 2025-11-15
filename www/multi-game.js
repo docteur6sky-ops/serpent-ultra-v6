@@ -545,60 +545,29 @@ class MultiplayerSnakeGame {
                 ? '💀 Adversaire éliminé !'
                 : '💀 Les deux sont morts !';
 
-        // Créer l'overlay de game over
+        // Créer l'overlay de game over (styles dans snake.css)
         const gameOverOverlay = document.createElement('div');
         gameOverOverlay.id = 'mp-gameover-overlay';
-        gameOverOverlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            padding: 20px;
-        `;
 
         gameOverOverlay.innerHTML = `
-            <div style="text-align: center; max-width: 400px;">
-                <h1 style="font-size: 36px; margin-bottom: 10px; color: #D4AF37; text-shadow: 0 0 10px #D4AF37;">${resultMessage}</h1>
-                <p style="font-size: 16px; color: #C0C0C0; margin-bottom: 20px;">${reasonText}</p>
-                <div style="margin: 20px 0;">
-                    <div style="font-size: 20px; margin: 12px 0;">
-                        <span style="color: #4CAF50;">Vous:</span> <strong>${mySegments} segments</strong>
+            <div class="mp-gameover-content">
+                <h1 class="mp-gameover-title">${resultMessage}</h1>
+                <p class="mp-gameover-result">${reasonText}</p>
+
+                <div class="mp-gameover-stats">
+                    <div class="mp-stat">
+                        <div class="mp-stat-label">Vous</div>
+                        <div class="mp-stat-value">${mySegments}</div>
                     </div>
-                    <div style="font-size: 20px; margin: 12px 0;">
-                        <span style="color: #F44336;">Adversaire:</span> <strong>${opponentSegments} segments</strong>
+                    <div class="mp-stat">
+                        <div class="mp-stat-label">Adversaire</div>
+                        <div class="mp-stat-value">${opponentSegments}</div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 16px; justify-content: center; margin-top: 24px;">
-                    <button id="mp-replay-btn" style="
-                        padding: 12px 24px;
-                        font-size: 16px;
-                        background: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-weight: bold;
-                        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-                    ">🔄 Rejouer</button>
-                    <button id="mp-menu-btn" style="
-                        padding: 12px 24px;
-                        font-size: 16px;
-                        background: #D4AF37;
-                        color: #000;
-                        border: none;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-weight: bold;
-                        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
-                    ">🏠 Menu</button>
+
+                <div class="mp-gameover-buttons">
+                    <button id="mp-replay-btn" class="mp-gameover-btn">🔄 Rejouer</button>
+                    <button id="mp-menu-btn" class="mp-gameover-btn secondary">🏠 Menu</button>
                 </div>
             </div>
         `;
