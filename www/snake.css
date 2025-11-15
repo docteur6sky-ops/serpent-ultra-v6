@@ -4660,10 +4660,8 @@ body.dark-mode .game-over-progression {
 /* ═══════════════════════════════════════════════════════════ */
 
 .mp-scoreboard-2lines {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;      /* ✅ Dans le flux normal comme en solo */
+    margin: 0 auto;          /* ✅ Centré horizontalement */
     width: 88%;
     max-width: 480px;
 
