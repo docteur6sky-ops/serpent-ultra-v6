@@ -51,8 +51,19 @@
 
     const TROPHIES = {
         // ═══════════════════════════════════════
-        // SOLO - PROGRESSION (2)
+        // SOLO - PROGRESSION (3)
         // ═══════════════════════════════════════
+        ver_de_terre: {
+            name: 'Ver de Terre',
+            emoji: '🪱',
+            description: 'Atteindre le niveau 5',
+            rarity: 1,
+            xp: 500,
+            secret: false,
+            category: 'progression',
+            check: () => career.maxLevel >= 5
+        },
+
         roi_reptiles: {
             name: 'Roi des Reptiles',
             emoji: '👑',
@@ -112,6 +123,53 @@
             secret: false,
             category: 'destruction',
             check: () => career.totalWalls >= 200
+        },
+
+        // ═══════════════════════════════════════
+        // SOLO - EXPLOITS & MAÎTRISE (4)
+        // ═══════════════════════════════════════
+        anaconda: {
+            name: 'Anaconda',
+            emoji: '🦎',
+            description: 'Atteindre 50 segments de longueur',
+            rarity: 2,
+            xp: 1000,
+            secret: false,
+            category: 'exploits',
+            check: () => career.bestScore >= 5000  // Proxy : 50 segments ≈ 5000 pts
+        },
+
+        perfectionniste: {
+            name: 'Perfectionniste',
+            emoji: '💯',
+            description: 'Atteindre le niveau 10 sans manger de crâne',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'maitrise',
+            check: () => false  // TODO: Nécessite tracking skullsEaten
+        },
+
+        puriste: {
+            name: 'Puriste',
+            emoji: '🚫',
+            description: 'Atteindre le niveau 10 sans power-up',
+            rarity: 3,
+            xp: 1500,
+            secret: false,
+            category: 'maitrise',
+            check: () => career.maxLevel >= 10 && career.totalPowerups === 0
+        },
+
+        maitre: {
+            name: 'Maître',
+            emoji: '🥇',
+            description: 'Obtenir 20 000 points en Difficile',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'maitrise',
+            check: () => career.bestScore >= 20000  // TODO: Vérifier difficulté
         },
 
         // ═══════════════════════════════════════
