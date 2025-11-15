@@ -4895,7 +4895,7 @@ body.dark-mode .game-over-progression {
 /* ═══════════════════════════════════════════════════════════ */
 
 .career-btn-floating {
-    position: fixed;
+    position: absolute;
     top: 15px;
     right: 15px;
     width: 50px;
