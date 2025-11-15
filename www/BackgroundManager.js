@@ -68,17 +68,17 @@ class BackgroundManager {
 
         const imagePath = this.backgrounds[screenName];
 
-        // ✅ NOUVEAU : Appliquer SEULEMENT sur body
-        if (document.body) {
-            document.body.style.backgroundImage = `url('${imagePath}')`;
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center center';
-            document.body.style.backgroundRepeat = 'no-repeat';
-            document.body.style.backgroundAttachment = 'scroll';
+        // ✅ SOLUTION FINALE : Appliquer sur .phone (qui bouge quand body scroll)
+        const phone = document.querySelector('.phone');
+        if (phone) {
+            phone.style.backgroundImage = `url('${imagePath}')`;
+            phone.style.backgroundSize = 'cover';
+            phone.style.backgroundPosition = 'center center';
+            phone.style.backgroundRepeat = 'no-repeat';
+            phone.style.backgroundAttachment = 'scroll';
         }
 
-        // ❌ SUPPRIMÉ : Ne plus appliquer sur .phone
-        // Le fond est maintenant UNIQUEMENT sur body
+        // Ne plus toucher document.body
 
         this.currentBackground = screenName;
         if (this.debug) console.log(`[BackgroundManager] ✅ Background activé: ${screenName}`);
@@ -131,10 +131,10 @@ class BackgroundManager {
      * Supprime le fond d'écran
      */
     clear() {
-        if (document.body) {
-            document.body.style.backgroundImage = 'none';
+        const phone = document.querySelector('.phone');
+        if (phone) {
+            phone.style.backgroundImage = 'none';
         }
-        // Ne plus toucher .phone
         this.currentBackground = null;
         if (this.debug) console.log('[BackgroundManager] Background effacé');
     }

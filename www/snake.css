@@ -52,11 +52,8 @@ body {
     /* Font */
     font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-    /* Fond d'écran - Géré par BackgroundManager */
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-attachment: scroll;  /* Scroll avec le contenu */
+    /* Fond d'écran maintenant géré sur .phone (pas body) */
+    /* PAS de propriétés background-* */
 
     /* Positioning */
     position: relative;
