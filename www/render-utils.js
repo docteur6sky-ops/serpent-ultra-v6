@@ -216,6 +216,27 @@ const RenderUtils = {
     },
 
     /**
+     * Obtenir une couleur plus foncée pour les bordures
+     * @param {string} hexColor - Couleur hex (#RRGGBB)
+     * @returns {string} Couleur assombrie
+     */
+    getDarkerColor(hexColor) {
+        // Convertit #RRGGBB en version plus foncée
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+
+        // Assombrir de 40%
+        const darker = (val) => Math.max(0, Math.floor(val * 0.6));
+
+        const newR = darker(r).toString(16).padStart(2, '0');
+        const newG = darker(g).toString(16).padStart(2, '0');
+        const newB = darker(b).toString(16).padStart(2, '0');
+
+        return `#${newR}${newG}${newB}`;
+    },
+
+    /**
      * Dessine un serpent multijoueur complet
      * @param {CanvasRenderingContext2D} ctx - Contexte du canvas
      * @param {Array} segments - Tableau de segments
@@ -232,8 +253,20 @@ const RenderUtils = {
 
         segments.forEach((segment, i) => {
             const fillColor = isAlive ? color : '#666666';
+
+            // ✅ Dessiner le segment
             ctx.fillStyle = fillColor;
             ctx.fillRect(
+                segment.x * cellSize,
+                segment.y * cellSize,
+                cellSize,
+                cellSize
+            );
+
+            // ✅ BORDURE pour chaque segment (comme en solo)
+            ctx.strokeStyle = this.getDarkerColor(fillColor);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
                 segment.x * cellSize,
                 segment.y * cellSize,
                 cellSize,
