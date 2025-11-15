@@ -2273,7 +2273,9 @@ canvas.invincible-power {
     --bg-bar: rgba(0, 0, 0, 0.1);
     --border-bar: rgba(0, 0, 0, 0.15);
     --btn-gradient-multi: linear-gradient(135deg, #d4a574, #b8935f);
-    --btn-secondary: linear-gradient(135deg, #8B4513, #A0522D);
+    --btn-primary: linear-gradient(135deg, #d4a574, #b8935f);       /* Gold/brown */
+    --btn-secondary: linear-gradient(135deg, #8B4513, #A0522D);     /* Marron foncé */
+    --btn-leaderboard: linear-gradient(135deg, #FFD700, #FFA500);   /* Or vif */
     --color-navy-alpha: rgba(26, 26, 46, 0.92);      /* Navy foncé (identique dark) */
     --color-purple-alpha: rgba(22, 33, 62, 0.92);    /* Purple foncé (identique dark) */
     --text-board: #FFFFFF;                           /* Blanc sur fond foncé */
@@ -2352,7 +2354,9 @@ body.dark-mode {
     --bg-bar: rgba(255, 255, 255, 0.1);
     --border-bar: rgba(255, 255, 255, 0.15);
     --btn-gradient-multi: linear-gradient(135deg, #667eea, #764ba2);
-    --btn-secondary: linear-gradient(135deg, #333, #555);
+    --btn-primary: linear-gradient(135deg, #667eea, #764ba2);       /* Violet */
+    --btn-secondary: linear-gradient(135deg, #333, #555);           /* Gris */
+    --btn-leaderboard: linear-gradient(135deg, #00CED1, #20B2AA);   /* Cyan/turquoise */
     --color-navy-alpha: rgba(26, 26, 46, 0.92);
     --color-purple-alpha: rgba(22, 33, 62, 0.92);
     --text-board: #f1f5f9;                       /* Blanc sur fond sombre */
@@ -4577,7 +4581,7 @@ body.dark-mode .game-over-progression {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: var(--bg-overlay);
+    background: transparent;  /* ✅ Transparent - on voit seulement la popup */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -4649,7 +4653,7 @@ body.dark-mode .game-over-progression {
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: var(--btn-gradient-multi);
+    background: var(--btn-primary);     /* ✅ Thématisé (violet dark, gold light) */
     color: var(--text-board);
 }
 
@@ -4659,7 +4663,11 @@ body.dark-mode .game-over-progression {
 }
 
 .mp-gameover-btn.secondary {
-    background: var(--btn-secondary);
+    background: var(--btn-secondary);   /* ✅ Thématisé (gris dark, marron light) */
+}
+
+.mp-gameover-btn.leaderboard {
+    background: var(--btn-leaderboard); /* ✅ Nouveau style (cyan dark, or light) */
 }
 
 /* ═══════════════════════════════════════════════════════════ */

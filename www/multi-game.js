@@ -2,6 +2,12 @@
 // MULTIPLAYER SNAKE GAME - MODE MULTIJOUEUR ENCAPSULÉ
 // ============================================
 
+// ✅ Fonction placeholder pour le leaderboard (à implémenter plus tard)
+window.showLeaderboard = function() {
+    alert('🏆 Leaderboard mondial - Fonctionnalité à venir !');
+    // TODO : Implémenter affichage leaderboard
+};
+
 class MultiplayerSnakeGame {
     constructor() {
         // Canvas dédié au multijoueur
@@ -621,6 +627,7 @@ class MultiplayerSnakeGame {
 
                 <div class="mp-gameover-buttons">
                     <button id="mp-replay-btn" class="mp-gameover-btn">🔄 Rejouer</button>
+                    <button id="mp-leaderboard-btn" class="mp-gameover-btn leaderboard">🏆 Leaderboard</button>
                     <button id="mp-menu-btn" class="mp-gameover-btn secondary">🏠 Menu</button>
                 </div>
             </div>
@@ -635,6 +642,10 @@ class MultiplayerSnakeGame {
         document.getElementById('mp-replay-btn').onclick = () => {
             gameOverOverlay.remove();
             this.replay();
+        };
+
+        document.getElementById('mp-leaderboard-btn').onclick = () => {
+            window.showLeaderboard();
         };
 
         document.getElementById('mp-menu-btn').onclick = () => {
