@@ -1122,22 +1122,29 @@ body.dark-mode .game-control-btn:hover {
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 40px;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
 /* Carte individuelle */
 .stat-card {
     background: var(--card-bg, rgba(255, 255, 255, 0.05));
     border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
-    border-radius: 15px;
-    padding: 25px 15px;
+    border-radius: 12px;
+    padding: 15px 10px;
     text-align: center;
+
+    /* ✅ Centrage vertical */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
     transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     border-color: var(--color-gold, #D4AF37);
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
 }
@@ -1149,30 +1156,41 @@ body.dark-mode .game-control-btn:hover {
 
 /* Label (texte descriptif) */
 .stat-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary, #999);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+
+    /* ✅ Force sur 1 ligne */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Valeur (donnée) */
 .stat-value {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--text-primary, #fff);
     line-height: 1.2;
+
+    /* ✅ Centrage parfait */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Valeurs spéciales colorées */
 .stat-score {
     color: var(--color-gold, #D4AF37);
-    font-size: 36px;
+    font-size: 32px;
 }
 
 .stat-xp {
     color: var(--color-gold, #D4AF37);
+    font-size: 22px;
 }
 
 .stat-level {
@@ -1181,17 +1199,17 @@ body.dark-mode .game-control-btn:hover {
 
 /* Emoji difficulté (très gros) */
 .stat-difficulty-emoji {
-    font-size: 48px;
+    font-size: 42px;
     line-height: 1;
 }
 
 /* Power-ups */
 .stat-powerups-values {
-    font-size: 24px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .stat-powerups-values span {
@@ -1199,10 +1217,51 @@ body.dark-mode .game-control-btn:hover {
     color: var(--text-primary, #fff);
 }
 
+/* Conteneur boutons */
+.menu-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+/* Boutons généraux (thématiques) */
+.menu-btn {
+    padding: 15px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+
+    /* ✅ Couleurs adaptatives */
+    background: var(--btn-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+    color: var(--btn-text, #fff);
+    border: 2px solid var(--btn-border, transparent);
+}
+
+.menu-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    background: var(--btn-hover-bg, linear-gradient(135deg, #764ba2 0%, #667eea 100%));
+}
+
+.menu-btn:active {
+    transform: translateY(0);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 12px 8px;
     }
 
     .stat-wide {
@@ -1220,11 +1279,20 @@ body.dark-mode .game-control-btn:hover {
     }
 
     .stat-value {
-        font-size: 24px;
+        font-size: 20px;
     }
 
     .stat-score {
-        font-size: 28px;
+        font-size: 26px;
+    }
+
+    .menu-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .menu-btn {
+        width: 100%;
     }
 }
 
@@ -2135,6 +2203,12 @@ canvas.invincible-power {
     /* Bordures */
     --border-color: rgba(107, 68, 35, 0.4);
 
+    /* Cartes et boutons stats */
+    --card-bg: rgba(107, 68, 35, 0.05);
+    --btn-bg: linear-gradient(135deg, #D4AF37 0%, #b8941f 100%);
+    --btn-text: #2c1810;
+    --btn-border: rgba(212, 175, 55, 0.3);
+
     /* Sliders */
     --slider-track: #e2e8f0;
     --slider-thumb: var(--gold-medium);
@@ -2200,6 +2274,12 @@ body.dark-mode {
 
     /* Bordures */
     --border-color: rgba(14, 116, 144, 0.4);
+
+    /* Cartes et boutons stats */
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --btn-bg: linear-gradient(135deg, #008B8B 0%, #00a8cc 100%);
+    --btn-text: #0a0a1e;
+    --btn-border: rgba(0, 139, 139, 0.3);
 
     /* Sliders */
     --slider-track: #4a5568;
