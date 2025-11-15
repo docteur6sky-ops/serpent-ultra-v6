@@ -1026,7 +1026,7 @@ class Room {
                 }
 
                 // Vérifier collision tête vs corps
-                const bodyCollision = player.snake.collidesWithBody(opponent.snake);
+                const bodyCollision = player.snake.collidesWithSnake(opponent.snake);
 
                 if (bodyCollision) {
                     logger.debug('COLLISION', `${player.id} touche corps de ${opponent.id} - MaT te(${myHead.x},${myHead.y}) dir(${player.snake.direction.dx},${player.snake.direction.dy}) vs OpponentTête(${opponentHead.x},${opponentHead.y}) dir(${opponent.snake.direction.dx},${opponent.snake.direction.dy})`);
