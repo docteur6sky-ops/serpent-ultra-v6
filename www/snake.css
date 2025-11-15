@@ -1164,7 +1164,7 @@ body.dark-mode .game-control-btn:hover {
 .stat-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-secondary, #999);
+    color: #fff;  /* ✅ CHANGÉ : Blanc pour meilleure lisibilité */
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 8px;
@@ -1175,6 +1175,9 @@ body.dark-mode .game-control-btn:hover {
     text-overflow: ellipsis;
     width: 100%;
     text-align: center;
+
+    /* ✅ NOUVEAU : Ombre pour lisibilité */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Valeur (donnée) */
@@ -1217,6 +1220,7 @@ body.dark-mode .game-control-btn:hover {
     align-items: center;
     justify-content: center;
     width: 100%;
+    margin: 0 auto;  /* ✅ Centrage additionnel */
 }
 
 /* Power-ups - Centrage parfait */
@@ -1230,6 +1234,7 @@ body.dark-mode .game-control-btn:hover {
     /* ✅ NOUVEAU : Force centrage */
     width: 100%;
     text-align: center;
+    flex-wrap: nowrap;  /* ✅ Assure que les spans sont centrés */
 }
 
 .stat-powerups-values span {
@@ -1286,10 +1291,12 @@ body.dark-mode .game-control-btn:hover {
 
     .stat-card {
         padding: 12px 8px;
+        text-align: center;  /* ✅ Force centrage */
     }
 
     .stat-wide {
         grid-column: span 2;
+        text-align: center;  /* ✅ Force centrage */
     }
 }
 
@@ -1300,6 +1307,10 @@ body.dark-mode .game-control-btn:hover {
 
     .stat-wide {
         grid-column: span 1;
+    }
+
+    .stat-label {
+        font-size: 11px;  /* ✅ Ajuste pour mobile */
     }
 
     .stat-value {
