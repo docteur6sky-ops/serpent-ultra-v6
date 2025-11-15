@@ -2249,7 +2249,7 @@ canvas.invincible-power {
     --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 
     /* Bordures */
-    --border-color: rgba(107, 68, 35, 0.4);
+    --border-color: #d8d800ff;  /* Gold en mode light */
 
     /* Cartes et boutons stats */
     --card-bg: rgba(107, 68, 35, 0.05);
@@ -2274,9 +2274,9 @@ canvas.invincible-power {
     --border-bar: rgba(0, 0, 0, 0.15);
     --btn-gradient-multi: linear-gradient(135deg, #d4a574, #b8935f);
     --btn-secondary: linear-gradient(135deg, #8B4513, #A0522D);
-    --color-navy-alpha: rgba(222, 184, 135, 0.85);   /* Burlywood clair */
-    --color-purple-alpha: rgba(245, 222, 179, 0.85); /* Wheat clair */
-    --text-board: #FFFFFF;                           /* Blanc sur fond clair */
+    --color-navy-alpha: rgba(26, 26, 46, 0.92);      /* Navy foncé (identique dark) */
+    --color-purple-alpha: rgba(22, 33, 62, 0.92);    /* Purple foncé (identique dark) */
+    --text-board: #FFFFFF;                           /* Blanc sur fond foncé */
     --text-board-value: #8B4513;                     /* Marron pour scores/timer */
 }
 
