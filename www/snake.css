@@ -94,7 +94,7 @@ body::before {
     height: auto;
     aspect-ratio: 1/1;
     overflow: hidden;
-    border: 2px solid #D4AF37;
+    border: 2px solid var(--border-color);     /* ✅ Variable adaptative */
     border-radius: 15px;
 }
 
@@ -147,8 +147,8 @@ body::before {
     --color-red-hard: #FF1744;
 
     /* ✅ Ombres et bordures - Mode Light (Gold) */
-    --border-color: #d8d800ff;
-    --border-canvas-color: #d8d800ff;
+    --border-color: #D4AF37;
+    --border-canvas-color: #D4AF37;
     --score-box-border: rgba(216, 216, 0, 0.3);
     --shadow-gold: 0 0 20px rgba(216, 216, 0, 0.4);
     --shadow-primary: 0 8px 30px rgba(216, 216, 0, 0.3);
@@ -2249,7 +2249,7 @@ canvas.invincible-power {
     --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 
     /* Bordures */
-    --border-color: #d8d800ff;  /* Gold en mode light */
+    --border-color: #D4AF37;    /* ✅ Gold solo (identique partout) */
 
     /* Cartes et boutons stats */
     --card-bg: rgba(107, 68, 35, 0.05);
@@ -2332,7 +2332,7 @@ body.dark-mode {
     --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 
     /* Bordures */
-    --border-color: rgba(14, 116, 144, 0.4);
+    --border-color: #008B8B;    /* ✅ Dark cyan (identique partout) */
 
     /* Cartes et boutons stats */
     --card-bg: rgba(255, 255, 255, 0.08);
@@ -4419,7 +4419,7 @@ body.dark-mode .game-over-progression {
 .overlay-content {
     position: relative;
     background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
-    border: 2px solid #008B8B;
+    border: 2px solid var(--border-color);     /* ✅ Variable adaptative */
     border-radius: 20px;
     padding: 30px 40px;
     max-width: 450px;
