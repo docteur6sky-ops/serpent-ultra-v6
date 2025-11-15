@@ -314,8 +314,8 @@ class MultiplayerSnakeGame {
             }
         }
 
-        // Dessiner l'UI des power-ups actifs
-        this.drawPowerupUI();
+        // ❌ SUPPRIMÉ - Power-ups maintenant affichés dans le tableau HTML (mini-barres)
+        // this.drawPowerupUI();
     }
 
     // ============================================
@@ -350,60 +350,61 @@ class MultiplayerSnakeGame {
         this.ctx.globalAlpha = 1;
     }
 
-    drawPowerupUI() {
-        if (!this.serverState || !this.serverState.players) return;
+    // ❌ FONCTION DÉSACTIVÉE - Remplacée par les mini-barres HTML dans le tableau
+    // drawPowerupUI() {
+    //     if (!this.serverState || !this.serverState.players) return;
 
-        // Trouver le power-up actif du joueur local
-        const myPlayer = this.serverState.players[this.client.playerId];
-        if (!myPlayer || !myPlayer.activePowerup || !myPlayer.powerupEndTime) return;
+    //     // Trouver le power-up actif du joueur local
+    //     const myPlayer = this.serverState.players[this.client.playerId];
+    //     if (!myPlayer || !myPlayer.activePowerup || !myPlayer.powerupEndTime) return;
 
-        const timeRemaining = Math.max(0, myPlayer.powerupEndTime - Date.now());
-        if (timeRemaining <= 0) return;
+    //     const timeRemaining = Math.max(0, myPlayer.powerupEndTime - Date.now());
+    //     if (timeRemaining <= 0) return;
 
-        const powerupEmojis = {
-            fire: '🔥',
-            ice: '❄️',
-            ghost: '👻',
-            rock: '🪨'
-        };
+    //     const powerupEmojis = {
+    //         fire: '🔥',
+    //         ice: '❄️',
+    //         ghost: '👻',
+    //         rock: '🪨'
+    //     };
 
-        const powerupNames = {
-            fire: 'FIRE',
-            ice: 'ICE',
-            ghost: 'GHOST',
-            rock: 'ROCK'
-        };
+    //     const powerupNames = {
+    //         fire: 'FIRE',
+    //         ice: 'ICE',
+    //         ghost: 'GHOST',
+    //         rock: 'ROCK'
+    //     };
 
-        const powerupColors = {
-            fire: '#FF5722',
-            ice: '#008B8B',
-            ghost: '#FFFFFF',
-            rock: '#D2B48C'
-        };
+    //     const powerupColors = {
+    //         fire: '#FF5722',
+    //         ice: '#008B8B',
+    //         ghost: '#FFFFFF',
+    //         rock: '#D2B48C'
+    //     };
 
-        // Position en haut au centre
-        const centerX = this.CANVAS_SIZE / 2;
-        const y = 20;
+    //     // Position en haut au centre
+    //     const centerX = this.CANVAS_SIZE / 2;
+    //     const y = 20;
 
-        // Fond semi-transparent
-        const text = `${powerupEmojis[myPlayer.activePowerup]} ${powerupNames[myPlayer.activePowerup]} ${(timeRemaining / 1000).toFixed(1)}s`;
-        this.ctx.font = 'bold 16px Arial';
-        const textWidth = this.ctx.measureText(text).width;
+    //     // Fond semi-transparent
+    //     const text = `${powerupEmojis[myPlayer.activePowerup]} ${powerupNames[myPlayer.activePowerup]} ${(timeRemaining / 1000).toFixed(1)}s`;
+    //     this.ctx.font = 'bold 16px Arial';
+    //     const textWidth = this.ctx.measureText(text).width;
 
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        this.ctx.fillRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
+    //     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    //     this.ctx.fillRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
 
-        // Bordure colorée
-        this.ctx.strokeStyle = powerupColors[myPlayer.activePowerup];
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
+    //     // Bordure colorée
+    //     this.ctx.strokeStyle = powerupColors[myPlayer.activePowerup];
+    //     this.ctx.lineWidth = 2;
+    //     this.ctx.strokeRect(centerX - textWidth / 2 - 10, y - 12, textWidth + 20, 24);
 
-        // Texte
-        this.ctx.fillStyle = powerupColors[myPlayer.activePowerup];
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(text, centerX, y);
-    }
+    //     // Texte
+    //     this.ctx.fillStyle = powerupColors[myPlayer.activePowerup];
+    //     this.ctx.textAlign = 'center';
+    //     this.ctx.textBaseline = 'middle';
+    //     this.ctx.fillText(text, centerX, y);
+    // }
 
     // ============================================
     // TIMER & SCOREBOARD
@@ -428,49 +429,106 @@ class MultiplayerSnakeGame {
     }
 
     updateScoreBoard() {
-        if (!this.serverState) return;
+        if (!this.serverState || !this.client?.playerId) return;
 
-        // Mettre à jour le timer
+        // ═══════════════════════════════════════════════════════════
+        // TIMER
+        // ═══════════════════════════════════════════════════════════
         const timerElement = document.getElementById('multi-timer');
-        if (timerElement && this.serverState.matchTimeRemaining !== undefined) {
-            const timeRemaining = this.serverState.matchTimeRemaining;
-            const minutes = Math.floor(timeRemaining / 60000);
-            const seconds = Math.floor((timeRemaining % 60000) / 1000);
+        const timeRemaining = this.serverState.matchTimeRemaining || 0;
+        const minutes = Math.floor(timeRemaining / 60000);
+        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+
+        if (timerElement) {
             timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-            // Changer le style si temps critique
+            // Temps critique (< 60s) - Rouge
             if (timeRemaining < 60000) {
                 timerElement.style.color = '#FF4444';
-                timerElement.style.fontWeight = 'bold';
+            } else {
+                timerElement.style.color = ''; // Reset
             }
         }
 
-        // Mettre à jour les scores (segments)
-        if (this.serverState.segments && this.client.playerId) {
-            const segments = this.serverState.segments;
-            const players = Object.keys(segments);
+        // ═══════════════════════════════════════════════════════════
+        // DÉTERMINER QUEL JOUEUR EST QUEL ID
+        // ═══════════════════════════════════════════════════════════
+        const myId = this.client.playerId;
+        const players = this.serverState.players || {};
+        const playerIds = Object.keys(players);
+        const opponentId = playerIds.find(id => id !== myId);
 
-            const myId = this.client.playerId;
-            const opponentId = players.find(id => id !== myId);
+        if (!opponentId) return;
 
-            const mySegments = segments[myId] || 1;
-            const oppSegments = segments[opponentId] || 1;
+        // Déterminer qui est P1 et P2 (le joueur local est toujours P1)
+        const p1Id = myId;
+        const p2Id = opponentId;
 
-            // ✅ NOUVEAU - Récupérer les pseudos depuis serverState.players
-            const myPseudo = this.serverState.players?.[myId]?.pseudo || `J${this.client.playerNumber}`;
-            const oppPseudo = this.serverState.players?.[opponentId]?.pseudo || `J${this.client.playerNumber === 1 ? 2 : 1}`;
+        // ═══════════════════════════════════════════════════════════
+        // PSEUDOS
+        // ═══════════════════════════════════════════════════════════
+        const p1Name = document.getElementById('multi-player1-name');
+        const p2Name = document.getElementById('multi-player2-name');
 
-            const p1El = document.getElementById('multi-player1-score');
-            const p2El = document.getElementById('multi-player2-score');
+        if (p1Name) p1Name.textContent = players[p1Id]?.pseudo || 'Joueur 1';
+        if (p2Name) p2Name.textContent = players[p2Id]?.pseudo || 'Joueur 2';
 
-            // Afficher avec pseudos au lieu de "J1" et "J2"
-            if (this.client.playerNumber === 1) {
-                if (p1El) p1El.textContent = `${myPseudo}: ${mySegments}`;
-                if (p2El) p2El.textContent = `${oppPseudo}: ${oppSegments}`;
-            } else {
-                if (p1El) p1El.textContent = `${oppPseudo}: ${oppSegments}`;
-                if (p2El) p2El.textContent = `${myPseudo}: ${mySegments}`;
-            }
+        // ═══════════════════════════════════════════════════════════
+        // SEGMENTS
+        // ═══════════════════════════════════════════════════════════
+        const segments = this.serverState.segments || {};
+        const p1Segments = document.getElementById('multi-player1-segments');
+        const p2Segments = document.getElementById('multi-player2-segments');
+
+        if (p1Segments) p1Segments.textContent = segments[p1Id] || 1;
+        if (p2Segments) p2Segments.textContent = segments[p2Id] || 1;
+
+        // ═══════════════════════════════════════════════════════════
+        // POWER-UPS (MINI-BARRES)
+        // ═══════════════════════════════════════════════════════════
+        this.updatePlayerPowerup('multi-player1-powerup', players[p1Id]);
+        this.updatePlayerPowerup('multi-player2-powerup', players[p2Id]);
+    }
+
+    updatePlayerPowerup(containerId, playerData) {
+        const container = document.getElementById(containerId);
+        if (!container || !playerData) return;
+
+        const emoji = container.querySelector('.mp-powerup-emoji');
+        const fill = container.querySelector('.mp-powerup-fill');
+
+        if (!emoji || !fill) return;
+
+        const powerupType = playerData.activePowerup;
+        const powerupEndTime = playerData.powerupEndTime;
+
+        // Emojis par type
+        const powerupEmojis = {
+            ice: '❄️',
+            fire: '🔥',
+            rock: '🪨',
+            ghost: '👻'
+        };
+
+        if (powerupType && powerupEndTime) {
+            // ✅ POWER-UP ACTIF
+            const timeRemaining = Math.max(0, powerupEndTime - Date.now());
+            const duration = 5000; // 5 secondes (ajuste selon ton jeu)
+            const percentage = (timeRemaining / duration) * 100;
+
+            // Activer le conteneur
+            container.className = `mp-powerup-container active ${powerupType}`;
+
+            // Afficher l'emoji
+            emoji.textContent = powerupEmojis[powerupType] || '';
+
+            // Mettre à jour la barre
+            fill.style.width = Math.max(0, percentage) + '%';
+        } else {
+            // ❌ PAS DE POWER-UP
+            container.className = 'mp-powerup-container';
+            emoji.textContent = '\u00A0'; // Espace insécable
+            fill.style.width = '0%';
         }
     }
 

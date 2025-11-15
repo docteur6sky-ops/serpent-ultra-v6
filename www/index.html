@@ -518,11 +518,43 @@
         <div class="screen hidden" id="game-multi">
             <div class="game-area">
                 <div class="game-column">
-                    <!-- Tableau J1 | Timer | J2 -->
-                    <div id="multi-score-board" style="display: flex; justify-content: space-between; width: 100%; max-width: 360px; margin: 0 auto 16px; background: linear-gradient(145deg, rgba(0,0,0,0.9), rgba(20,20,50,0.9)); border: 3px solid #D4AF37; border-radius: 12px; padding: 12px 16px; font-family: 'Press Start 2P', monospace; font-size: 14px; color: #00FF87;">
-                        <div id="multi-player1-score" style="flex: 1; text-align: left;">J1: 0</div>
-                        <div id="multi-timer" style="flex: 1; text-align: center; color: #D4AF37; font-weight: bold;">5:00</div>
-                        <div id="multi-player2-score" style="flex: 1; text-align: right;">J2: 0</div>
+                    <!-- Tableau J1 | Timer | J2 (AAA Design) -->
+                    <div id="multi-score-board" class="mp-scoreboard">
+                        <!-- Timer centré -->
+                        <div id="multi-timer" class="mp-timer">5:00</div>
+
+                        <!-- 2 colonnes joueurs -->
+                        <div class="mp-players">
+                            <!-- Joueur 1 (Toi) -->
+                            <div class="mp-player-card player-1">
+                                <div class="mp-player-name" id="multi-player1-name">Joueur 1</div>
+                                <div class="mp-segments">
+                                    <div class="mp-segments-label">Segments</div>
+                                    <div class="mp-segments-value" id="multi-player1-segments">1</div>
+                                </div>
+                                <div class="mp-powerup-container" id="multi-player1-powerup">
+                                    <span class="mp-powerup-emoji"></span>
+                                    <div class="mp-powerup-bar">
+                                        <div class="mp-powerup-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Joueur 2 (Adversaire) -->
+                            <div class="mp-player-card player-2">
+                                <div class="mp-player-name" id="multi-player2-name">Joueur 2</div>
+                                <div class="mp-segments">
+                                    <div class="mp-segments-label">Segments</div>
+                                    <div class="mp-segments-value" id="multi-player2-segments">1</div>
+                                </div>
+                                <div class="mp-powerup-container" id="multi-player2-powerup">
+                                    <span class="mp-powerup-emoji"></span>
+                                    <div class="mp-powerup-bar">
+                                        <div class="mp-powerup-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <canvas id="canvas-multi" width="360" height="360" aria-label="Zone de jeu Snake Ultra Multijoueur"></canvas>
