@@ -518,45 +518,44 @@
         <div class="screen hidden" id="game-multi">
             <div class="game-area">
                 <div class="game-column">
-                    <!-- Tableau 2 Lignes : Info | Power-ups -->
-                    <div id="multi-score-board" class="mp-scoreboard-2lines">
-                        <!-- Ligne supérieure : Noms + Segments + Timer -->
-                        <div class="mp-top-line">
-                            <!-- Joueur 1 -->
-                            <div class="mp-player-info player-1">
-                                <div class="mp-name" id="multi-player1-name">Joueur 1</div>
-                                <div class="mp-value" id="multi-player1-segments">1</div>
-                            </div>
-
-                            <!-- Timer centre -->
-                            <div class="mp-timer-center" id="multi-timer">5:00</div>
-
-                            <!-- Joueur 2 -->
-                            <div class="mp-player-info player-2">
-                                <div class="mp-value" id="multi-player2-segments">1</div>
-                                <div class="mp-name" id="multi-player2-name">Joueur 2</div>
-                            </div>
+                    <!-- Tableau Grid 3 Lignes : Noms | Scores | Power-ups -->
+                    <div id="multi-score-board" class="mp-scoreboard-grid">
+                        <!-- LIGNE 1 : Noms + Emoji Chrono -->
+                        <div class="mp-cell player-1">
+                            <div class="mp-name" id="multi-player1-name">Joueur 1</div>
+                        </div>
+                        <div class="mp-cell center">
+                            <div class="mp-chrono-emoji">⏱️</div>
+                        </div>
+                        <div class="mp-cell player-2">
+                            <div class="mp-name" id="multi-player2-name">Joueur 2</div>
                         </div>
 
-                        <!-- Ligne inférieure : Power-ups -->
-                        <div class="mp-bottom-line">
-                            <!-- Power-up Joueur 1 (gauche) -->
-                            <div class="mp-powerup-zone">
-                                <div class="mp-powerup-compact" id="multi-player1-powerup">
-                                    <span class="mp-pw-emoji"></span>
-                                    <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
-                                </div>
+                        <!-- LIGNE 2 : Scores + Timer -->
+                        <div class="mp-cell player-1">
+                            <div class="mp-score" id="multi-player1-segments">1</div>
+                        </div>
+                        <div class="mp-cell center">
+                            <div class="mp-timer" id="multi-timer">5:00</div>
+                        </div>
+                        <div class="mp-cell player-2">
+                            <div class="mp-score" id="multi-player2-segments">1</div>
+                        </div>
+
+                        <!-- LIGNE 3 : Power-ups -->
+                        <div class="mp-cell player-1">
+                            <div class="mp-powerup-inline" id="multi-player1-powerup">
+                                <span class="mp-pw-emoji"></span>
+                                <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
                             </div>
-
-                            <!-- Espace central vide -->
-                            <div class="mp-powerup-spacer"></div>
-
-                            <!-- Power-up Joueur 2 (droite) -->
-                            <div class="mp-powerup-zone">
-                                <div class="mp-powerup-compact" id="multi-player2-powerup">
-                                    <span class="mp-pw-emoji"></span>
-                                    <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
-                                </div>
+                        </div>
+                        <div class="mp-cell center">
+                            <!-- Vide -->
+                        </div>
+                        <div class="mp-cell player-2">
+                            <div class="mp-powerup-inline" id="multi-player2-powerup">
+                                <span class="mp-pw-emoji"></span>
+                                <div class="mp-pw-bar"><div class="mp-pw-fill"></div></div>
                             </div>
                         </div>
                     </div>

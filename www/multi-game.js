@@ -514,11 +514,11 @@ class MultiplayerSnakeGame {
             const duration = 5000;
             const percentage = (timeRemaining / duration) * 100;
 
-            container.className = `mp-powerup-compact active ${powerupType}`;
+            container.className = `mp-powerup-inline active ${powerupType}`;
             emoji.textContent = powerupEmojis[powerupType] || '';
             fill.style.width = Math.max(0, percentage) + '%';
         } else {
-            container.className = 'mp-powerup-compact';
+            container.className = 'mp-powerup-inline';
             emoji.textContent = '\u00A0';
             fill.style.width = '0%';
         }
