@@ -74,7 +74,7 @@ class BackgroundManager {
             document.body.style.backgroundSize = 'cover';
             document.body.style.backgroundPosition = 'center';
             document.body.style.backgroundRepeat = 'no-repeat';
-            document.body.style.backgroundAttachment = 'fixed';
+            document.body.style.backgroundAttachment = 'scroll';  // ✅ Scroll avec le contenu
         }
 
         // Modifier aussi .phone si présent
@@ -84,6 +84,7 @@ class BackgroundManager {
             phone.style.backgroundSize = 'cover';
             phone.style.backgroundPosition = 'center';
             phone.style.backgroundRepeat = 'no-repeat';
+            phone.style.backgroundAttachment = 'scroll';  // ✅ Scroll avec le contenu
         }
 
         this.currentBackground = screenName;
