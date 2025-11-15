@@ -24,6 +24,15 @@
     <script src="snake.js"></script>
 </head>
 <body>
+    <!-- Bouton Carrière fixe (toujours visible) -->
+    <button id="career-btn-fixed"
+            class="career-btn-floating"
+            onclick="window.audio.buttonClick();showCareer()"
+            aria-label="Ouvrir Carrière"
+            title="Carrière">
+        🏆
+    </button>
+
     <!-- ÉCRAN DE CHARGEMENT -->
     <div class="screen" id="loading">
         <div class="video-wrapper">

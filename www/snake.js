@@ -487,7 +487,32 @@
         h += `<tr><td>✨ Power-Ups</td><td>${career.totalPowerups}</td></tr>`;
         h += `<tr><td>⏱️ Survie Max</td><td>${Math.floor((career.maxSurvivalTime || 0) / 60)}:${((career.maxSurvivalTime || 0) % 60).toString().padStart(2, '0')}</td></tr>`;
         h += `</table>`;
-        h += `<div class="table-header">🎖️ TROPHÉES (${unlocked}/${total})</div>`;
+
+        // ✅ AJOUTER SECTION TOP 3 LOCAL
+        const savedScores = load('ss', []);
+        const topScores = savedScores.slice(0, 3);
+
+        h += `<div class="table-header" style="margin-top: 20px;">🏅 VOS MEILLEURS SCORES</div>`;
+
+        if (topScores.length === 0) {
+            h += `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 14px;">
+                Aucun score enregistré. Jouez pour établir votre premier record !
+            </div>`;
+        } else {
+            h += `<table class="stats-table">`;
+            topScores.forEach((entry, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                const name = entry.n || 'Anonyme';
+                const score = entry.s || 0;
+                h += `<tr>
+                    <td class="stat-label">${medal} ${index + 1}. ${name}</td>
+                    <td class="stat-value" style="color: var(--border-color);">${score} pts</td>
+                </tr>`;
+            });
+            h += `</table>`;
+        }
+
+        h += `<div class="table-header" style="margin-top: 20px;">🎖️ TROPHÉES (${unlocked}/${total})</div>`;
         h += `<div class="trophy-bar">${window.careerTrophyHTML || ''}</div>`;
         h += `<div class="career-actions">`;
         h += `<button class="menu-btn career-reset-btn" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
