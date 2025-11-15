@@ -501,50 +501,16 @@ class MultiplayerSnakeGame {
     // ============================================
 
     showWaitingOverlay() {
-        // Créer un overlay d'attente sur le canvas
+        // Créer un overlay d'attente (styles dans snake.css)
         const overlay = document.createElement('div');
         overlay.id = 'mp-waiting-overlay';
-        overlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            color: #D4AF37;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            border-radius: 8px;
-        `;
-
         overlay.innerHTML = `
-            <h2 style="font-size: 20px; margin-bottom: 16px; text-shadow: 0 0 10px #D4AF37;">
-                🔍 Recherche adversaire...
-            </h2>
-            <div style="
-                width: 40px;
-                height: 40px;
-                border: 4px solid #333;
-                border-top: 4px solid #D4AF37;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            "></div>
-            <style>
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-            </style>
+            <h2>🔍 Recherche adversaire...</h2>
+            <div class="mp-spinner"></div>
         `;
 
-        // Insérer l'overlay juste après le canvas
-        const canvasParent = this.canvas.parentElement;
-        if (canvasParent) {
-            canvasParent.style.position = 'relative';
-            canvasParent.appendChild(overlay);
-        }
+        // Ajouter au body (position fixed dans CSS)
+        document.body.appendChild(overlay);
 
         // Enregistrer l'overlay dans le ScreenManager
         window.screenManager.registerOverlay('mp-waiting-overlay');
