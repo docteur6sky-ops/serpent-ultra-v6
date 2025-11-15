@@ -641,7 +641,7 @@
 
     window.showRules = showRules;
     window.showCredits = showCredits;
-    window.career = showCareer;
+    window.showCareer = showCareer;
     window.toggleSound = toggleSound;
     window.closeModal = closeModal;
     window.save = save;
