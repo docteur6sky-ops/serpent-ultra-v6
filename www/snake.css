@@ -4581,7 +4581,8 @@ body.dark-mode .game-over-progression {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: transparent;  /* ✅ Transparent - on voit seulement la popup */
+    background: rgba(0, 0, 0, 0.85);           /* ✅ Fond noir 85% opaque */
+    backdrop-filter: blur(8px);                /* ✅ Flou pour effet moderne */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -4589,7 +4590,9 @@ body.dark-mode .game-over-progression {
 }
 
 .mp-gameover-content {
-    background: linear-gradient(135deg, var(--color-navy-alpha), var(--color-purple-alpha));
+    background: linear-gradient(135deg,
+                rgba(26, 26, 46, 0.98),        /* ✅ Navy quasi-opaque */
+                rgba(22, 33, 62, 0.98));       /* ✅ Purple quasi-opaque */
     padding: 40px;
     border-radius: 20px;
     text-align: center;
@@ -4599,7 +4602,7 @@ body.dark-mode .game-over-progression {
 
     /* ✅ Ajustement position */
     position: relative;
-    top: 50px;           /* Descendre de 50px */
+    top: 80px;           /* Descendre de 80px (position optimale) */
     left: -10px;         /* Décaler de 10px à gauche */
 }
 
@@ -4663,8 +4666,8 @@ body.dark-mode .game-over-progression {
 }
 
 .mp-gameover-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+    /* ✅ Pas d'effet hover - boutons statiques */
+    cursor: pointer;
 }
 
 .mp-gameover-btn.secondary {
