@@ -243,6 +243,65 @@
         }
     };
 
+    const RANKS = {
+        bronze: {
+            name: 'BRONZE',
+            emoji: '🥉',
+            title: 'Apprenti',
+            minLevel: 1,
+            maxLevel: 10,
+            color: '#CD7F32'
+        },
+        silver: {
+            name: 'ARGENT',
+            emoji: '🥈',
+            title: 'Combattant',
+            minLevel: 11,
+            maxLevel: 25,
+            color: '#C0C0C0'
+        },
+        gold: {
+            name: 'OR',
+            emoji: '🥇',
+            title: 'Vétéran',
+            minLevel: 26,
+            maxLevel: 40,
+            color: '#FFD700'
+        },
+        platinum: {
+            name: 'PLATINE',
+            emoji: '💎',
+            title: 'Champion',
+            minLevel: 41,
+            maxLevel: 60,
+            color: '#E5E4E2'
+        },
+        diamond: {
+            name: 'DIAMANT',
+            emoji: '💠',
+            title: 'Maître',
+            minLevel: 61,
+            maxLevel: 80,
+            color: '#B9F2FF'
+        },
+        elite: {
+            name: 'ÉLITE',
+            emoji: '⭐',
+            title: 'Élite',
+            minLevel: 81,
+            maxLevel: 95,
+            color: '#FF69B4'
+        },
+        legend: {
+            name: 'LÉGENDE',
+            emoji: '👑',
+            title: 'Légende Vivante',
+            minLevel: 96,
+            maxLevel: 100,
+            color: '#9400D3'
+        }
+    };
+
     // ============================================
     // VARIABLES GLOBALES (UI & Données uniquement)
     // ============================================
@@ -467,12 +526,97 @@
     }
 
     // ============================================
+    // SYSTÈME RANGS
+    // ============================================
+
+    function getCurrentRank() {
+        const level = career.level || 1;
+
+        for (let key in RANKS) {
+            const rank = RANKS[key];
+            if (level >= rank.minLevel && level <= rank.maxLevel) {
+                return {
+                    ...rank,
+                    key: key,
+                    progress: level - rank.minLevel,
+                    total: rank.maxLevel - rank.minLevel + 1,
+                    percentage: Math.round(((level - rank.minLevel) / (rank.maxLevel - rank.minLevel + 1)) * 100)
+                };
+            }
+        }
+
+        return RANKS.legend;
+    }
+
+    function getNextRank() {
+        const current = getCurrentRank();
+        const rankKeys = Object.keys(RANKS);
+        const currentIndex = rankKeys.indexOf(current.key);
+
+        if (currentIndex < rankKeys.length - 1) {
+            const nextKey = rankKeys[currentIndex + 1];
+            return { ...RANKS[nextKey], key: nextKey };
+        }
+
+        return null;
+    }
+
+    function hasRankChanged(oldLevel, newLevel) {
+        const oldRank = Object.values(RANKS).find(r => oldLevel >= r.minLevel && oldLevel <= r.maxLevel);
+        const newRank = Object.values(RANKS).find(r => newLevel >= r.minLevel && newLevel <= r.maxLevel);
+
+        return oldRank !== newRank;
+    }
+
+    function showRankUpNotification(newRank) {
+        const notification = document.createElement('div');
+        notification.className = 'rank-notification';
+        notification.innerHTML = `
+            <div class="rank-notif-content">
+                <div class="rank-notif-emoji">${newRank.emoji}</div>
+                <div class="rank-notif-text">
+                    <div class="rank-notif-title">NOUVEAU RANG</div>
+                    <div class="rank-notif-name">VOUS ÊTES MAINTENANT ${newRank.name}</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 500);
+        }, 4000);
+
+        if (audio && audio.rankUp) {
+            audio.rankUp();
+        }
+    }
+
+    function updateRankDisplay() {
+        const rank = getCurrentRank();
+        const badge = document.getElementById('rank-badge');
+
+        if (badge) {
+            badge.querySelector('.rank-badge-emoji').textContent = rank.emoji;
+            badge.querySelector('.rank-badge-name').textContent = rank.name;
+            badge.querySelector('.rank-badge-level').textContent = `Nv. ${career.level}/${rank.maxLevel}`;
+            badge.style.borderColor = rank.color;
+            badge.style.boxShadow = `0 0 15px ${rank.color}`;
+        }
+    }
+
+    // ============================================
     // TROPHÉES
     // ============================================
 
     function checkTrophy() {
         let changed = false;
         let newTrophies = [];
+
+        const oldLevel = career.level; // ✅ Sauvegarder niveau actuel
 
         for (let key in TROPHIES) {
             const trophy = TROPHIES[key];
@@ -502,10 +646,23 @@
                 career.xpNext = Math.floor(career.xpNext * 1.5);
             }
 
+            // ✅ VÉRIFIER RANK UP
+            if (hasRankChanged(oldLevel, career.level)) {
+                const newRank = getCurrentRank();
+                showRankUpNotification(newRank);
+
+                // ✅ HISTORIQUE RANGS
+                if (!career.rankHistory) career.rankHistory = [];
+                if (!career.rankHistory.includes(newRank.key)) {
+                    career.rankHistory.push(newRank.key);
+                }
+            }
+
             save('tr', tr);
             save('career', career);
             updateTrophies();
             updatePlayerInfo();
+            updateRankDisplay(); // ✅ Mise à jour badge
         }
 
         return newTrophies;
@@ -726,7 +883,41 @@
         const unlocked = Object.values(tr).filter(Boolean).length;
         const total = Object.keys(TROPHIES).length;
 
+        // ═══════════════════════════════════════
+        // 🎯 CARRIÈRE V2 - ARCHITECTURE SIMPLIFIÉE
+        // ═══════════════════════════════════════
+
         let h = `<div class="modal-title">🏆 CARRIERE</div>`;
+
+        // ═══════════════════════════════════════
+        // SECTION RANG (Nouveau !)
+        // ═══════════════════════════════════════
+        const currentRank = getCurrentRank();
+        const nextRank = getNextRank();
+
+        h += `<div class="rank-section">`;
+        h += `  <div class="rank-badge" style="background: ${currentRank.color};">`;
+        h += `    <div class="rank-emoji">${currentRank.emoji}</div>`;
+        h += `    <div class="rank-name">${currentRank.name}</div>`;
+        h += `  </div>`;
+        h += `  <div class="rank-info">`;
+        h += `    <div class="rank-title">${currentRank.title}</div>`;
+        h += `    <div class="rank-progress-text">`;
+        if (nextRank) {
+            h += `Niveau ${currentRank.progress}/${currentRank.total} → ${nextRank.emoji} ${nextRank.name}`;
+        } else {
+            h += `Rang MAXIMUM atteint ! 🎉`;
+        }
+        h += `    </div>`;
+        h += `    <div class="rank-progress-bar">`;
+        h += `      <div class="rank-progress-fill" style="width: ${currentRank.percentage}%; background: ${currentRank.color};"></div>`;
+        h += `    </div>`;
+        h += `  </div>`;
+        h += `</div>`;
+
+        // ═══════════════════════════════════════
+        // SECTION STATS
+        // ═══════════════════════════════════════
         h += `<div class="table-header">📊 STATISTIQUES GLOBALES</div>`;
         h += `<table class="stats-table">`;
         h += `<tr><td>🎮 Total Parties</td><td>${career.totalGames}</td></tr>`;
@@ -741,77 +932,17 @@
         h += `<tr><td>⏱️ Survie Max</td><td>${Math.floor((career.maxSurvivalTime || 0) / 60)}:${((career.maxSurvivalTime || 0) % 60).toString().padStart(2, '0')}</td></tr>`;
         h += `</table>`;
 
-        // ✅ AJOUTER SECTION TOP 3 LOCAL
-        const savedScores = load('ss', []);
-        const topScores = savedScores.slice(0, 3);
-
-        h += `<div class="table-header" style="margin-top: 20px;">🏅 VOS MEILLEURS SCORES</div>`;
-
-        if (topScores.length === 0) {
-            h += `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 14px;">
-                Aucun score enregistré. Jouez pour établir votre premier record !
-            </div>`;
-        } else {
-            h += `<table class="stats-table">`;
-            topScores.forEach((entry, index) => {
-                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                const name = entry.n || 'Anonyme';
-                const score = entry.s || 0;
-                h += `<tr>
-                    <td class="stat-label">${medal} ${index + 1}. ${name}</td>
-                    <td class="stat-value" style="color: var(--border-color);">${score} pts</td>
-                </tr>`;
-            });
-            h += `</table>`;
-        }
-
         // ═══════════════════════════════════════
-        // SECTION TROPHÉES AAA
+        // BOUTONS OVERLAYS (Nouveau !)
         // ═══════════════════════════════════════
-        h += `<div class="table-header" style="margin-top: 20px;">🏆 TROPHÉES AAA (${unlocked}/${total})</div>`;
-
-        // Barre de progression
-        const progressPercent = Math.round((unlocked / total) * 100);
-        h += `
-            <div class="trophy-progress-container">
-                <div class="trophy-progress-bar">
-                    <div class="trophy-progress-fill" style="width: ${progressPercent}%"></div>
-                </div>
-                <div class="trophy-progress-text">${unlocked}/${total} débloqués (${progressPercent}%)</div>
-            </div>
-        `;
-
-        // Grille de trophées
-        h += `<div class="trophy-grid">`;
-
-        for (let key in TROPHIES) {
-            const trophy = TROPHIES[key];
-            const isUnlocked = tr[key] || false;
-            const stars = '⭐'.repeat(trophy.rarity);
-
-            // Si secret et non débloqué, afficher ???
-            const displayName = (trophy.secret && !isUnlocked) ? '???' : trophy.name;
-            const displayEmoji = (trophy.secret && !isUnlocked) ? '❓' : trophy.emoji;
-            const displayDesc = (trophy.secret && !isUnlocked)
-                ? (trophy.hint || 'Trophée secret...')
-                : trophy.description;
-
-            const cardClass = `trophy-card ${isUnlocked ? 'unlocked' : 'locked'}`;
-
-            h += `
-                <div class="${cardClass}">
-                    <div class="trophy-card-emoji">${displayEmoji}</div>
-                    <div class="trophy-card-name">${displayName}</div>
-                    <div class="trophy-card-desc">${displayDesc}</div>
-                    <div class="trophy-card-footer">
-                        <span class="trophy-rarity">${stars}</span>
-                        ${isUnlocked ? `<span class="trophy-xp">+${trophy.xp} XP</span>` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
+        h += `<div class="career-overlay-buttons">`;
+        h += `  <button class="menu-btn overlay-btn" onclick="audio.buttonClick();showLeaderboardOverlay()">📈 CLASSEMENT</button>`;
+        h += `  <button class="menu-btn overlay-btn" onclick="audio.buttonClick();showTrophiesOverlay()">🏆 TROPHÉES (${unlocked}/${total})</button>`;
         h += `</div>`;
+
+        // ═══════════════════════════════════════
+        // BOUTONS ACTIONS
+        // ═══════════════════════════════════════
         h += `<div class="career-actions">`;
         h += `<button class="menu-btn career-reset-btn" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
         h += `<button class="menu-btn" onclick="audio.buttonClick();closeModal()">Fermer</button>`;
@@ -851,6 +982,143 @@
             closeModal();
 
             alert('✅ Toutes les statistiques ont été réinitialisées !');
+        }
+    }
+
+    // ============================================
+    // OVERLAYS CARRIÈRE (Nouveau !)
+    // ============================================
+
+    /**
+     * Affiche l'overlay Classement (Top 3 scores locaux)
+     */
+    function showLeaderboardOverlay() {
+        const savedScores = load('ss', []);
+        const topScores = savedScores.slice(0, 3);
+
+        let content = `
+            <div class="overlay-header">
+                <h2>🏅 CLASSEMENT</h2>
+                <button class="overlay-close" onclick="audio.buttonClick();closeOverlay()">✖</button>
+            </div>
+        `;
+
+        if (topScores.length === 0) {
+            content += `
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 14px;">
+                    Aucun score enregistré.<br>
+                    Jouez pour établir votre premier record !
+                </div>
+            `;
+        } else {
+            content += `<table class="stats-table" style="margin-top: 20px;">`;
+            topScores.forEach((entry, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                const name = entry.n || 'Anonyme';
+                const score = entry.s || 0;
+                content += `
+                    <tr>
+                        <td class="stat-label">${medal} ${index + 1}. ${name}</td>
+                        <td class="stat-value" style="color: var(--border-color);">${score} pts</td>
+                    </tr>
+                `;
+            });
+            content += `</table>`;
+        }
+
+        showOverlay(content);
+    }
+
+    /**
+     * Affiche l'overlay Trophées (grille complète)
+     */
+    function showTrophiesOverlay() {
+        const tr = load('tr', {});
+        const unlocked = Object.values(tr).filter(Boolean).length;
+        const total = Object.keys(TROPHIES).length;
+
+        let content = `
+            <div class="overlay-header">
+                <h2>🏆 TROPHÉES (${unlocked}/${total})</h2>
+                <button class="overlay-close" onclick="audio.buttonClick();closeOverlay()">✖</button>
+            </div>
+        `;
+
+        // Barre de progression
+        const progressPercent = Math.round((unlocked / total) * 100);
+        content += `
+            <div class="trophy-progress-container" style="margin-top: 20px;">
+                <div class="trophy-progress-bar">
+                    <div class="trophy-progress-fill" style="width: ${progressPercent}%"></div>
+                </div>
+                <div class="trophy-progress-text">${unlocked}/${total} débloqués (${progressPercent}%)</div>
+            </div>
+        `;
+
+        // Grille de trophées
+        content += `<div class="trophy-grid" style="margin-top: 20px;">`;
+
+        for (let key in TROPHIES) {
+            const trophy = TROPHIES[key];
+            const isUnlocked = tr[key] || false;
+            const stars = '⭐'.repeat(trophy.rarity);
+
+            // Si secret et non débloqué, afficher ???
+            const displayName = (trophy.secret && !isUnlocked) ? '???' : trophy.name;
+            const displayEmoji = (trophy.secret && !isUnlocked) ? '❓' : trophy.emoji;
+            const displayDesc = (trophy.secret && !isUnlocked)
+                ? (trophy.hint || 'Trophée secret...')
+                : trophy.description;
+
+            const cardClass = `trophy-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+            content += `
+                <div class="${cardClass}">
+                    <div class="trophy-card-emoji">${displayEmoji}</div>
+                    <div class="trophy-card-name">${displayName}</div>
+                    <div class="trophy-card-desc">${displayDesc}</div>
+                    <div class="trophy-card-footer">
+                        <span class="trophy-rarity">${stars}</span>
+                        ${isUnlocked ? `<span class="trophy-xp">+${trophy.xp} XP</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        content += `</div>`;
+
+        showOverlay(content);
+    }
+
+    /**
+     * Affiche un overlay générique
+     */
+    function showOverlay(content) {
+        // Créer l'overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'career-overlay';
+        overlay.className = 'career-overlay';
+        overlay.innerHTML = `
+            <div class="career-overlay-content">
+                ${content}
+            </div>
+        `;
+
+        // Ajouter au DOM
+        document.body.appendChild(overlay);
+
+        // Animation d'apparition
+        setTimeout(() => overlay.classList.add('visible'), 10);
+    }
+
+    /**
+     * Ferme l'overlay actif
+     */
+    function closeOverlay() {
+        const overlay = document.getElementById('career-overlay');
+        if (overlay) {
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.remove(), 300);
         }
     }
 
@@ -947,6 +1215,10 @@
     window.checkTrophy = checkTrophy;
     window.updateTrophies = updateTrophies;
     window.updatePlayerInfo = updatePlayerInfo;
+    window.showLeaderboardOverlay = showLeaderboardOverlay;
+    window.showTrophiesOverlay = showTrophiesOverlay;
+    window.closeOverlay = closeOverlay;
+    window.updateRankDisplay = updateRankDisplay;
 
 
 })();

@@ -5334,3 +5334,523 @@ body.dark-mode .career-btn-floating:hover {
         right: 10px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   👑 SYSTÈME DE RANGS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 1. Badge de Rang dans le Menu (coin supérieur gauche)                   */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+.rank-badge-menu {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.rank-badge-menu:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.rank-badge-menu .rank-emoji {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.rank-badge-menu .rank-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Mode Dark - Badge dans menu */
+body.dark-mode .rank-badge-menu {
+    background: rgba(0, 20, 40, 0.8);
+    border-color: #008B8B;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 2. Section Rang dans Modale Carrière                                     */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+.rank-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.rank-section .rank-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
+                inset 0 2px 8px rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+}
+
+.rank-section .rank-emoji {
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.rank-section .rank-name {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    letter-spacing: 1px;
+}
+
+.rank-section .rank-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rank-section .rank-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-bottom: 5px;
+}
+
+.rank-section .rank-progress-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.rank-section .rank-progress-bar {
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.rank-section .rank-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #CD7F32, #FFB347);
+    border-radius: 8px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Mode Dark - Section Rang */
+body.dark-mode .rank-section {
+    background: rgba(0, 20, 40, 0.6);
+    border-color: #008B8B;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 3. Boutons Overlays dans Carrière                                        */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+.career-overlay-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    margin-bottom: 20px;
+}
+
+.career-overlay-buttons .overlay-btn {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: bold;
+    padding: 15px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.career-overlay-buttons .overlay-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.career-overlay-buttons .overlay-btn:active {
+    transform: translateY(0);
+}
+
+/* Mode Dark - Boutons Overlays */
+body.dark-mode .career-overlay-buttons .overlay-btn {
+    background: rgba(0, 20, 40, 0.6);
+    border-color: #008B8B;
+}
+
+body.dark-mode .career-overlay-buttons .overlay-btn:hover {
+    background: rgba(0, 30, 60, 0.8);
+    box-shadow: 0 6px 16px rgba(0, 139, 139, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 4. Overlays Carrière (Classement & Trophées)                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+.career-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+.career-overlay.visible {
+    opacity: 1;
+}
+
+.career-overlay-content {
+    background: linear-gradient(135deg,
+        rgba(30, 30, 60, 0.95),
+        rgba(10, 10, 30, 0.95)
+    );
+    border: 3px solid var(--border-color);
+    border-radius: 24px;
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7),
+                0 0 100px rgba(216, 216, 0, 0.2);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.career-overlay.visible .career-overlay-content {
+    transform: scale(1);
+}
+
+/* Header de l'overlay */
+.overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.overlay-header h2 {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    margin: 0;
+}
+
+.overlay-close {
+    background: rgba(255, 0, 0, 0.3);
+    border: 2px solid #ff3333;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.overlay-close:hover {
+    background: rgba(255, 0, 0, 0.5);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 6px 12px rgba(255, 0, 0, 0.4);
+}
+
+/* Mode Dark - Overlays */
+body.dark-mode .career-overlay-content {
+    background: linear-gradient(135deg,
+        rgba(0, 20, 40, 0.95),
+        rgba(0, 10, 20, 0.95)
+    );
+    border-color: #008B8B;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9),
+                0 0 100px rgba(0, 139, 139, 0.3);
+}
+
+body.dark-mode .overlay-header {
+    border-bottom-color: #008B8B;
+}
+
+/* Scrollbar personnalisée pour les overlays */
+.career-overlay-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.career-overlay-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.career-overlay-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+.career-overlay-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 5. Notification de Rank Up (Simple & Clean)                             */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+.rank-up-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: linear-gradient(135deg,
+        rgba(30, 30, 60, 0.98),
+        rgba(10, 10, 30, 0.98)
+    );
+    border: 4px solid var(--border-color);
+    border-radius: 24px;
+    padding: 40px 50px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8),
+                0 0 150px rgba(216, 216, 0, 0.4),
+                inset 0 2px 20px rgba(255, 255, 255, 0.1);
+    z-index: 10000;
+    text-align: center;
+    opacity: 0;
+    animation: rankUpAppear 0.5s ease forwards,
+               rankUpDisappear 0.5s ease 3.5s forwards;
+}
+
+@keyframes rankUpAppear {
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes rankUpDisappear {
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+.rank-up-notification .rank-up-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--border-color);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    margin-bottom: 20px;
+    letter-spacing: 3px;
+}
+
+.rank-up-notification .rank-up-badge {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
+                inset 0 4px 16px rgba(255, 255, 255, 0.2);
+    animation: rankBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes rankBadgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
+                    inset 0 4px 16px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6),
+                    inset 0 6px 20px rgba(255, 255, 255, 0.3);
+    }
+}
+
+.rank-up-notification .rank-emoji {
+    font-size: 60px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.rank-up-notification .rank-name-notif {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    letter-spacing: 2px;
+}
+
+.rank-up-notification .rank-up-message {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    margin-top: 20px;
+}
+
+/* Mode Dark - Notification */
+body.dark-mode .rank-up-notification {
+    background: linear-gradient(135deg,
+        rgba(0, 20, 40, 0.98),
+        rgba(0, 10, 20, 0.98)
+    );
+    border-color: #008B8B;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9),
+                0 0 150px rgba(0, 139, 139, 0.5),
+                inset 0 2px 20px rgba(0, 200, 200, 0.1);
+}
+
+body.dark-mode .rank-up-notification .rank-up-title {
+    color: #00CED1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 6. Responsive pour le système de rangs                                   */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+    /* Badge menu */
+    .rank-badge-menu {
+        top: 10px;
+        left: 10px;
+        padding: 6px 12px;
+        gap: 6px;
+    }
+
+    .rank-badge-menu .rank-emoji {
+        font-size: 20px;
+    }
+
+    .rank-badge-menu .rank-name {
+        font-size: 12px;
+    }
+
+    /* Section rang dans carrière */
+    .rank-section {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .rank-section .rank-badge {
+        width: 80px;
+        height: 80px;
+    }
+
+    .rank-section .rank-emoji {
+        font-size: 32px;
+    }
+
+    .rank-section .rank-name {
+        font-size: 10px;
+    }
+
+    .rank-section .rank-title {
+        font-size: 18px;
+        text-align: center;
+    }
+
+    .rank-section .rank-progress-text {
+        font-size: 12px;
+        text-align: center;
+    }
+
+    /* Boutons overlays */
+    .career-overlay-buttons {
+        flex-direction: column;
+    }
+
+    /* Notification rank up */
+    .rank-up-notification {
+        padding: 30px 35px;
+        max-width: 90%;
+    }
+
+    .rank-up-notification .rank-up-title {
+        font-size: 16px;
+    }
+
+    .rank-up-notification .rank-up-badge {
+        width: 100px;
+        height: 100px;
+    }
+
+    .rank-up-notification .rank-emoji {
+        font-size: 50px;
+    }
+
+    .rank-up-notification .rank-name-notif {
+        font-size: 14px;
+    }
+
+    .rank-up-notification .rank-up-message {
+        font-size: 18px;
+    }
+
+    /* Overlay content */
+    .career-overlay-content {
+        padding: 20px;
+        max-height: 90vh;
+    }
+
+    .overlay-header h2 {
+        font-size: 20px;
+    }
+
+    .overlay-close {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+    }
+}
