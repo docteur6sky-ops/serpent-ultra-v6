@@ -2277,7 +2277,7 @@ canvas.invincible-power {
     --color-navy-alpha: rgba(26, 26, 46, 0.92);      /* Navy foncé (identique dark) */
     --color-purple-alpha: rgba(22, 33, 62, 0.92);    /* Purple foncé (identique dark) */
     --text-board: #FFFFFF;                           /* Blanc sur fond foncé */
-    --text-board-value: #8B4513;                     /* Marron pour scores/timer */
+    --text-board-value: #D4AF37;                     /* GOLD pour scores/timer (identique dark) */
 }
 
 body.dark-mode {
