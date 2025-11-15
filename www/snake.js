@@ -104,7 +104,6 @@
         init() {
             try {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                console.log('✅ AudioContext initialisé (effets sonores)');
             } catch (error) {
                 console.error('❌ Impossible d\'initialiser l\'audio:', error);
             }
@@ -228,7 +227,6 @@
         // Bouton Son
         updateSoundButtonEmoji();
 
-        console.log('✅ Emojis du menu initialisés');
     }
 
     function updatePlayerInfo() {
@@ -291,7 +289,6 @@
     function checkTrophy() {
         // Cette fonction sera appelée par solo-game.js après game over
         // Pour l'instant, on la garde vide pour éviter les erreurs
-        console.log('checkTrophy() appelé - sera implémenté par solo-game.js');
     }
 
     function updateTrophies() {
@@ -425,12 +422,10 @@
         h += '<p><strong>cyril.laurent@example.com</strong></p>';
         h += '</div>';
 
-        h += '<div class="credits-footer">';
-        h += '<p style="text-align: center; margin-top: 20px; color: var(--color-gold);">';
+        h += '<p class="credits-footer">';
         h += '🐍 Snake Ultra - Deluxe Edition 🐍<br>';
         h += '© 2024 Cyril Laurent & IA Collaborateurs';
         h += '</p>';
-        h += '</div>';
 
         h += '<div class="close-container"><button class="menu-btn" onclick="audio.buttonClick();closeModal()" aria-label="Fermer la fenêtre des crédits">Fermer</button></div>';
         getElementSafely('mcontent').innerHTML = h;
@@ -494,8 +489,8 @@
         h += `</table>`;
         h += `<div class="table-header">🎖️ TROPHÉES (${unlocked}/${total})</div>`;
         h += `<div class="trophy-bar">${window.careerTrophyHTML || ''}</div>`;
-        h += `<div style="margin-top: 20px; display: flex; gap: 10px; flex-direction: column;">`;
-        h += `<button class="menu-btn" style="background: #f44336; border-color: #f44336;" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
+        h += `<div class="career-actions">`;
+        h += `<button class="menu-btn career-reset-btn" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
         h += `<button class="menu-btn" onclick="audio.buttonClick();closeModal()">Fermer</button>`;
         h += `</div>`;
 
@@ -551,11 +546,8 @@
             return;
         }
 
-        console.log('📸 Initialisation image de chargement...');
         startButton.addEventListener('click', () => {
-            console.log('🚀 Bouton cliqué, démarrage');
             loadingScreen.style.display = 'none';
-            console.log('🏁 Chargement terminé → Menu');
             startGame();
         });
     }
@@ -573,7 +565,6 @@
     // ============================================
 
     function init() {
-        console.log('🎮 Initialisation Snake Ultra...');
 
         // Init backgrounds & audio
         if (window.backgroundManager && window.audioManager) {
@@ -583,7 +574,6 @@
             ]).then(() => {
                 window.backgroundManager.setBackground('menu');
                 window.audioManager.setAudio('menu');
-                console.log('✅ Backgrounds et audio prêts');
             }).catch(error => {
                 console.error('❌ Erreur chargement média:', error);
             });
@@ -596,15 +586,12 @@
         tr = load('tr', {});
         const savedSound = load('soundEnabled');
         if (savedSound !== null) soundEnabled = savedSound;
-        console.log('✅ Données chargées');
 
         // 2. Initialiser l'audio
         audio.init();
-        console.log('✅ Audio initialisé');
 
         // 3. Configurer l'écran de chargement
         setupLoadingScreen();
-        console.log('✅ Écran de chargement configuré');
 
         // 4. Initialiser les emojis et l'UI
         initMenuEmojis();
@@ -618,8 +605,6 @@
         if (dpadButtons[4]) dpadButtons[4].textContent = '⬇️';
         if (dpadButtons[5]) dpadButtons[5].textContent = '➡️';
 
-        console.log('✅ Emojis ajoutés');
-        console.log('🎮 Snake Ultra prêt !');
     }
 
     // ============================================
@@ -640,6 +625,5 @@
     window.updateTrophies = updateTrophies;
     window.updatePlayerInfo = updatePlayerInfo;
 
-    console.log('✅ snake.js (nettoyé) chargé');
 
 })();

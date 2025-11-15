@@ -4627,3 +4627,30 @@ body.dark-mode .game-over-progression {
 .mp-gameover-btn.secondary {
     background: linear-gradient(135deg, #333, #555);
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* ÉCRANS SOLO - CRÉDITS ET CARRIÈRE */
+/* ═══════════════════════════════════════════════════════════ */
+
+.credits-footer {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--color-gold, #D4AF37);
+}
+
+.career-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.career-reset-btn {
+    background: #f44336;
+    border-color: #f44336;
+}
+
+.career-reset-btn:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
