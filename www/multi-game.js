@@ -627,8 +627,8 @@ class MultiplayerSnakeGame {
 
                 <div class="mp-gameover-buttons">
                     <button id="mp-replay-btn" class="mp-gameover-btn">🔄 Rejouer</button>
-                    <button id="mp-leaderboard-btn" class="mp-gameover-btn leaderboard">🏆 Leaderboard</button>
-                    <button id="mp-menu-btn" class="mp-gameover-btn secondary">🏠 Menu</button>
+                    <button id="mp-leaderboard-btn" class="mp-gameover-btn">🏆 Leaderboard</button>
+                    <button id="mp-menu-btn" class="mp-gameover-btn">🏠 Menu</button>
                 </div>
             </div>
         `;

@@ -2273,9 +2273,6 @@ canvas.invincible-power {
     --bg-bar: rgba(0, 0, 0, 0.1);
     --border-bar: rgba(0, 0, 0, 0.15);
     --btn-gradient-multi: linear-gradient(135deg, #d4a574, #b8935f);
-    --btn-primary: linear-gradient(135deg, #d4a574, #b8935f);       /* Gold/brown */
-    --btn-secondary: linear-gradient(135deg, #8B4513, #A0522D);     /* Marron foncé */
-    --btn-leaderboard: linear-gradient(135deg, #FFD700, #FFA500);   /* Or vif */
     --color-navy-alpha: rgba(26, 26, 46, 0.92);      /* Navy foncé (identique dark) */
     --color-purple-alpha: rgba(22, 33, 62, 0.92);    /* Purple foncé (identique dark) */
     --text-board: #FFFFFF;                           /* Blanc sur fond foncé */
@@ -2354,9 +2351,6 @@ body.dark-mode {
     --bg-bar: rgba(255, 255, 255, 0.1);
     --border-bar: rgba(255, 255, 255, 0.15);
     --btn-gradient-multi: linear-gradient(135deg, #667eea, #764ba2);
-    --btn-primary: linear-gradient(135deg, #667eea, #764ba2);       /* Violet */
-    --btn-secondary: linear-gradient(135deg, #333, #555);           /* Gris */
-    --btn-leaderboard: linear-gradient(135deg, #00CED1, #20B2AA);   /* Cyan/turquoise */
     --color-navy-alpha: rgba(26, 26, 46, 0.92);
     --color-purple-alpha: rgba(22, 33, 62, 0.92);
     --text-board: #f1f5f9;                       /* Blanc sur fond sombre */
@@ -4581,8 +4575,7 @@ body.dark-mode .game-over-progression {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.85);           /* ✅ Fond noir 85% opaque */
-    backdrop-filter: blur(8px);                /* ✅ Flou pour effet moderne */
+    background: transparent;                    /* ✅ Transparent */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -4660,22 +4653,14 @@ body.dark-mode .game-over-progression {
     border: 2px solid var(--border-color);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--btn-primary);     /* ✅ Thématisé (violet dark, gold light) */
-    color: var(--text-board);
+    background: var(--border-color);           /* ✅ Même couleur que bordures */
+    color: #fff;                               /* ✅ Texte blanc */
+    transition: opacity 0.2s ease;
 }
 
 .mp-gameover-btn:hover {
-    /* ✅ Pas d'effet hover - boutons statiques */
+    opacity: 0.9;                              /* ✅ Légère transparence */
     cursor: pointer;
-}
-
-.mp-gameover-btn.secondary {
-    background: var(--btn-secondary);   /* ✅ Thématisé (gris dark, marron light) */
-}
-
-.mp-gameover-btn.leaderboard {
-    background: var(--btn-leaderboard); /* ✅ Nouveau style (cyan dark, or light) */
 }
 
 /* ═══════════════════════════════════════════════════════════ */
