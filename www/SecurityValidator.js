@@ -138,6 +138,11 @@ class SecurityValidator {
 
         const gameDuration = (Date.now() - gameStartTime) / 1000; // en secondes
 
+        // ✅ Ne pas valider les 2 premières secondes (évite les faux positifs au démarrage)
+        if (gameDuration < 2) {
+            return { valid: true };
+        }
+
         // Score maximum théorique
         const maxPossibleScore = gameDuration * this.config.MAX_SCORE_PER_SECOND;
 
