@@ -518,14 +518,10 @@
         <div class="screen hidden" id="game-multi">
             <div class="game-area">
                 <div class="game-column">
-                    <!-- Tableau J1 | Timer | J2 (AAA Design) -->
+                    <!-- Tableau Compact : J1 | Timer | J2 (3 colonnes) -->
                     <div id="multi-score-board" class="mp-scoreboard">
-                        <!-- Timer centré -->
-                        <div id="multi-timer" class="mp-timer">5:00</div>
-
-                        <!-- 2 colonnes joueurs -->
-                        <div class="mp-players">
-                            <!-- Joueur 1 (Toi) -->
+                        <div class="mp-players-compact">
+                            <!-- Joueur 1 (Gauche) -->
                             <div class="mp-player-card player-1">
                                 <div class="mp-player-name" id="multi-player1-name">Joueur 1</div>
                                 <div class="mp-segments">
@@ -540,7 +536,12 @@
                                 </div>
                             </div>
 
-                            <!-- Joueur 2 (Adversaire) -->
+                            <!-- Timer (Centre) -->
+                            <div class="mp-timer-center">
+                                <div id="multi-timer" class="mp-timer-compact">5:00</div>
+                            </div>
+
+                            <!-- Joueur 2 (Droite) -->
                             <div class="mp-player-card player-2">
                                 <div class="mp-player-name" id="multi-player2-name">Joueur 2</div>
                                 <div class="mp-segments">
