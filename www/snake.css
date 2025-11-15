@@ -4596,6 +4596,11 @@ body.dark-mode .game-over-progression {
     max-width: 400px;
     border: 2px solid var(--border-color);
     box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+
+    /* ✅ Ajustement position */
+    position: relative;
+    top: 50px;           /* Descendre de 50px */
+    left: -10px;         /* Décaler de 10px à gauche */
 }
 
 .mp-gameover-title {
