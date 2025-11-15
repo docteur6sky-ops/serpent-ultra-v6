@@ -50,21 +50,139 @@
     };
 
     const TROPHIES = {
-        first: {i: '😊', n: 'Apprenti Serpent', d: 'Atteindre le niveau 10 en difficulté Facile'},
-        millenium: {i: '😮', n: 'Serpent du Millénaire', d: 'Atteindre le niveau 10 en difficulté Normal'},
-        speed: {i: '😈', n: 'Serpent Véloce', d: 'Atteindre le niveau 10 en difficulté Difficile'},
-        timemaster: {i: '⏱️', n: 'Maître du Temps', d: 'Collecter 5 power-ups Ralentissement'},
-        moneysnake: {i: '💰', n: 'Serpent Argenté', d: 'Collecter 5 power-ups Double Score'},
-        invincible: {i: '🛡️', n: 'Serpent Indestructible', d: 'Collecter 5 power-ups Invincibilité'},
-        wallbreaker: {i: '🧱', n: 'Briseur de Murs', d: 'Détruire 20 obstacles au total'},
-        loner: {i: '🎯', n: 'Puriste', d: 'Atteindre le niveau 10 sans utiliser de power-ups'},
-        easywin: {i: '🏅', n: 'Vainqueur Facile', d: 'Obtenir 3000 points en difficulté Facile'},
-        normalwin: {i: '🎖️', n: 'Vainqueur Normal', d: 'Obtenir 6000 points en difficulté Normal'},
-        hardwin: {i: '🏆', n: 'Vainqueur Difficile', d: 'Obtenir 12000 points en difficulté Difficile'},
-        kingsnake: {i: '👑', n: 'Roi Serpent', d: 'Atteindre le niveau 20'},
-        perfectionist: {i: '💎', n: 'Perfectionniste', d: 'Atteindre le niveau 15 sans manger de crânes'},
-        boaroyal: {i: '🐍', n: 'Boa Royal', d: 'Atteindre une longueur de 30 segments'},
-        expert: {i: '⭐', n: 'Expert Ultime', d: 'Atteindre le niveau 10 en difficulté Difficile sans power-ups'}
+        // ═══════════════════════════════════════
+        // SOLO - PROGRESSION (2)
+        // ═══════════════════════════════════════
+        roi_reptiles: {
+            name: 'Roi des Reptiles',
+            emoji: '👑',
+            description: 'Atteindre le niveau 10',
+            rarity: 2,
+            xp: 1000,
+            secret: false,
+            category: 'progression',
+            check: () => career.maxLevel >= 10
+        },
+
+        dieu_serpent: {
+            name: 'Dieu Serpent',
+            emoji: '🌟',
+            description: 'Atteindre le niveau 15',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'progression',
+            check: () => career.maxLevel >= 15
+        },
+
+        // ═══════════════════════════════════════
+        // SOLO - COLLECTION (2) - CUMULATIF
+        // ═══════════════════════════════════════
+        tout_puissant: {
+            name: 'Tout Puissant',
+            emoji: '⚡',
+            description: 'Collecter 75 power-ups (total carrière)',
+            rarity: 2,
+            xp: 1000,
+            secret: false,
+            category: 'collection',
+            check: () => career.totalPowerups >= 75
+        },
+
+        seigneur_chaos: {
+            name: 'Seigneur du Chaos',
+            emoji: '🔮',
+            description: 'Collecter 150 power-ups (total carrière)',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'collection',
+            check: () => career.totalPowerups >= 150
+        },
+
+        // ═══════════════════════════════════════
+        // SOLO - DESTRUCTION (1) - CUMULATIF
+        // ═══════════════════════════════════════
+        architecte_chaos: {
+            name: 'Architecte du Chaos',
+            emoji: '🌪️',
+            description: 'Détruire 200 murs (total carrière)',
+            rarity: 3,
+            xp: 1500,
+            secret: false,
+            category: 'destruction',
+            check: () => career.totalWalls >= 200
+        },
+
+        // ═══════════════════════════════════════
+        // MULTI - VICTOIRES (3)
+        // ═══════════════════════════════════════
+        vainqueur: {
+            name: 'Vainqueur',
+            emoji: '🏆',
+            description: 'Gagner 10 parties multijoueur',
+            rarity: 2,
+            xp: 1000,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiWins || 0) >= 10
+        },
+
+        champion: {
+            name: 'Champion',
+            emoji: '👑',
+            description: 'Gagner 50 parties multijoueur',
+            rarity: 3,
+            xp: 1500,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiWins || 0) >= 50
+        },
+
+        invaincu: {
+            name: 'Invaincu',
+            emoji: '🔥',
+            description: 'Gagner 3 parties multijoueur d\'affilée',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'multi',
+            check: () => (career.currentStreak || 0) >= 3
+        },
+
+        // ═══════════════════════════════════════
+        // SECRETS (2)
+        // ═══════════════════════════════════════
+        centenaire: {
+            name: 'Centenaire',
+            emoji: '💯',
+            description: 'Jouer 100 parties (total carrière)',
+            rarity: 3,
+            xp: 1500,
+            secret: true,
+            hint: 'L\'expérience compte...',
+            category: 'secret',
+            check: () => career.totalGames >= 100
+        },
+
+        explorateur: {
+            name: 'Explorateur',
+            emoji: '🗺️',
+            description: 'Visiter tous les écrans du jeu',
+            rarity: 4,
+            xp: 2000,
+            secret: true,
+            hint: 'Explore chaque recoin...',
+            category: 'secret',
+            check: () => {
+                const requiredScreens = [
+                    'menu', 'game-solo', 'multiplayer-menu',
+                    'options-menu', 'rules-menu', 'credits-menu'
+                ];
+                const visited = career.screensVisited || [];
+                return requiredScreens.every(screen => visited.includes(screen));
+            }
+        }
     };
 
     // ============================================
@@ -85,7 +203,15 @@
         maxLevel: 0,
         totalWalls: 0,
         totalPowerups: 0,
-        maxSurvivalTime: 0
+        maxSurvivalTime: 0,
+
+        // ✅ NOUVELLES VARIABLES MULTI
+        multiWins: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+
+        // ✅ NOUVELLES VARIABLES SECRETS
+        screensVisited: []
     };
 
     let tr = {};  // Trophées
@@ -287,15 +413,84 @@
     // ============================================
 
     function checkTrophy() {
-        // Cette fonction sera appelée par solo-game.js après game over
-        // Pour l'instant, on la garde vide pour éviter les erreurs
+        let changed = false;
+        let newTrophies = [];
+
+        for (let key in TROPHIES) {
+            const trophy = TROPHIES[key];
+
+            // Ignorer si déjà débloqué
+            if (tr[key]) continue;
+
+            // Vérifier condition
+            if (trophy.check()) {
+                tr[key] = true;
+                changed = true;
+                newTrophies.push(trophy);
+
+                // ✅ RÉCOMPENSE XP
+                career.xp += trophy.xp;
+
+                // ✅ NOTIFICATION
+                showTrophyNotification(trophy);
+            }
+        }
+
+        if (changed) {
+            // Vérifier level up après gain XP
+            while (career.xp >= career.xpNext && career.level < 100) {
+                career.xp -= career.xpNext;
+                career.level++;
+                career.xpNext = Math.floor(career.xpNext * 1.5);
+            }
+
+            save('tr', tr);
+            save('career', career);
+            updateTrophies();
+            updatePlayerInfo();
+        }
+
+        return newTrophies;
+    }
+
+    function showTrophyNotification(trophy) {
+        // Créer notification
+        const notification = document.createElement('div');
+        notification.className = 'trophy-notification';
+        notification.innerHTML = `
+            <div class="trophy-notif-content">
+                <div class="trophy-notif-emoji">${trophy.emoji}</div>
+                <div class="trophy-notif-text">
+                    <div class="trophy-notif-title">TROPHÉE DÉBLOQUÉ !</div>
+                    <div class="trophy-notif-name">${trophy.name}</div>
+                    <div class="trophy-notif-xp">+${trophy.xp} XP</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animation entrée
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Animation sortie
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 500);
+        }, 4000);
+
+        // Son si disponible
+        if (audio && audio.trophy) {
+            audio.trophy();
+        }
     }
 
     function updateTrophies() {
         let h = '', unlocked = 0, total = Object.keys(TROPHIES).length;
         for (let k in TROPHIES) {
             if (tr[k]) unlocked++;
-            h += `<span class="trophy ${tr[k] ? 'unlocked' : ''}" title="${TROPHIES[k].n}: ${TROPHIES[k].d}">${TROPHIES[k].i}</span>`;
+            const trophy = TROPHIES[k];
+            h += `<span class="trophy ${tr[k] ? 'unlocked' : ''}" title="${trophy.name}: ${trophy.description}">${trophy.emoji}</span>`;
         }
 
         window.careerTrophyHTML = h;
