@@ -170,13 +170,17 @@ class MultiplayerSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
+        // ✅ Couleur bordure adaptée au mode dark/light (comme solo)
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const borderColor = isDarkMode ? '#008B8B' : '#d8d800ff';  // Cyan en dark, Gold en light
+
         // Dessiner la grille (même style que le solo)
         RenderUtils.drawGrid(
             this.ctx,
             this.GRID_SIZE,
             this.CELL_SIZE,
             this.CANVAS_SIZE,
-            { grid: this.COLORS.grid, border: this.COLORS.border }
+            { grid: this.COLORS.grid, border: borderColor }
         );
 
         // Dessiner la nourriture (même étoile dorée que le solo)
