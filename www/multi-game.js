@@ -593,6 +593,10 @@ class MultiplayerSnakeGame {
         const opponentSegments = opponentId ? scores[opponentId] : 0;
 
         const isWinner = message.winner === myId;
+
+        // ✅ TRACKING VICTOIRES MULTIJOUEUR (pour trophées)
+        this.trackMultiplayerVictory(isWinner);
+
         const resultMessage = isWinner
             ? '🏆 VICTOIRE !'
             : message.winner
@@ -652,6 +656,40 @@ class MultiplayerSnakeGame {
             gameOverOverlay.remove();
             this.returnToMenu();
         };
+    }
+
+    /**
+     * Track les victoires multijoueur (pour trophées)
+     * @param {boolean} isWinner - Si le joueur a gagné
+     */
+    trackMultiplayerVictory(isWinner) {
+        // Sécurité: attendre que snake.js soit chargé
+        if (!window.load || !window.save || !window.checkTrophy) return;
+
+        let career = window.load('career', {});
+
+        // Initialiser les variables multi si besoin
+        if (typeof career.multiWins === 'undefined') career.multiWins = 0;
+        if (typeof career.currentStreak === 'undefined') career.currentStreak = 0;
+        if (typeof career.bestStreak === 'undefined') career.bestStreak = 0;
+
+        // Mettre à jour selon le résultat
+        if (isWinner) {
+            career.multiWins++;
+            career.currentStreak++;
+
+            // Mettre à jour le meilleur streak
+            if (career.currentStreak > career.bestStreak) {
+                career.bestStreak = career.currentStreak;
+            }
+        } else {
+            // Défaite ou match nul - réinitialiser le streak
+            career.currentStreak = 0;
+        }
+
+        // Sauvegarder et vérifier les trophées
+        window.save('career', career);
+        window.checkTrophy();
     }
 
     replay() {

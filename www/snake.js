@@ -707,8 +707,53 @@
             h += `</table>`;
         }
 
-        h += `<div class="table-header" style="margin-top: 20px;">🎖️ TROPHÉES (${unlocked}/${total})</div>`;
-        h += `<div class="trophy-bar">${window.careerTrophyHTML || ''}</div>`;
+        // ═══════════════════════════════════════
+        // SECTION TROPHÉES AAA
+        // ═══════════════════════════════════════
+        h += `<div class="table-header" style="margin-top: 20px;">🏆 TROPHÉES AAA (${unlocked}/${total})</div>`;
+
+        // Barre de progression
+        const progressPercent = Math.round((unlocked / total) * 100);
+        h += `
+            <div class="trophy-progress-container">
+                <div class="trophy-progress-bar">
+                    <div class="trophy-progress-fill" style="width: ${progressPercent}%"></div>
+                </div>
+                <div class="trophy-progress-text">${unlocked}/${total} débloqués (${progressPercent}%)</div>
+            </div>
+        `;
+
+        // Grille de trophées
+        h += `<div class="trophy-grid">`;
+
+        for (let key in TROPHIES) {
+            const trophy = TROPHIES[key];
+            const isUnlocked = tr[key] || false;
+            const stars = '⭐'.repeat(trophy.rarity);
+
+            // Si secret et non débloqué, afficher ???
+            const displayName = (trophy.secret && !isUnlocked) ? '???' : trophy.name;
+            const displayEmoji = (trophy.secret && !isUnlocked) ? '❓' : trophy.emoji;
+            const displayDesc = (trophy.secret && !isUnlocked)
+                ? (trophy.hint || 'Trophée secret...')
+                : trophy.description;
+
+            const cardClass = `trophy-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+            h += `
+                <div class="${cardClass}">
+                    <div class="trophy-card-emoji">${displayEmoji}</div>
+                    <div class="trophy-card-name">${displayName}</div>
+                    <div class="trophy-card-desc">${displayDesc}</div>
+                    <div class="trophy-card-footer">
+                        <span class="trophy-rarity">${stars}</span>
+                        ${isUnlocked ? `<span class="trophy-xp">+${trophy.xp} XP</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        h += `</div>`;
         h += `<div class="career-actions">`;
         h += `<button class="menu-btn career-reset-btn" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
         h += `<button class="menu-btn" onclick="audio.buttonClick();closeModal()">Fermer</button>`;

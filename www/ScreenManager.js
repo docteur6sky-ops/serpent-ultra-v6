@@ -61,8 +61,50 @@ class ScreenManager {
 
             this.currentScreen = screenId;
             console.log(`🖥️ [ScreenManager]   - ${screenId} affiché`);
+
+            // ✅ TRACKING ÉCRANS VISITÉS (pour trophée "Explorateur")
+            this.trackScreenVisit(screenId);
         } else {
             console.warn(`⚠️ [ScreenManager] Écran "${screenId}" introuvable`);
+        }
+    }
+
+    /**
+     * Track les écrans visités (pour trophée "Explorateur")
+     * @param {string} screenId - ID de l'écran visité
+     */
+    trackScreenVisit(screenId) {
+        // Charger la career
+        if (!window.load) return; // Sécurité: attendre que snake.js soit chargé
+
+        let career = window.load('career', {});
+
+        // Initialiser screensVisited si besoin
+        if (!career.screensVisited) {
+            career.screensVisited = [];
+        }
+
+        // Mapper les IDs d'écrans vers les noms trackés pour le trophée
+        const screenMapping = {
+            'menu': 'menu',
+            'game-solo': 'game-solo',
+            'multiplayer-menu': 'multiplayer-menu',
+            'options-menu': 'options-menu',
+            'rules-menu': 'rules-menu',
+            'credits-menu': 'credits-menu'
+        };
+
+        const trackedName = screenMapping[screenId];
+
+        // Si c'est un écran à tracker et qu'il n'est pas déjà visité
+        if (trackedName && !career.screensVisited.includes(trackedName)) {
+            career.screensVisited.push(trackedName);
+            window.save('career', career);
+
+            // Vérifier les trophées
+            if (window.checkTrophy) {
+                window.checkTrophy();
+            }
         }
     }
 
