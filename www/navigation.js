@@ -259,6 +259,13 @@ function showFinalStats() {
 
     // Afficher les stats de jeu
     setTimeout(() => {
+        // Mapping emoji difficulté
+        const difficultyEmojis = {
+            'Facile': '😊',
+            'Normal': '😮',
+            'Difficile': '😈'
+        };
+
         const elements = {
             fsc: document.getElementById('fsc'),
             fxp: document.getElementById('fxp'),
@@ -268,10 +275,10 @@ function showFinalStats() {
             fmaxlength: document.getElementById('fmaxlength'),
             fwalls: document.getElementById('fwalls'),
             fskulls: document.getElementById('fskulls'),
-            fdiff: document.getElementById('fdiff'),
-            fslow: document.getElementById('fslow'),
-            fdouble: document.getElementById('fdouble'),
-            finvincible: document.getElementById('finvincible'),
+            fdiffEmoji: document.getElementById('fdiff-emoji'),
+            fice: document.getElementById('fice'),
+            ffire: document.getElementById('ffire'),
+            frock: document.getElementById('frock'),
             fghost: document.getElementById('fghost')
         };
 
@@ -285,10 +292,16 @@ function showFinalStats() {
         if (elements.fmaxlength) elements.fmaxlength.textContent = stats.maxSnakeLength || 1;
         if (elements.fwalls) elements.fwalls.textContent = stats.wallsDestroyed || 0;
         if (elements.fskulls) elements.fskulls.textContent = stats.skullsEaten || 0;
-        if (elements.fdiff) elements.fdiff.textContent = stats.difficulty || 'Facile';
-        if (elements.fslow) elements.fslow.textContent = stats.slowCount || 0;
-        if (elements.fdouble) elements.fdouble.textContent = stats.doubleCount || 0;
-        if (elements.finvincible) elements.finvincible.textContent = stats.invincibleCount || 0;
+
+        // Mettre à jour difficulté avec emoji
+        if (elements.fdiffEmoji && stats.difficulty) {
+            elements.fdiffEmoji.textContent = difficultyEmojis[stats.difficulty] || '😊';
+        }
+
+        // Power-ups (nouveaux IDs)
+        if (elements.fice) elements.fice.textContent = stats.slowCount || 0;
+        if (elements.ffire) elements.ffire.textContent = stats.doubleCount || 0;
+        if (elements.frock) elements.frock.textContent = stats.invincibleCount || 0;
         if (elements.fghost) elements.fghost.textContent = stats.ghostCount || 0;
     }, 100);
 }
