@@ -1149,9 +1149,15 @@ body.dark-mode .game-control-btn:hover {
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
 }
 
-/* Cartes larges (2 colonnes) */
+/* Cartes larges (2 colonnes) - CENTRAGE VERTICAL */
 .stat-wide {
     grid-column: span 2;
+
+    /* ✅ NOUVEAU : Forcer centrage vertical et horizontal */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
 
 /* Label (texte descriptif) */
@@ -1167,6 +1173,8 @@ body.dark-mode .game-control-btn:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
+    text-align: center;
 }
 
 /* Valeur (donnée) */
@@ -1180,6 +1188,8 @@ body.dark-mode .game-control-btn:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    text-align: center;
 }
 
 /* Valeurs spéciales colorées */
@@ -1197,19 +1207,29 @@ body.dark-mode .game-control-btn:hover {
     color: var(--color-gold, #D4AF37);
 }
 
-/* Emoji difficulté (très gros) */
+/* Emoji difficulté (très gros) - Centrage parfait */
 .stat-difficulty-emoji {
     font-size: 42px;
     line-height: 1;
+
+    /* ✅ NOUVEAU : Force centrage */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
-/* Power-ups */
+/* Power-ups - Centrage parfait */
 .stat-powerups-values {
     font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+
+    /* ✅ NOUVEAU : Force centrage */
+    width: 100%;
+    text-align: center;
 }
 
 .stat-powerups-values span {
@@ -1243,14 +1263,18 @@ body.dark-mode .game-control-btn:hover {
     border: 2px solid var(--btn-border, transparent);
 }
 
+/* ✅ SUPPRIMÉ : Effet hover (couleur pas jolie) */
+/*
 .menu-btn:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
     background: var(--btn-hover-bg, linear-gradient(135deg, #764ba2 0%, #667eea 100%));
 }
+*/
 
+/* ✅ GARDE SEULEMENT :active - Léger feedback au clic */
 .menu-btn:active {
-    transform: translateY(0);
+    transform: scale(0.98);
 }
 
 /* Responsive */
