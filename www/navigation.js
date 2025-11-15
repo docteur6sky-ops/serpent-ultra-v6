@@ -310,6 +310,45 @@ function showFinalStats() {
 window.showProgressionOverlay = showProgressionOverlay;
 window.showFinalStats = showFinalStats;
 
+/**
+ * Retour au menu depuis l'écran Stats
+ */
+function returnToMenuFromStats() {
+    if (window.audio) window.audio.buttonClick();
+
+    // Nettoyer le jeu solo si actif
+    if (window.soloGame && window.soloGame.stop) {
+        window.soloGame.stop();
+    }
+
+    // Retour au menu
+    window.screenManager.show('menu');
+
+    // Mettre à jour la barre XP du menu
+    if (window.updatePlayerProgress) {
+        window.updatePlayerProgress();
+    }
+}
+
+/**
+ * Rejouer une partie solo depuis l'écran Stats
+ */
+function replaySolo() {
+    if (window.audio) window.audio.buttonClick();
+
+    // Cacher écran stats
+    window.screenManager.show('game-solo');
+
+    // Redémarrer le jeu
+    if (window.start) {
+        window.start();
+    }
+}
+
+// Exposer globalement
+window.returnToMenuFromStats = returnToMenuFromStats;
+window.replaySolo = replaySolo;
+
 // ============================================
 // MODE MULTIJOUEUR
 // ============================================
