@@ -18,7 +18,7 @@ global.WebSocket = class MockWebSocket {
     }
 };
 
-const Snake = require('../../SnakeServer.js');
+const Snake = require('../../../SnakeServer.js');
 
 // Configuration pour tests
 const CONFIG = {

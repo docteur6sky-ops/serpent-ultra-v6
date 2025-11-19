@@ -3,7 +3,7 @@
 // 24 tests - Scénarios de jeu complets
 // ============================================
 
-const Snake = require('../../SnakeServer.js');
+const Snake = require('../../../SnakeServer.js');
 
 describe('INTÉGRATION - Flow Complet Solo', () => {
     test('devrait gérer un flow complet : démarrage → mouvement → nourriture', () => {

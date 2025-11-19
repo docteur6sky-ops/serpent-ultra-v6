@@ -29,7 +29,7 @@ class MultiplayerClient {
     }
 
     detectServerUrl() {
-        return 'ws://localhost:8080';
+        return 'ws://localhost:3000';
     }
 
     connect(customUrl = null) {
