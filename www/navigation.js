@@ -231,6 +231,48 @@ function showProgressionOverlay(stats) {
     localStorage.setItem('playerXP', finalXP);
     localStorage.setItem('playerLevel', newLevel);
 
+    // ✅ Mettre à jour et sauvegarder les statistiques de carrière
+    const career = JSON.parse(localStorage.getItem('career') || '{}');
+
+    // Initialiser les champs si nécessaire
+    if (!career.totalGames) career.totalGames = 0;
+    if (!career.totalScore) career.totalScore = 0;
+    if (!career.bestScore) career.bestScore = 0;
+    if (!career.totalApples) career.totalApples = 0;
+    if (!career.maxLevel) career.maxLevel = 0;
+    if (!career.totalWalls) career.totalWalls = 0;
+    if (!career.totalPowerups) career.totalPowerups = 0;
+    if (!career.maxSurvivalTime) career.maxSurvivalTime = 0;
+    if (!career.totalSkulls) career.totalSkulls = 0;
+    if (!career.maxSnakeLength) career.maxSnakeLength = 0;
+    if (!career.xp) career.xp = 0;
+    if (!career.level) career.level = 1;
+
+    // Mettre à jour les statistiques
+    career.totalGames++;
+    career.totalScore += stats.score || 0;
+    career.bestScore = Math.max(career.bestScore, stats.score || 0);
+    career.totalApples += stats.foodCount || 0;
+    career.maxLevel = Math.max(career.maxLevel, stats.level || 0);
+    career.totalWalls += stats.wallsDestroyed || 0;
+    career.totalPowerups += (stats.slowCount || 0) + (stats.doubleCount || 0) + (stats.invincibleCount || 0) + (stats.ghostCount || 0);
+    career.totalSkulls += stats.skullsEaten || 0;
+    career.maxSnakeLength = Math.max(career.maxSnakeLength, stats.maxSnakeLength || 0);
+
+    // Mettre à jour XP et niveau dans career aussi
+    career.xp = finalXP;
+    career.level = newLevel;
+
+    // Extraire le temps en secondes depuis timeString (format "minutes:seconds")
+    if (stats.timeString) {
+        const [minutes, seconds] = stats.timeString.split(':').map(Number);
+        const totalSeconds = (minutes * 60) + seconds;
+        career.maxSurvivalTime = Math.max(career.maxSurvivalTime, totalSeconds);
+    }
+
+    // Sauvegarder
+    localStorage.setItem('career', JSON.stringify(career));
+
     // ✅ NOUVEAU : Stocker XP gagné pour les stats
     window.lastGameXPGained = xpGained;
 

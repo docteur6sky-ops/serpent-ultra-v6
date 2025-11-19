@@ -476,12 +476,19 @@
         const saved = load('career');
         if (saved) career = { ...career, ...saved };
 
+        // ✅ Lire depuis playerXP/playerLevel (nouveau système) ou career (ancien système)
+        const playerXP = parseInt(localStorage.getItem('playerXP')) || career.xp || 0;
+        const playerLevel = parseInt(localStorage.getItem('playerLevel')) || career.level || 1;
+
+        // Calculer XP pour le prochain niveau (formule: niveau × 1000)
+        const xpNext = playerLevel * 1000;
+
         const levelNum = getElementSafely('player-level-num');
         const circleFill = getElementSafely('player-circle-fill');
 
-        if (levelNum) levelNum.textContent = career.level;
+        if (levelNum) levelNum.textContent = playerLevel;
         if (circleFill) {
-            const percentage = Math.min((career.xp / career.xpNext) * 100, 100);
+            const percentage = Math.min((playerXP / xpNext) * 100, 100);
             const circumference = 283;
             const offset = circumference - (percentage / 100) * circumference;
             circleFill.style.strokeDashoffset = offset;
@@ -492,7 +499,7 @@
         const soundBtn = document.querySelector('#menu button[aria-label="Activer ou désactiver le son"]');
         const soundStatus = document.getElementById('sound-status');
         if (soundBtn && soundStatus) {
-            soundBtn.innerHTML = (soundEnabled ? '🔊' : '🔇') + ' SON : <span id="sound-status">' + soundStatus.textContent + '</span>';
+            soundBtn.innerHTML = (soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07') + ' SON : <span id="sound-status">' + soundStatus.textContent + '</span>';
         }
     }
 
@@ -868,7 +875,7 @@
         }
 
         if (soundBtn) {
-            soundBtn.innerHTML = (soundEnabled ? '🔊' : '🔇') + ' SON : <span id="sound-status">' + (soundEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉ') + '</span>';
+            soundBtn.innerHTML = (soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07') + ' SON : <span id="sound-status">' + (soundEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉ') + '</span>';
         }
     }
 
@@ -953,11 +960,19 @@
     }
 
     function resetAllStats() {
-        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n\nCette action est IRRÉVERSIBLE !')) {
+        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n✖️ Pseudo\n\nCette action est IRRÉVERSIBLE !')) {
+            // ✅ Supprimer TOUTES les clés liées au jeu
             localStorage.removeItem('career');
             localStorage.removeItem('tr');
             localStorage.removeItem('ss');
             localStorage.removeItem('hi');
+            localStorage.removeItem('playerXP');
+            localStorage.removeItem('playerLevel');
+            localStorage.removeItem('careerStats');
+            localStorage.removeItem('leaderboard');
+            localStorage.removeItem('justLeveledUp');
+            localStorage.removeItem('snakeUltraPseudo');
+            localStorage.removeItem('playerPseudo');
 
             career = {
                 level: 1,
@@ -970,7 +985,11 @@
                 maxLevel: 0,
                 totalWalls: 0,
                 totalPowerups: 0,
-                maxSurvivalTime: 0
+                maxSurvivalTime: 0,
+                screensVisited: [],
+                multiWins: 0,
+                currentStreak: 0,
+                bestStreak: 0
             };
 
             tr = {};
@@ -981,7 +1000,9 @@
             updateTrophies();
             closeModal();
 
-            alert('✅ Toutes les statistiques ont été réinitialisées !');
+            // ✅ Recharger la page pour réinitialiser complètement l'interface
+            alert('✅ Toutes les statistiques ont été réinitialisées !\n\nLa page va se recharger.');
+            window.location.reload();
         }
     }
 
@@ -1219,6 +1240,7 @@
     window.showTrophiesOverlay = showTrophiesOverlay;
     window.closeOverlay = closeOverlay;
     window.updateRankDisplay = updateRankDisplay;
+    window.resetAllStats = resetAllStats;
 
 
 })();
