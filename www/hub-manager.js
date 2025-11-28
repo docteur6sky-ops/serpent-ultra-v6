@@ -29,7 +29,7 @@ function calculateSoloGrade(level) {
             return {
                 emoji: rank.emoji,
                 color: rank.color,
-                label: rank.name
+                label: rank.title
             };
         }
     }
@@ -38,7 +38,7 @@ function calculateSoloGrade(level) {
     return {
         emoji: RANKS.bronze.emoji,
         color: RANKS.bronze.color,
-        label: RANKS.bronze.name
+        label: RANKS.bronze.title
     };
 }
 

@@ -1,306 +1,23 @@
 // ============================================
-// SNAKE ULTRA V6 - FICHIER PRINCIPAL NETTOYÉ
-// Constants, Audio, UI & Utilities uniquement
+// SNAKE ULTRA V6 - FICHIER PRINCIPAL MODULAIRE
+// UI & Utilities avec imports ES6
 // ============================================
+
+// Imports des modules
+import { logger } from './services/logger.js';
+import { CONFIG, DIFFICULTY, DIFFICULTY_NAMES, DIFFICULTY_ICONS, MEDALS, KEYS, COLORS } from './config/constants.js';
+import { createTrophies, RANKS } from './data/trophies.js';
+import { save, load } from './services/storage.js';
+import { audioService } from './services/audio.js';
 
 (function() {
     'use strict';
 
-    // ============================================
-    // CONSTANTES DE JEU
-    // ============================================
+    // Constantes importées depuis ./config/constants.js
+    // CONFIG, DIFFICULTY, DIFFICULTY_NAMES, DIFFICULTY_ICONS, MEDALS, KEYS, COLORS
 
-    const CONFIG = {
-        GRID_SIZE: 30,
-        CANVAS_SIZE: 360,
-        CELL_SIZE: 360 / 30,
-        ANIMATION_DELAY: 300,
-        MAX_SAVED_SCORES: 3,
-        SLOW_DURATION: 10000,
-        DOUBLE_DURATION: 15000,
-        INVINCIBLE_DURATION: 8000,
-        POWERUP_SPAWN_CHANCE: 0.08,
-        OBSTACLE_SPAWN_INTERVAL: 5,
-        BAD_SPAWN_INTERVAL: 3
-    };
-
-    const DIFFICULTY = { EASY: 0, NORMAL: 1, HARD: 2 };
-    const DIFFICULTY_NAMES = ['😊 Facile', '😮 Normal', '😈 Difficile'];
-    const DIFFICULTY_ICONS = ['😊', '😮', '😈'];
-    const MEDALS = ['🥇', '🥈', '🥉'];
-
-    const KEYS = {
-        UP: 'ArrowUp',
-        DOWN: 'ArrowDown',
-        LEFT: 'ArrowLeft',
-        RIGHT: 'ArrowRight',
-        SPACE: ' ',
-        PAUSE: 'p'
-    };
-
-    const COLORS = {
-        GOLD: '#D4AF37',
-        SNAKE: '#00FF87',
-        FOOD: '#FFD700',
-        BAD: '#FF1744',
-        BG_DARK: '#0f0f23',
-        BG_LIGHT: '#1a1a2e',
-        TEXT_LIGHT: '#C0C0C0',
-        BORDER: '#d8d800ff'
-    };
-
-    const TROPHIES = {
-        // ═══════════════════════════════════════
-        // SOLO - PROGRESSION (3)
-        // ═══════════════════════════════════════
-        ver_de_terre: {
-            name: 'Ver de Terre',
-            emoji: '🪱',
-            description: 'Atteindre le niveau 5',
-            rarity: 1,
-            xp: 500,
-            secret: false,
-            category: 'progression',
-            check: () => career.maxLevel >= 5
-        },
-
-        roi_reptiles: {
-            name: 'Roi des Reptiles',
-            emoji: '👑',
-            description: 'Atteindre le niveau 10',
-            rarity: 2,
-            xp: 1000,
-            secret: false,
-            category: 'progression',
-            check: () => career.maxLevel >= 10
-        },
-
-        dieu_serpent: {
-            name: 'Dieu Serpent',
-            emoji: '🌟',
-            description: 'Atteindre le niveau 15',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'progression',
-            check: () => career.maxLevel >= 15
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - COLLECTION (2) - CUMULATIF
-        // ═══════════════════════════════════════
-        tout_puissant: {
-            name: 'Tout Puissant',
-            emoji: '⚡',
-            description: 'Collecter 75 power-ups (total carrière)',
-            rarity: 2,
-            xp: 1000,
-            secret: false,
-            category: 'collection',
-            check: () => career.totalPowerups >= 75
-        },
-
-        seigneur_chaos: {
-            name: 'Seigneur du Chaos',
-            emoji: '🔮',
-            description: 'Collecter 150 power-ups (total carrière)',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'collection',
-            check: () => career.totalPowerups >= 150
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - DESTRUCTION (1) - CUMULATIF
-        // ═══════════════════════════════════════
-        architecte_chaos: {
-            name: 'Architecte du Chaos',
-            emoji: '🌪️',
-            description: 'Détruire 200 murs (total carrière)',
-            rarity: 3,
-            xp: 1500,
-            secret: false,
-            category: 'destruction',
-            check: () => career.totalWalls >= 200
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - EXPLOITS & MAÎTRISE (4)
-        // ═══════════════════════════════════════
-        anaconda: {
-            name: 'Anaconda',
-            emoji: '🦎',
-            description: 'Atteindre 50 segments de longueur',
-            rarity: 2,
-            xp: 1000,
-            secret: false,
-            category: 'exploits',
-            check: () => career.bestScore >= 5000  // Proxy : 50 segments ≈ 5000 pts
-        },
-
-        perfectionniste: {
-            name: 'Perfectionniste',
-            emoji: '💯',
-            description: 'Atteindre le niveau 10 sans manger de crâne',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'maitrise',
-            check: () => false  // TODO: Nécessite tracking skullsEaten
-        },
-
-        puriste: {
-            name: 'Puriste',
-            emoji: '🚫',
-            description: 'Atteindre le niveau 10 sans power-up',
-            rarity: 3,
-            xp: 1500,
-            secret: false,
-            category: 'maitrise',
-            check: () => career.maxLevel >= 10 && career.totalPowerups === 0
-        },
-
-        maitre: {
-            name: 'Maître',
-            emoji: '🥇',
-            description: 'Obtenir 20 000 points en Difficile',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'maitrise',
-            check: () => career.bestScore >= 20000  // TODO: Vérifier difficulté
-        },
-
-        // ═══════════════════════════════════════
-        // MULTI - VICTOIRES (3)
-        // ═══════════════════════════════════════
-        vainqueur: {
-            name: 'Vainqueur',
-            emoji: '🏆',
-            description: 'Gagner 10 parties multijoueur',
-            rarity: 2,
-            xp: 1000,
-            secret: false,
-            category: 'multi',
-            check: () => (career.multiWins || 0) >= 10
-        },
-
-        champion: {
-            name: 'Champion',
-            emoji: '👑',
-            description: 'Gagner 50 parties multijoueur',
-            rarity: 3,
-            xp: 1500,
-            secret: false,
-            category: 'multi',
-            check: () => (career.multiWins || 0) >= 50
-        },
-
-        invaincu: {
-            name: 'Invaincu',
-            emoji: '🔥',
-            description: 'Gagner 3 parties multijoueur d\'affilée',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'multi',
-            check: () => (career.currentStreak || 0) >= 3
-        },
-
-        // ═══════════════════════════════════════
-        // SECRETS (2)
-        // ═══════════════════════════════════════
-        centenaire: {
-            name: 'Centenaire',
-            emoji: '💯',
-            description: 'Jouer 100 parties (total carrière)',
-            rarity: 3,
-            xp: 1500,
-            secret: true,
-            hint: 'L\'expérience compte...',
-            category: 'secret',
-            check: () => career.totalGames >= 100
-        },
-
-        explorateur: {
-            name: 'Explorateur',
-            emoji: '🗺️',
-            description: 'Visiter tous les écrans du jeu',
-            rarity: 4,
-            xp: 2000,
-            secret: true,
-            hint: 'Explore chaque recoin...',
-            category: 'secret',
-            check: () => {
-                const requiredScreens = [
-                    'menu', 'game-solo', 'multiplayer-menu',
-                    'options-menu', 'rules-menu', 'credits-menu'
-                ];
-                const visited = career.screensVisited || [];
-                return requiredScreens.every(screen => visited.includes(screen));
-            }
-        }
-    };
-
-    const RANKS = {
-        bronze: {
-            name: 'BRONZE',
-            emoji: '🥉',
-            title: 'Apprenti',
-            minLevel: 1,
-            maxLevel: 10,
-            color: '#CD7F32'
-        },
-        silver: {
-            name: 'ARGENT',
-            emoji: '🥈',
-            title: 'Combattant',
-            minLevel: 11,
-            maxLevel: 25,
-            color: '#C0C0C0'
-        },
-        gold: {
-            name: 'OR',
-            emoji: '🥇',
-            title: 'Vétéran',
-            minLevel: 26,
-            maxLevel: 40,
-            color: '#FFD700'
-        },
-        platinum: {
-            name: 'PLATINE',
-            emoji: '💎',
-            title: 'Champion',
-            minLevel: 41,
-            maxLevel: 60,
-            color: '#E5E4E2'
-        },
-        diamond: {
-            name: 'DIAMANT',
-            emoji: '💠',
-            title: 'Maître',
-            minLevel: 61,
-            maxLevel: 80,
-            color: '#B9F2FF'
-        },
-        elite: {
-            name: 'ÉLITE',
-            emoji: '⭐',
-            title: 'Élite',
-            minLevel: 81,
-            maxLevel: 95,
-            color: '#FF69B4'
-        },
-        legend: {
-            name: 'LÉGENDE',
-            emoji: '👑',
-            title: 'Légende Vivante',
-            minLevel: 96,
-            maxLevel: 100,
-            color: '#9400D3'
-        }
-    };
+    // TROPHIES et RANKS importés depuis ./data/trophies.js
+    // TROPHIES sera initialisé après la définition de career (ligne ~300)
 
     // ============================================
     // VARIABLES GLOBALES (UI & Données uniquement)
@@ -309,10 +26,11 @@
     let soundEnabled = true;
     let musicStarted = false;
 
-    let career = {
+    // ✅ CHARGER CAREER DEPUIS LOCALSTORAGE D'ABORD (sinon TROPHIES check() utilisera career vide!)
+    const defaultCareer = {
         level: 1,
         xp: 0,
-        xpNext: 1000,
+        xpNext: 100,
         totalGames: 0,
         totalScore: 0,
         bestScore: 0,
@@ -326,10 +44,100 @@
         multiWins: 0,
         currentStreak: 0,
         bestStreak: 0,
+        totalMultiGames: 0,        // Total parties multi jouées
+        multiCompleted: 0,         // Parties finies sans abandon
+
+        // ✅ NOUVELLES VARIABLES IA
+        aiWins: 0,                 // Victoires contre l'IA
+        aiGames: 0,                // Total parties contre IA
+
+        // ✅ NOUVELLES VARIABLES TROPHÉES CRÉATIFS
+        phoenixRises: 0,           // Victoires immédiatement après défaite
+        quickDeaths: 0,            // Morts en moins de 10 secondes
+        lastGameResult: null,      // 'win' ou 'loss' pour tracking Phoenix
 
         // ✅ NOUVELLES VARIABLES SECRETS
         screensVisited: []
     };
+
+    let career = { ...defaultCareer, ...load('career', {}) };
+
+    // ✅ Initialisation des trophées AVEC LE VRAI CAREER chargé
+    const TROPHIES = createTrophies(career);
+    window.TROPHIES = TROPHIES; // ✅ Exposer pour debug
+    window.career = career; // ✅ Exposer pour debug console
+
+    // ============================================
+    // SYSTÈME UNIFIÉ DE CARRIÈRE
+    // ============================================
+
+    /**
+     * Met à jour les statistiques de carrière après une partie
+     * @param {object} stats - Statistiques de la partie
+     * @returns {object} { leveledUp, oldLevel, newLevel, xpGained }
+     */
+    function updateCareer(stats) {
+        const oldLevel = career.level;
+        const xpGained = Math.floor((stats.score || 0) / 5);
+
+        // Mise à jour des statistiques de jeu
+        career.totalGames++;
+        career.totalScore += stats.score || 0;
+        career.bestScore = Math.max(career.bestScore, stats.score || 0);
+        career.totalApples += stats.foodCount || 0;
+        career.maxLevel = Math.max(career.maxLevel, stats.level || 0);
+        career.totalWalls += stats.wallsDestroyed || 0;
+        career.totalPowerups += (stats.slowCount || 0) + (stats.doubleCount || 0) +
+                                (stats.invincibleCount || 0) + (stats.ghostCount || 0);
+
+        // Mise à jour du temps de survie max
+        if (stats.timeString) {
+            const currentSeconds = timeToSeconds(stats.timeString);
+            if (currentSeconds > career.maxSurvivalTime) {
+                career.maxSurvivalTime = currentSeconds;
+            }
+        }
+
+        // Ajout de l'XP
+        career.xp += xpGained;
+
+        // Gestion du level up (formule exponentielle × 1.5)
+        let leveledUp = false;
+        while (career.xp >= career.xpNext && career.level < 100) {
+            career.xp -= career.xpNext;
+            career.level++;
+            career.xpNext = Math.floor(career.xpNext * 1.05);
+            leveledUp = true;
+        }
+
+        // Sauvegarde unifiée
+        save('career', career);
+
+        logger.log(`[Career] Stats mises à jour - Niveau ${career.level}, XP ${career.xp}/${career.xpNext}`);
+
+        return { leveledUp, oldLevel, newLevel: career.level, xpGained };
+    }
+
+    // Exposer globalement pour navigation.js et autres
+    window.updateCareer = updateCareer;
+
+    /**
+     * Convertit un temps "M:SS" en secondes
+     */
+    function timeToSeconds(timeString) {
+        if (!timeString) return 0;
+        const parts = timeString.split(':');
+        return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0);
+    }
+
+    /**
+     * Récupère les statistiques de carrière (lecture seule)
+     * @returns {object} Copie des stats de carrière
+     */
+    function getCareerStats() {
+        return { ...career };
+    }
+    window.getCareerStats = getCareerStats;
 
     let tr = {};  // Trophées
     let ss = [];  // Saved scores
@@ -337,114 +145,15 @@
     let diff = DIFFICULTY.NORMAL;  // Difficulté courante
 
     // ============================================
-    // SYSTÈME AUDIO (Web Audio API pour effets sonores)
-    // Note: Musiques gérées par AudioManager.js
+    // SERVICES IMPORTÉS
     // ============================================
 
-    const audio = {
-        ctx: null,
-
-        init() {
-            try {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (error) {
-                console.error('❌ Impossible d\'initialiser l\'audio:', error);
-            }
-        },
-
-        beep(freq, dur, vol = 0.1, type = 'sine') {
-            if (!soundEnabled || !this.ctx) return;
-
-            try {
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = type;
-                osc.frequency.value = freq;
-
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur / 1000);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-
-                osc.start(this.ctx.currentTime);
-                osc.stop(this.ctx.currentTime + dur / 1000);
-            } catch (error) {
-                console.warn('⚠️ Impossible de jouer le son:', error);
-            }
-        },
-
-        buttonClick() {
-            this.beep(600, 50, 0.05);
-            setTimeout(() => this.beep(700, 50, 0.05), 50);
-        },
-
-        dpadClick() {
-            this.beep(500, 30, 0.03);
-        },
-
-        eat() {
-            this.beep(800, 100, 0.15);
-            setTimeout(() => this.beep(1000, 100, 0.15), 50);
-        },
-
-        bad() {
-            this.beep(200, 200, 0.2, 'sawtooth');
-        },
-
-        obstacle() {
-            this.beep(150, 150, 0.15, 'square');
-        },
-
-        lvlup() {
-            this.beep(600, 150, 0.2);
-            setTimeout(() => this.beep(800, 150, 0.2), 100);
-            setTimeout(() => this.beep(1000, 200, 0.2), 200);
-        },
-
-        powerup() {
-            this.beep(1200, 200, 0.2, 'triangle');
-        },
-
-        die() {
-            this.beep(400, 150, 0.25, 'sawtooth');
-            setTimeout(() => this.beep(300, 150, 0.25, 'sawtooth'), 100);
-            setTimeout(() => this.beep(200, 300, 0.25, 'sawtooth'), 200);
-        },
-
-        breakWall() {
-            this.beep(300, 100, 0.2, 'square');
-            setTimeout(() => this.beep(200, 100, 0.2, 'square'), 50);
-            setTimeout(() => this.beep(150, 150, 0.2, 'square'), 100);
-        }
-    };
-
+    // Utilisation du service audio importé (compatibilité avec le code existant)
+    const audio = audioService;
     window.audio = audio;
 
-    // ============================================
-    // GESTION DU STOCKAGE LOCAL
-    // ============================================
-
-    function save(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-            return true;
-        } catch (e) {
-            console.error(`Failed to save ${key}:`, e);
-            return false;
-        }
-    }
-
-    function load(key, defaultValue = null) {
-        try {
-            const item = localStorage.getItem(key);
-            return item ? JSON.parse(item) : defaultValue;
-        } catch (e) {
-            console.error(`Failed to load ${key}:`, e);
-            return defaultValue;
-        }
-    }
+    // Fonctions save/load importées depuis ./services/storage.js
+    // (Déjà disponibles via les imports en haut du fichier)
 
     // ============================================
     // UTILITAIRES
@@ -452,7 +161,7 @@
 
     function getElementSafely(id) {
         const element = document.getElementById(id);
-        if (!element) console.warn(`Element with id '${id}' not found`);
+        if (!element) logger.warn(`Element with id '${id}' not found`);
         return element;
     }
 
@@ -474,21 +183,14 @@
 
     function updatePlayerInfo() {
         const saved = load('career');
-        if (saved) career = { ...career, ...saved };
-
-        // ✅ Lire depuis playerXP/playerLevel (nouveau système) ou career (ancien système)
-        const playerXP = parseInt(localStorage.getItem('playerXP')) || career.xp || 0;
-        const playerLevel = parseInt(localStorage.getItem('playerLevel')) || career.level || 1;
-
-        // Calculer XP pour le prochain niveau (formule: niveau × 1000)
-        const xpNext = playerLevel * 1000;
+        if (saved) Object.assign(career, saved); // ✅ Modifier EN PLACE pour que TROPHIES.check() voit les changements
 
         const levelNum = getElementSafely('player-level-num');
         const circleFill = getElementSafely('player-circle-fill');
 
-        if (levelNum) levelNum.textContent = playerLevel;
+        if (levelNum) levelNum.textContent = career.level;
         if (circleFill) {
-            const percentage = Math.min((playerXP / xpNext) * 100, 100);
+            const percentage = Math.min((career.xp / career.xpNext) * 100, 100);
             const circumference = 283;
             const offset = circumference - (percentage / 100) * circumference;
             circleFill.style.strokeDashoffset = offset;
@@ -576,30 +278,9 @@
     }
 
     function showRankUpNotification(newRank) {
-        const notification = document.createElement('div');
-        notification.className = 'rank-notification';
-        notification.innerHTML = `
-            <div class="rank-notif-content">
-                <div class="rank-notif-emoji">${newRank.emoji}</div>
-                <div class="rank-notif-text">
-                    <div class="rank-notif-title">NOUVEAU RANG</div>
-                    <div class="rank-notif-name">VOUS ÊTES MAINTENANT ${newRank.name}</div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => notification.classList.add('show'), 100);
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 500);
-        }, 4000);
-
-        if (audio && audio.rankUp) {
-            audio.rankUp();
-        }
+        // Déléguer au NotificationManager pour gestion propre de la mémoire
+        const audioCallback = (audio && audio.rankUp) ? audio.rankUp : null;
+        window.NotificationManager.showRankUpNotification(newRank, audioCallback);
     }
 
     function updateRankDisplay() {
@@ -607,9 +288,15 @@
         const badge = document.getElementById('rank-badge');
 
         if (badge) {
-            badge.querySelector('.rank-badge-emoji').textContent = rank.emoji;
-            badge.querySelector('.rank-badge-name').textContent = rank.name;
-            badge.querySelector('.rank-badge-level').textContent = `Nv. ${career.level}/${rank.maxLevel}`;
+            const emojiEl = badge.querySelector('.rank-badge-emoji');
+            const nameEl = badge.querySelector('.rank-badge-name');
+            const levelEl = badge.querySelector('.rank-badge-level');
+
+            // ✅ Vérifier que les sous-éléments existent avant de modifier
+            if (emojiEl) emojiEl.textContent = rank.emoji;
+            if (nameEl) nameEl.textContent = rank.title;
+            if (levelEl) levelEl.textContent = `Nv. ${career.level}/${rank.maxLevel}`;
+
             badge.style.borderColor = rank.color;
             badge.style.boxShadow = `0 0 15px ${rank.color}`;
         }
@@ -635,7 +322,7 @@
             if (trophy.check()) {
                 tr[key] = true;
                 changed = true;
-                newTrophies.push(trophy);
+                newTrophies.push({ key, ...trophy }); // ✅ Inclure la clé du trophée
 
                 // ✅ RÉCOMPENSE XP
                 career.xp += trophy.xp;
@@ -645,12 +332,17 @@
             }
         }
 
+        // ✅ STOCKER les trophées débloqués pour l'écran de progression
+        if (newTrophies.length > 0) {
+            window.sessionTrophies = (window.sessionTrophies || []).concat(newTrophies);
+        }
+
         if (changed) {
             // Vérifier level up après gain XP
             while (career.xp >= career.xpNext && career.level < 100) {
                 career.xp -= career.xpNext;
                 career.level++;
-                career.xpNext = Math.floor(career.xpNext * 1.5);
+                career.xpNext = Math.floor(career.xpNext * 1.05);
             }
 
             // ✅ VÉRIFIER RANK UP
@@ -676,35 +368,9 @@
     }
 
     function showTrophyNotification(trophy) {
-        // Créer notification
-        const notification = document.createElement('div');
-        notification.className = 'trophy-notification';
-        notification.innerHTML = `
-            <div class="trophy-notif-content">
-                <div class="trophy-notif-emoji">${trophy.emoji}</div>
-                <div class="trophy-notif-text">
-                    <div class="trophy-notif-title">TROPHÉE DÉBLOQUÉ !</div>
-                    <div class="trophy-notif-name">${trophy.name}</div>
-                    <div class="trophy-notif-xp">+${trophy.xp} XP</div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(notification);
-
-        // Animation entrée
-        setTimeout(() => notification.classList.add('show'), 100);
-
-        // Animation sortie
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 500);
-        }, 4000);
-
-        // Son si disponible
-        if (audio && audio.trophy) {
-            audio.trophy();
-        }
+        // Déléguer au NotificationManager pour gestion propre de la mémoire
+        const audioCallback = (audio && audio.trophy) ? audio.trophy : null;
+        window.NotificationManager.showTrophyNotification(trophy, audioCallback);
     }
 
     function updateTrophies() {
@@ -851,6 +517,7 @@
 
     function toggleSound() {
         soundEnabled = !soundEnabled;
+        audioService.setEnabled(soundEnabled);
         save('soundEnabled', soundEnabled);
         updateSoundButton();
 
@@ -883,126 +550,40 @@
         audio.buttonClick();
         startMenuMusicOnce();
 
-        const saved = load('career');
-        if (saved) career = { ...career, ...saved };
-
-        const tr = load('tr', {});
-        const unlocked = Object.values(tr).filter(Boolean).length;
-        const total = Object.keys(TROPHIES).length;
-
-        // ═══════════════════════════════════════
-        // 🎯 CARRIÈRE V2 - ARCHITECTURE SIMPLIFIÉE
-        // ═══════════════════════════════════════
-
-        let h = `<div class="modal-title">🏆 CARRIERE</div>`;
-
-        // ═══════════════════════════════════════
-        // SECTION RANG (Nouveau !)
-        // ═══════════════════════════════════════
-        const currentRank = getCurrentRank();
-        const nextRank = getNextRank();
-
-        h += `<div class="rank-section">`;
-        h += `  <div class="rank-badge" style="background: ${currentRank.color};">`;
-        h += `    <div class="rank-emoji">${currentRank.emoji}</div>`;
-        h += `    <div class="rank-name">${currentRank.name}</div>`;
-        h += `  </div>`;
-        h += `  <div class="rank-info">`;
-        h += `    <div class="rank-title">${currentRank.title}</div>`;
-        h += `    <div class="rank-progress-text">`;
-        if (nextRank) {
-            h += `Niveau ${currentRank.progress}/${currentRank.total} → ${nextRank.emoji} ${nextRank.name}`;
+        // ✅ NOUVEAU : Utiliser le nouvel écran Stats/Carrière
+        if (window.statsManager) {
+            window.statsManager.showStats();
         } else {
-            h += `Rang MAXIMUM atteint ! 🎉`;
+            // Fallback au cas où le module ne serait pas chargé
+            logger.error('[showCareer] statsManager non disponible');
+            alert('Erreur : Le système de statistiques n\'est pas chargé.');
         }
-        h += `    </div>`;
-        h += `    <div class="rank-progress-bar">`;
-        h += `      <div class="rank-progress-fill" style="width: ${currentRank.percentage}%; background: ${currentRank.color};"></div>`;
-        h += `    </div>`;
-        h += `  </div>`;
-        h += `</div>`;
-
-        // ═══════════════════════════════════════
-        // SECTION STATS
-        // ═══════════════════════════════════════
-        h += `<div class="table-header">📊 STATISTIQUES GLOBALES</div>`;
-        h += `<table class="stats-table">`;
-        h += `<tr><td>🎮 Total Parties</td><td>${career.totalGames}</td></tr>`;
-        h += `<tr><td>📈 Niveau Joueur</td><td>${career.level}</td></tr>`;
-        h += `<tr><td>⭐ XP Actuel</td><td>${career.xp} / ${career.xpNext}</td></tr>`;
-        h += `<tr><td>💯 Score Total</td><td>${career.totalScore}</td></tr>`;
-        h += `<tr><td>🏅 Meilleur Score</td><td>${career.bestScore}</td></tr>`;
-        h += `<tr><td>🍎 Pommes Totales</td><td>${career.totalApples}</td></tr>`;
-        h += `<tr><td>📊 Niveau Max</td><td>${career.maxLevel}</td></tr>`;
-        h += `<tr><td>🧱 Murs Détruits</td><td>${career.totalWalls}</td></tr>`;
-        h += `<tr><td>✨ Power-Ups</td><td>${career.totalPowerups}</td></tr>`;
-        h += `<tr><td>⏱️ Survie Max</td><td>${Math.floor((career.maxSurvivalTime || 0) / 60)}:${((career.maxSurvivalTime || 0) % 60).toString().padStart(2, '0')}</td></tr>`;
-        h += `</table>`;
-
-        // ═══════════════════════════════════════
-        // BOUTONS OVERLAYS (Nouveau !)
-        // ═══════════════════════════════════════
-        h += `<div class="career-overlay-buttons">`;
-        h += `  <button class="menu-btn overlay-btn" onclick="audio.buttonClick();showLeaderboardOverlay()">📈 CLASSEMENT</button>`;
-        h += `  <button class="menu-btn overlay-btn" onclick="audio.buttonClick();showTrophiesOverlay()">🏆 TROPHÉES (${unlocked}/${total})</button>`;
-        h += `</div>`;
-
-        // ═══════════════════════════════════════
-        // BOUTONS ACTIONS
-        // ═══════════════════════════════════════
-        h += `<div class="career-actions">`;
-        h += `<button class="menu-btn career-reset-btn" onclick="audio.buttonClick();resetAllStats()">⚠️ Réinitialiser Tout</button>`;
-        h += `<button class="menu-btn" onclick="audio.buttonClick();closeModal()">Fermer</button>`;
-        h += `</div>`;
-
-        getElementSafely('mcontent').innerHTML = h;
-        openModal('modal');
     }
 
     function resetAllStats() {
-        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n✖️ Pseudo\n\nCette action est IRRÉVERSIBLE !')) {
-            // ✅ Supprimer TOUTES les clés liées au jeu
+        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n✖️ Pseudo du joueur\n\nCette action est IRRÉVERSIBLE !')) {
+
+            // Supprimer TOUTES les statistiques (ancien et nouveau système)
             localStorage.removeItem('career');
+            localStorage.removeItem('careerStats');
             localStorage.removeItem('tr');
             localStorage.removeItem('ss');
             localStorage.removeItem('hi');
-            localStorage.removeItem('playerXP');
-            localStorage.removeItem('playerLevel');
-            localStorage.removeItem('careerStats');
             localStorage.removeItem('leaderboard');
+            localStorage.removeItem('playerLevel');
+            localStorage.removeItem('playerXP');
             localStorage.removeItem('justLeveledUp');
-            localStorage.removeItem('snakeUltraPseudo');
+
+            // Supprimer le pseudo (toutes les variantes)
+            localStorage.removeItem('snakeultra_pseudo');
             localStorage.removeItem('playerPseudo');
+            localStorage.removeItem('snakeUltraPseudo');
 
-            career = {
-                level: 1,
-                xp: 0,
-                xpNext: 1000,
-                totalGames: 0,
-                totalScore: 0,
-                bestScore: 0,
-                totalApples: 0,
-                maxLevel: 0,
-                totalWalls: 0,
-                totalPowerups: 0,
-                maxSurvivalTime: 0,
-                screensVisited: [],
-                multiWins: 0,
-                currentStreak: 0,
-                bestStreak: 0
-            };
+            // Message de confirmation
+            alert('✅ Toutes les statistiques et le pseudo ont été réinitialisés !\n\nLa page va se recharger...');
 
-            tr = {};
-            ss = [];
-            hi = 0;
-
-            updatePlayerInfo();
-            updateTrophies();
-            closeModal();
-
-            // ✅ Recharger la page pour réinitialiser complètement l'interface
-            alert('✅ Toutes les statistiques ont été réinitialisées !\n\nLa page va se recharger.');
-            window.location.reload();
+            // Recharger la page pour réinitialiser complètement
+            location.reload();
         }
     }
 
@@ -1014,12 +595,12 @@
      * Affiche l'overlay Classement (Top 3 scores locaux)
      */
     function showLeaderboardOverlay() {
-        const savedScores = load('ss', []);
-        const topScores = savedScores.slice(0, 3);
+        // ✅ NOUVEAU : Utiliser le système de leaderboard avec détails
+        const topScores = window.getLeaderboard ? window.getLeaderboard() : [];
 
         let content = `
             <div class="overlay-header">
-                <h2>🏅 CLASSEMENT</h2>
+                <h2>🏅 CLASSEMENT TOP 3</h2>
                 <button class="overlay-close" onclick="audio.buttonClick();closeOverlay()">✖</button>
             </div>
         `;
@@ -1032,19 +613,38 @@
                 </div>
             `;
         } else {
-            content += `<table class="stats-table" style="margin-top: 20px;">`;
+            content += `<div style="margin-top: 20px;">`;
             topScores.forEach((entry, index) => {
                 const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                const name = entry.n || 'Anonyme';
-                const score = entry.s || 0;
+                const medalColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32';
+                const score = entry.score || 0;
+                const level = entry.level || 1;
+                const difficulty = entry.difficulty || 'FACILE';
+                const date = entry.date ? new Date(entry.date).toLocaleDateString('fr-FR') : 'Inconnue';
+                const time = entry.timeString || '0:00';
+                const food = entry.foodCount || 0;
+                const combo = entry.maxCombo || 0;
+
                 content += `
-                    <tr>
-                        <td class="stat-label">${medal} ${index + 1}. ${name}</td>
-                        <td class="stat-value" style="color: var(--border-color);">${score} pts</td>
-                    </tr>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                            <span style="font-size: 32px;">${medal}</span>
+                            <div style="flex: 1;">
+                                <div style="font-size: 18px; font-weight: bold; color: ${medalColor};">#${index + 1} - ${score} points</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                    📅 ${date} • 🎮 Niveau ${level} • ⚡ ${difficulty}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 12px; color: var(--text-secondary);">
+                            <div>⏱️ Temps: ${time}</div>
+                            <div>🍎 Pommes: ${food}</div>
+                            <div>🔥 Combo: ${combo}</div>
+                        </div>
+                    </div>
                 `;
             });
-            content += `</table>`;
+            content += `</div>`;
         }
 
         showOverlay(content);
@@ -1053,40 +653,130 @@
     /**
      * Affiche l'overlay Trophées (grille complète)
      */
-    function showTrophiesOverlay() {
+    function showTrophiesOverlay(category = 'all') {
+        logger.log('🏆 showTrophiesOverlay() appelée avec category:', category);
+
+        // Vérifier que TROPHIES est défini
+        if (!TROPHIES) {
+            logger.log('❌ ERREUR: TROPHIES n\'est pas défini!');
+            alert('Erreur: Les trophées ne sont pas chargés. Redémarrez l\'application.');
+            return;
+        }
+
         const tr = load('tr', {});
-        const unlocked = Object.values(tr).filter(Boolean).length;
-        const total = Object.keys(TROPHIES).length;
+
+        // Calculer les compteurs par catégorie
+        const counts = {
+            all: { unlocked: 0, total: 0 },
+            solo: { unlocked: 0, total: 0 },
+            multi: { unlocked: 0, total: 0 },
+            ia: { unlocked: 0, total: 0 },
+            secret: { unlocked: 0, total: 0 }
+        };
+
+        for (let key in TROPHIES) {
+            const trophy = TROPHIES[key];
+            const isUnlocked = tr[key] || false;
+            const cat = trophy.category || 'solo';
+
+            counts.all.total++;
+            counts[cat].total++;
+
+            if (isUnlocked) {
+                counts.all.unlocked++;
+                counts[cat].unlocked++;
+            }
+        }
+
+        const unlocked = counts.all.unlocked;
+        const total = counts.all.total;
 
         let content = `
             <div class="overlay-header">
                 <h2>🏆 TROPHÉES (${unlocked}/${total})</h2>
-                <button class="overlay-close" onclick="audio.buttonClick();closeOverlay()">✖</button>
+                <button class="overlay-close" onclick="window.audio.buttonClick();window.closeOverlay()">✖</button>
             </div>
         `;
 
-        // Barre de progression
-        const progressPercent = Math.round((unlocked / total) * 100);
+        // Tabs de catégories
         content += `
-            <div class="trophy-progress-container" style="margin-top: 20px;">
+            <div class="trophy-tabs" style="margin-top: 15px;">
+                <button class="trophy-tab ${category === 'all' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('all')">
+                    TOUS (${counts.all.unlocked}/${counts.all.total})
+                </button>
+                <button class="trophy-tab ${category === 'solo' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('solo')">
+                    SOLO (${counts.solo.unlocked}/${counts.solo.total})
+                </button>
+                <button class="trophy-tab ${category === 'multi' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('multi')">
+                    MULTI (${counts.multi.unlocked}/${counts.multi.total})
+                </button>
+                <button class="trophy-tab ${category === 'ia' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('ia')">
+                    IA (${counts.ia.unlocked}/${counts.ia.total})
+                </button>
+                <button class="trophy-tab ${category === 'secret' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('secret')">
+                    🔒 (${counts.secret.unlocked}/${counts.secret.total})
+                </button>
+            </div>
+        `;
+
+        // Barre de progression (pour la catégorie sélectionnée)
+        const currentCount = counts[category] || counts.all; // Fallback sur 'all' si catégorie inconnue
+        const progressPercent = currentCount.total > 0 ? Math.round((currentCount.unlocked / currentCount.total) * 100) : 0;
+        content += `
+            <div class="trophy-progress-container" style="margin-top: 15px;">
                 <div class="trophy-progress-bar">
                     <div class="trophy-progress-fill" style="width: ${progressPercent}%"></div>
                 </div>
-                <div class="trophy-progress-text">${unlocked}/${total} débloqués (${progressPercent}%)</div>
+                <div class="trophy-progress-text">${currentCount.unlocked}/${currentCount.total} débloqués (${progressPercent}%)</div>
             </div>
         `;
 
-        // Grille de trophées
-        content += `<div class="trophy-grid" style="margin-top: 20px;">`;
-
+        // Collecter et trier les trophées par rareté
+        const trophyList = [];
         for (let key in TROPHIES) {
             const trophy = TROPHIES[key];
+            const cat = trophy.category || 'solo';
+
+            // Filtrer par catégorie
+            if (category !== 'all' && cat !== category) {
+                continue;
+            }
+
+            trophyList.push({ key, trophy });
+        }
+
+        // Trier par rareté (1 étoile → 2 étoiles → 3 étoiles)
+        trophyList.sort((a, b) => a.trophy.rarity - b.trophy.rarity);
+
+        // Générer la grille avec labels par niveau de rareté
+        content += `<div class="trophy-grid-container" style="margin-top: 20px;">`;
+
+        let currentRarity = 0;
+        const rarityLabels = {
+            1: '⭐ Trophées 1 étoile',
+            2: '⭐⭐ Trophées 2 étoiles',
+            3: '⭐⭐⭐ Trophées 3 étoiles'
+        };
+
+        for (const { key, trophy } of trophyList) {
+            // Ajouter un label séparateur si on change de niveau de rareté
+            if (trophy.rarity !== currentRarity) {
+                if (currentRarity !== 0) {
+                    content += `</div>`; // Fermer la grille précédente
+                }
+                currentRarity = trophy.rarity;
+                content += `
+                    <div class="trophy-rarity-label">${rarityLabels[currentRarity] || `⭐ Rareté ${currentRarity}`}</div>
+                    <div class="trophy-grid">
+                `;
+            }
+
             const isUnlocked = tr[key] || false;
             const stars = '⭐'.repeat(trophy.rarity);
 
             // Si secret et non débloqué, afficher ???
             const displayName = (trophy.secret && !isUnlocked) ? '???' : trophy.name;
-            const displayEmoji = (trophy.secret && !isUnlocked) ? '❓' : trophy.emoji;
+            const displayImage = (trophy.secret && !isUnlocked) ? 'locked-treasure-chest.png' : trophy.image;
             const displayDesc = (trophy.secret && !isUnlocked)
                 ? (trophy.hint || 'Trophée secret...')
                 : trophy.description;
@@ -1094,20 +784,24 @@
             const cardClass = `trophy-card ${isUnlocked ? 'unlocked' : 'locked'}`;
 
             content += `
-                <div class="${cardClass}">
-                    <div class="trophy-card-emoji">${displayEmoji}</div>
+                <div class="${cardClass}" data-rarity="${trophy.rarity}" data-trophy-id="${key}">
+                    <img src="assets/trophies/${displayImage}" alt="${displayName}" class="trophy-image" loading="lazy">
                     <div class="trophy-card-name">${displayName}</div>
                     <div class="trophy-card-desc">${displayDesc}</div>
                     <div class="trophy-card-footer">
-                        <span class="trophy-rarity">${stars}</span>
-                        ${isUnlocked ? `<span class="trophy-xp">+${trophy.xp} XP</span>` : ''}
+                        <div class="trophy-rarity">${stars}</div>
+                        <div class="trophy-xp">+${trophy.xp} XP</div>
                     </div>
                 </div>
             `;
         }
 
-        content += `</div>`;
+        if (currentRarity !== 0) {
+            content += `</div>`; // Fermer la dernière grille
+        }
+        content += `</div>`; // Fermer le container
 
+        logger.log('🏆 Affichage de l\'overlay trophées avec', trophyList.length, 'trophées');
         showOverlay(content);
     }
 
@@ -1115,6 +809,12 @@
      * Affiche un overlay générique
      */
     function showOverlay(content) {
+        // ✅ Supprimer l'ancien overlay s'il existe (évite les empilements)
+        const existingOverlay = document.getElementById('career-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+
         // Créer l'overlay
         const overlay = document.createElement('div');
         overlay.id = 'career-overlay';
@@ -1127,6 +827,11 @@
 
         // Ajouter au DOM
         document.body.appendChild(overlay);
+
+        // ✅ FIX #10: Enregistrer dans ScreenManager pour cleanup automatique
+        if (window.screenManager) {
+            window.screenManager.registerOverlay('career-overlay');
+        }
 
         // Animation d'apparition
         setTimeout(() => overlay.classList.add('visible'), 10);
@@ -1144,32 +849,45 @@
     }
 
     // ============================================
-    // ÉCRAN DE CHARGEMENT
+    // ÉCRAN DE CHARGEMENT (géré par main.js)
     // ============================================
 
     function setupLoadingScreen() {
-        const loadingScreen = getElementSafely('loading');
-        const loadingImage = getElementSafely('loading-image');
-        const startButton = getElementSafely('start-button');
-
-        if (!loadingScreen || !loadingImage || !startButton) {
-            console.warn('❌ Écran de chargement non trouvé → Menu direct');
-            setTimeout(startGame, 1000);
-            return;
-        }
-
-        startButton.addEventListener('click', () => {
-            loadingScreen.style.display = 'none';
-            startGame();
-        });
+        // ✅ Le loading screen vidéo est maintenant géré par main.js
+        // Cette fonction ne fait plus rien - main.js appelle screenManager.show('hub')
+        logger.log('📺 Loading screen géré par main.js (vidéo)');
     }
 
     function startGame() {
-        window.screenManager.show('menu');
-        initMenuEmojis();
+        // ✅ NOUVEAU FLOW : Demander le pseudo au premier lancement
+        // Vérifier si le pseudo existe déjà dans localStorage
+        const savedPseudo = localStorage.getItem('snakeultra_pseudo');
 
-        const firstButton = document.querySelector('#menu .menu-btn');
-        if (firstButton) firstButton.focus();
+        if (!savedPseudo) {
+            // Première visite → Afficher l'écran de saisie du pseudo
+            logger.log('🆕 Première visite → Demande du pseudo');
+            window.screenManager.show('multiplayer-menu');
+
+            // Focus sur l'input pseudo
+            setTimeout(() => {
+                const pseudoInput = document.getElementById('pseudo-input');
+                if (pseudoInput) pseudoInput.focus();
+            }, 300);
+        } else {
+            // Pseudo déjà sauvegardé → Aller directement au HUB V6
+            logger.log('👤 Pseudo existant:', savedPseudo);
+            window.screenManager.show('hub');
+
+            // ✅ METTRE À JOUR LE NIVEAU ET LE CERCLE D'XP
+            if (window.updatePlayerProgress) {
+                window.updatePlayerProgress();
+            }
+
+            // Initialiser le hub (mise à jour des données dynamiques)
+            if (window.initHub) {
+                setTimeout(() => window.initHub(), 100);
+            }
+        }
     }
 
     // ============================================
@@ -1185,9 +903,12 @@
                 window.audioManager.preloadAll()
             ]).then(() => {
                 window.backgroundManager.setBackground('menu');
-                window.audioManager.setAudio('menu');
+
+                // ✅ NE PAS lancer la musique pendant le loading screen
+                // La musique sera lancée par main.js après le loading
+                logger.log('🎵 Audio préchargé - En attente fin loading screen');
             }).catch(error => {
-                console.error('❌ Erreur chargement média:', error);
+                logger.error('❌ Erreur chargement média:', error);
             });
         }
 
@@ -1197,7 +918,10 @@
         diff = load('diff', DIFFICULTY.NORMAL);
         tr = load('tr', {});
         const savedSound = load('soundEnabled');
-        if (savedSound !== null) soundEnabled = savedSound;
+        if (savedSound !== null) {
+            soundEnabled = savedSound;
+            audioService.setEnabled(savedSound);
+        }
 
         // 2. Initialiser l'audio
         audio.init();
@@ -1225,10 +949,12 @@
 
     window.init = init;
     window.onload = () => window.init();
+    window.startGame = startGame; // ✅ Exposé pour main.js (loading vidéo)
 
     window.showRules = showRules;
     window.showCredits = showCredits;
-    window.showCareer = showCareer;
+    window.showCareer = showCareer; // ✅ RESTAURÉ
+    window.resetAllStats = resetAllStats;
     window.toggleSound = toggleSound;
     window.closeModal = closeModal;
     window.save = save;
@@ -1240,7 +966,8 @@
     window.showTrophiesOverlay = showTrophiesOverlay;
     window.closeOverlay = closeOverlay;
     window.updateRankDisplay = updateRankDisplay;
-    window.resetAllStats = resetAllStats;
 
+    // ✅ Log de confirmation du chargement des fonctions trophées
+    logger.log('✅ snake.js chargé: showTrophiesOverlay disponible:', typeof window.showTrophiesOverlay);
 
 })();

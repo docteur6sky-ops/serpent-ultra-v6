@@ -108,9 +108,9 @@ class StatsManager {
 
         // Récupérer rang actuel
         const rank = window.getCurrentRank ? window.getCurrentRank() : {
-            emoji: '🥈',
-            name: 'Combattant',
-            color: '#C0C0C0'
+            emoji: '🥉',
+            title: 'Apprenti',
+            color: '#CD7F32'
         };
 
         // Calculer progression XP (formule exponentielle)
@@ -136,7 +136,7 @@ class StatsManager {
 
         // Update UI: Rank name
         const rankNameEl = document.getElementById('stats-rank-name');
-        rankNameEl.textContent = `${rank.name} nv ${career.level}`;
+        rankNameEl.textContent = `${rank.title} nv ${career.level}`;
         rankNameEl.className = 'rank-name';
         if (badgeEl.classList.contains('bronze')) rankNameEl.classList.add('bronze');
         else if (badgeEl.classList.contains('gold')) rankNameEl.classList.add('gold');
