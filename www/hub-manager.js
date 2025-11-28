@@ -7,12 +7,13 @@ import { RANKS } from './data/trophies.js';
 
 /**
  * GRADES MULTI - Basés sur multiWins
+ * Couleurs alignées sur les grades Solo
  */
 const MULTI_GRADES = {
-    MASTER: { min: 100, emoji: '👑', color: '#FF00FF', label: 'MASTER' },
-    PLATINUM: { min: 50, emoji: '⚪', color: '#E5E4E2', label: 'PLAT' },
-    GOLD: { min: 25, emoji: '🥇', color: '#FFD700', label: 'GOLD' },
-    SILVER: { min: 10, emoji: '🥈', color: '#C0C0C0', label: 'SILVER' },
+    LEGEND: { min: 50, emoji: '👑', color: '#9400D3', label: 'LÉGENDE' },
+    PLATINUM: { min: 30, emoji: '💎', color: '#E5E4E2', label: 'PLATINE' },
+    GOLD: { min: 20, emoji: '🥇', color: '#FFD700', label: 'OR' },
+    SILVER: { min: 10, emoji: '🥈', color: '#C0C0C0', label: 'ARGENT' },
     BRONZE: { min: 0, emoji: '🥉', color: '#CD7F32', label: 'BRONZE' }
 };
 
