@@ -218,8 +218,16 @@ class StatsManager {
         // Update UI: Badge avec couleur du grade
         const badgeEl = document.getElementById('stats-rank-badge');
         badgeEl.className = 'rank-badge';
-        badgeEl.style.borderColor = multiGrade.color;
-        badgeEl.style.boxShadow = `0 0 10px ${multiGrade.color}40`;
+
+        // Ajouter la classe CSS selon le grade
+        if (multiGrade.color === '#CD7F32') badgeEl.classList.add('bronze');
+        else if (multiGrade.color === '#C0C0C0') badgeEl.classList.add('silver');
+        else if (multiGrade.color === '#FFD700') badgeEl.classList.add('gold');
+        else {
+            // Pour platinum et legend, utiliser style inline
+            badgeEl.style.borderColor = multiGrade.color;
+            badgeEl.style.background = `linear-gradient(135deg, ${multiGrade.color} 0%, ${multiGrade.color}88 100%)`;
+        }
 
         document.getElementById('stats-rank-icon').textContent = multiGrade.emoji;
         document.getElementById('stats-player-name').textContent = pseudo;
