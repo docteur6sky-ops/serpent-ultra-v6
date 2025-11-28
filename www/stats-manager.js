@@ -116,10 +116,12 @@ class StatsManager {
         // Calculer progression XP (formule exponentielle)
         const progressPercent = Math.min((career.xp / career.xpNext) * 100, 100);
 
-        // Trophées
+        // Trophées SOLO uniquement
         const tr = JSON.parse(localStorage.getItem('tr') || '{}');
-        const unlocked = Object.values(tr).filter(Boolean).length;
-        const total = window.TROPHIES ? Object.keys(window.TROPHIES).length : 15;
+        const soloTrophies = window.TROPHIES ?
+            Object.entries(window.TROPHIES).filter(([k, t]) => t.category === 'solo') : [];
+        const unlocked = soloTrophies.filter(([k, t]) => tr[k]).length;
+        const total = soloTrophies.length || 14;
 
         // Update UI: Badge
         const badgeEl = document.getElementById('stats-rank-badge');
@@ -213,10 +215,11 @@ class StatsManager {
             window.calculateMultiGrade(career.multiWins || 0) :
             { emoji: '🥉', color: '#CD7F32', label: 'BRONZE' };
 
-        // Update UI: Badge
+        // Update UI: Badge avec couleur du grade
         const badgeEl = document.getElementById('stats-rank-badge');
         badgeEl.className = 'rank-badge';
         badgeEl.style.borderColor = multiGrade.color;
+        badgeEl.style.boxShadow = `0 0 10px ${multiGrade.color}40`;
 
         document.getElementById('stats-rank-icon').textContent = multiGrade.emoji;
         document.getElementById('stats-player-name').textContent = pseudo;
