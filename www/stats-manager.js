@@ -201,10 +201,10 @@ class StatsManager {
         const career = window.career || {
             level: 1,
             multiWins: 0,
-            multiLosses: 0,
-            multiDraws: 0,
-            multiAbandons: 0,
-            totalMultiGames: 0
+            totalMultiGames: 0,
+            multiCompleted: 0,
+            currentStreak: 0,
+            bestStreak: 0
         };
         const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
 
@@ -230,11 +230,13 @@ class StatsManager {
         const progressPercent = this.calculateMultiProgress(career.multiWins || 0);
         document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
 
-        // Card Stats Multi (vraies valeurs)
+        // Card Stats Multi (données existantes dans career)
         const wins = career.multiWins || 0;
-        const losses = career.multiLosses || 0;
-        const draws = career.multiDraws || 0;
-        const abandons = career.multiAbandons || 0;
+        const totalGames = career.totalMultiGames || 0;
+        const completed = career.multiCompleted || 0;
+        const abandons = totalGames - completed; // Calculé
+        const losses = completed - wins; // Défaites = parties finies - victoires
+        const bestStreak = career.bestStreak || 0;
 
         const cardStatsHTML = `
             <div class="rank-stat">
@@ -243,23 +245,22 @@ class StatsManager {
             </div>
             <div class="rank-stat">
                 <div class="rank-stat-label">Défaites</div>
-                <div class="rank-stat-value">${losses}</div>
+                <div class="rank-stat-value">${Math.max(0, losses)}</div>
             </div>
             <div class="rank-stat">
-                <div class="rank-stat-label">Match Nul</div>
-                <div class="rank-stat-value">${draws}</div>
+                <div class="rank-stat-label">Abandons</div>
+                <div class="rank-stat-value">${Math.max(0, abandons)}</div>
             </div>
             <div class="rank-stat">
-                <div class="rank-stat-label">Abandon</div>
-                <div class="rank-stat-value">${abandons}</div>
+                <div class="rank-stat-label">Meilleure Série</div>
+                <div class="rank-stat-value">${bestStreak}</div>
             </div>
         `;
         document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
 
-        // Overview Stats Multi (vraies valeurs)
-        const totalGames = career.totalMultiGames || 0;
+        // Overview Stats Multi
         const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-        const maxSegment = career.multiMaxSegment || '-';
+        const currentStreak = career.currentStreak || 0;
 
         // Trophées multi
         const tr = JSON.parse(localStorage.getItem('tr') || '{}');
@@ -278,8 +279,8 @@ class StatsManager {
                 <div class="overview-stat-value">${winRate}%</div>
             </div>
             <div class="overview-stat">
-                <div class="overview-stat-label">Segment Max</div>
-                <div class="overview-stat-value">${maxSegment}</div>
+                <div class="overview-stat-label">Série Actuelle</div>
+                <div class="overview-stat-value">${currentStreak}</div>
             </div>
             <div class="overview-stat">
                 <div class="overview-stat-label">Trophées Multi</div>
