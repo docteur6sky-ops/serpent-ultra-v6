@@ -239,7 +239,7 @@ import { audioService } from './services/audio.js';
     // ============================================
 
     function getCurrentRank() {
-        const level = career.level || 1;
+        const level = (window.career ? window.career.level : career.level) || 1;
 
         for (let key in RANKS) {
             const rank = RANKS[key];

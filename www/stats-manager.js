@@ -123,12 +123,22 @@ class StatsManager {
         const unlocked = soloTrophies.filter(([k, t]) => tr[k]).length;
         const total = soloTrophies.length || 14;
 
-        // Update UI: Badge
+        // Update UI: Badge - Reset complet puis appliquer le bon style
         const badgeEl = document.getElementById('stats-rank-badge');
         badgeEl.className = 'rank-badge';
-        if (rank.color && rank.color.includes('#C0C0C0')) badgeEl.classList.add('silver');
-        else if (rank.color && rank.color.includes('#D4AF37')) badgeEl.classList.add('gold');
-        else if (rank.color && rank.color.includes('#CD7F32')) badgeEl.classList.add('bronze');
+        badgeEl.style.borderColor = '';
+        badgeEl.style.background = '';
+        badgeEl.style.boxShadow = '';
+
+        // Appliquer classe CSS ou style inline selon la couleur du grade
+        if (rank.color === '#CD7F32') badgeEl.classList.add('bronze');
+        else if (rank.color === '#C0C0C0') badgeEl.classList.add('silver');
+        else if (rank.color === '#FFD700') badgeEl.classList.add('gold');
+        else {
+            // Pour les autres grades (platinum, diamond, elite, legend), style inline
+            badgeEl.style.borderColor = rank.color;
+            badgeEl.style.background = `linear-gradient(135deg, ${rank.color} 0%, ${rank.color}88 100%)`;
+        }
 
         // Update UI: Icon
         document.getElementById('stats-rank-icon').textContent = rank.emoji;
@@ -215,9 +225,12 @@ class StatsManager {
             window.calculateMultiGrade(career.multiWins || 0) :
             { emoji: '🥉', color: '#CD7F32', label: 'BRONZE' };
 
-        // Update UI: Badge avec couleur du grade
+        // Update UI: Badge - Reset complet puis appliquer le bon style
         const badgeEl = document.getElementById('stats-rank-badge');
         badgeEl.className = 'rank-badge';
+        badgeEl.style.borderColor = '';
+        badgeEl.style.background = '';
+        badgeEl.style.boxShadow = '';
 
         // Ajouter la classe CSS selon le grade
         if (multiGrade.color === '#CD7F32') badgeEl.classList.add('bronze');
