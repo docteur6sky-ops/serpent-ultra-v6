@@ -86,6 +86,8 @@ class StatsManager {
     updateStatsDisplay() {
         if (this.currentMode === 'solo') {
             this.displaySoloStats();
+        } else if (this.currentMode === 'ia') {
+            this.displayIAStats();
         } else {
             this.displayMultiStats();
         }
@@ -152,12 +154,16 @@ class StatsManager {
         // Update UI: Player name
         document.getElementById('stats-player-name').textContent = pseudo;
 
-        // Update UI: Rank name
+        // Update UI: Rank name avec conteneur coloré (style hub)
         const rankNameEl = document.getElementById('stats-rank-name');
-        rankNameEl.textContent = `${rank.title} nv ${career.level}`;
-        rankNameEl.className = 'rank-name';
-        if (badgeEl.classList.contains('bronze')) rankNameEl.classList.add('bronze');
-        else if (badgeEl.classList.contains('gold')) rankNameEl.classList.add('gold');
+        const gradeContainer = document.getElementById('stats-grade-container');
+        rankNameEl.textContent = rank.title;
+
+        // Appliquer la couleur du grade au conteneur
+        if (gradeContainer) {
+            gradeContainer.style.borderColor = rank.color;
+            gradeContainer.style.background = `linear-gradient(135deg, ${rank.color}66 0%, ${rank.color}33 100%)`;
+        }
 
         // Update UI: Progress bar
         document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
@@ -207,6 +213,7 @@ class StatsManager {
 
         // Update UI: Button text
         document.getElementById('stats-ranking-btn').textContent = 'Classement';
+        document.getElementById('stats-ranking-btn').style.display = '';
     }
 
     /**
@@ -251,10 +258,16 @@ class StatsManager {
         document.getElementById('stats-rank-icon').textContent = multiGrade.emoji;
         document.getElementById('stats-player-name').textContent = pseudo;
 
+        // Update UI: Rank name avec conteneur coloré (style hub)
         const rankNameEl = document.getElementById('stats-rank-name');
-        rankNameEl.textContent = `${multiGrade.label}`;
-        rankNameEl.className = 'rank-name';
-        rankNameEl.style.color = multiGrade.color;
+        const gradeContainer = document.getElementById('stats-grade-container');
+        rankNameEl.textContent = multiGrade.label;
+
+        // Appliquer la couleur du grade au conteneur
+        if (gradeContainer) {
+            gradeContainer.style.borderColor = multiGrade.color;
+            gradeContainer.style.background = `linear-gradient(135deg, ${multiGrade.color}66 0%, ${multiGrade.color}33 100%)`;
+        }
 
         // Progression vers le prochain grade
         const progressPercent = this.calculateMultiProgress(career.multiWins || 0);
@@ -321,6 +334,107 @@ class StatsManager {
 
         // Button text
         document.getElementById('stats-ranking-btn').textContent = 'Classement Online';
+        document.getElementById('stats-ranking-btn').style.display = '';
+    }
+
+    /**
+     * Affiche les stats IA (vs Bot)
+     */
+    displayIAStats() {
+        logger.log('[StatsManager] Affichage stats IA');
+
+        // ✅ UNIFIÉ : Lecture depuis window.career uniquement
+        const career = window.career || {
+            aiWins: 0,
+            aiLosses: 0,
+            aiDraws: 0,
+            aiGames: 0
+        };
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
+
+        // Update UI: Badge - Cadre vide avec icône robot
+        const badgeEl = document.getElementById('stats-rank-badge');
+        badgeEl.className = 'rank-badge ia-mode';
+        badgeEl.style.borderColor = '#666';
+        badgeEl.style.background = 'linear-gradient(135deg, rgba(100,100,100,0.3), rgba(50,50,50,0.5))';
+        badgeEl.style.boxShadow = 'none';
+
+        document.getElementById('stats-rank-icon').textContent = '🤖';
+        document.getElementById('stats-player-name').textContent = pseudo;
+
+        // Update UI: Rank name avec conteneur gris (mode IA)
+        const rankNameEl = document.getElementById('stats-rank-name');
+        const gradeContainer = document.getElementById('stats-grade-container');
+        rankNameEl.textContent = 'Mode IA';
+
+        // Appliquer le style gris pour IA
+        if (gradeContainer) {
+            gradeContainer.style.borderColor = '#666';
+            gradeContainer.style.background = 'linear-gradient(135deg, rgba(100,100,100,0.4) 0%, rgba(80,80,80,0.2) 100%)';
+        }
+
+        // Pas de progression pour IA
+        document.getElementById('stats-progress-fill').style.width = '0%';
+
+        // Card Stats IA
+        const wins = career.aiWins || 0;
+        const losses = career.aiLosses || 0;
+        const draws = career.aiDraws || 0;
+        const totalGames = career.aiGames || 0;
+
+        const cardStatsHTML = `
+            <div class="rank-stat">
+                <div class="rank-stat-label">Victoires</div>
+                <div class="rank-stat-value">${wins}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">Défaites</div>
+                <div class="rank-stat-value">${losses}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">Nuls</div>
+                <div class="rank-stat-value">${draws}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">Parties</div>
+                <div class="rank-stat-value">${totalGames}</div>
+            </div>
+        `;
+        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
+
+        // Overview Stats IA
+        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+        // Trophées IA
+        const tr = JSON.parse(localStorage.getItem('tr') || '{}');
+        const iaTrophies = window.TROPHIES ?
+            Object.entries(window.TROPHIES).filter(([k, t]) => t.category === 'ia' && tr[k]).length : 0;
+        const totalIaTrophies = window.TROPHIES ?
+            Object.values(window.TROPHIES).filter(t => t.category === 'ia').length : 5;
+
+        const overviewHTML = `
+            <div class="overview-stat">
+                <div class="overview-stat-label">Win Rate</div>
+                <div class="overview-stat-value">${winRate}%</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Parties Jouées</div>
+                <div class="overview-stat-value">${totalGames}</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Victoires</div>
+                <div class="overview-stat-value">${wins}</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Trophées IA</div>
+                <div class="overview-stat-value">${iaTrophies}/${totalIaTrophies}</div>
+            </div>
+        `;
+        document.getElementById('stats-overview').innerHTML = overviewHTML;
+
+        // Button text (pas de classement pour IA)
+        document.getElementById('stats-ranking-btn').textContent = 'Classement';
+        document.getElementById('stats-ranking-btn').style.display = 'none';
     }
 
     /**

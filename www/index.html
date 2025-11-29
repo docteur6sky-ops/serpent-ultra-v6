@@ -655,6 +655,7 @@
                 <!-- Mode Selector -->
                 <div class="mode-selector">
                     <button class="mode-btn active" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
+                    <button class="mode-btn" data-mode="ia" onclick="window.audio.buttonClick();window.switchStatsMode('ia')">IA</button>
                     <button class="mode-btn" data-mode="multi" onclick="window.audio.buttonClick();window.switchStatsMode('multi')">Multi</button>
                 </div>
 
@@ -677,7 +678,9 @@
                             <div class="rank-info">
                                 <div class="rank-header">
                                     <div class="player-name" id="stats-player-name">Joueur</div>
-                                    <div class="rank-name" id="stats-rank-name">Combattant nv 15</div>
+                                    <div class="stats-grade-container" id="stats-grade-container">
+                                        <span class="stats-grade-value" id="stats-rank-name">Combattant</span>
+                                    </div>
                                 </div>
 
                                 <!-- Barre de progression -->
