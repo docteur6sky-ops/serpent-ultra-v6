@@ -106,11 +106,17 @@ class StatsManager {
         };
         const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
 
-        // Récupérer rang actuel
-        const rank = window.getCurrentRank ? window.getCurrentRank() : {
+        // ✅ Utiliser calculateSoloGrade (avec tri correct) au lieu de getCurrentRank
+        const gradeData = window.calculateSoloGrade ? window.calculateSoloGrade(career.level) : {
             emoji: '🥉',
-            title: 'Apprenti',
+            label: 'Apprenti',
             color: '#CD7F32'
+        };
+        // Adapter le format pour compatibilité (label → title)
+        const rank = {
+            emoji: gradeData.emoji,
+            title: gradeData.label,
+            color: gradeData.color
         };
 
         // Calculer progression XP (formule exponentielle)

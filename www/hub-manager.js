@@ -23,9 +23,15 @@ const MULTI_GRADES = {
  * @returns {object} Grade { emoji, color, label }
  */
 function calculateSoloGrade(level) {
-    // Parcourir les grades de RANKS (définis dans trophies.js)
-    for (const [key, rank] of Object.entries(RANKS)) {
+    // ✅ Convertir les RANKS en tableau trié par minLevel (du plus bas au plus haut)
+    const sortedRanks = Object.entries(RANKS)
+        .map(([key, rank]) => ({ key, ...rank }))
+        .sort((a, b) => a.minLevel - b.minLevel);
+
+    // Parcourir les grades triés
+    for (const rank of sortedRanks) {
         if (level >= rank.minLevel && level <= rank.maxLevel) {
+            logger.log(`[HubManager] Grade Solo calculé: ${rank.title} (niveau ${level}, plage ${rank.minLevel}-${rank.maxLevel})`);
             return {
                 emoji: rank.emoji,
                 color: rank.color,
@@ -35,6 +41,7 @@ function calculateSoloGrade(level) {
     }
 
     // Par défaut : BRONZE (Apprenti)
+    logger.log(`[HubManager] Grade Solo par défaut: Apprenti (niveau ${level})`);
     return {
         emoji: RANKS.bronze.emoji,
         color: RANKS.bronze.color,
@@ -93,18 +100,32 @@ function updatePlayerGrades() {
     const soloGrade = calculateSoloGrade(data.level);  // ✅ Basé sur le NIVEAU
     const multiGrade = calculateMultiGrade(data.multiWins);
 
-    // Mettre à jour le DOM
+    // Mettre à jour le DOM - Texte
     const soloValueEl = document.getElementById('hub-grade-solo');
     const multiValueEl = document.getElementById('hub-grade-multi');
 
     if (soloValueEl) {
         soloValueEl.textContent = soloGrade.label;
         soloValueEl.style.color = soloGrade.color;
+
+        // ✅ Mettre à jour la couleur du CONTENEUR parent
+        const soloContainer = soloValueEl.closest('.hub-grade-solo');
+        if (soloContainer) {
+            soloContainer.style.background = `linear-gradient(135deg, ${soloGrade.color}dd 0%, ${soloGrade.color}88 100%)`;
+            soloContainer.style.borderColor = soloGrade.color;
+        }
     }
 
     if (multiValueEl) {
         multiValueEl.textContent = multiGrade.label;
         multiValueEl.style.color = multiGrade.color;
+
+        // ✅ Mettre à jour la couleur du CONTENEUR parent
+        const multiContainer = multiValueEl.closest('.hub-grade-multi');
+        if (multiContainer) {
+            multiContainer.style.background = `linear-gradient(135deg, ${multiGrade.color}dd 0%, ${multiGrade.color}88 100%)`;
+            multiContainer.style.borderColor = multiGrade.color;
+        }
     }
 
     logger.log(`[HubManager] Grades mis à jour - Solo: ${soloGrade.label} (niveau ${data.level}), Multi: ${multiGrade.label} (${data.multiWins} victoires)`);
@@ -777,12 +798,45 @@ function closeChestDropRates() {
     }
 }
 
+/**
+ * ✅ FONCTION DE TEST CONSOLE
+ * Permet de tester les grades rapidement
+ * Usage: testGrade(niveau, victoires) ou testGrade(1) pour solo seul
+ */
+function testGrade(level = null, multiWins = null) {
+    if (level !== null) {
+        window.career.level = level;
+        logger.log(`[TEST] Niveau solo défini à ${level}`);
+    }
+    if (multiWins !== null) {
+        window.career.multiWins = multiWins;
+        logger.log(`[TEST] Victoires multi définies à ${multiWins}`);
+    }
+
+    // Rafraîchir l'affichage
+    updatePlayerGrades();
+    updatePlayerInfo();
+
+    // Afficher les grades actuels
+    const soloGrade = calculateSoloGrade(window.career.level);
+    const multiGrade = calculateMultiGrade(window.career.multiWins || 0);
+
+    logger.log('═══════════════════════════════════════');
+    logger.log(`📊 GRADES ACTUELS:`);
+    logger.log(`  Solo: ${soloGrade.emoji} ${soloGrade.label} (niveau ${window.career.level})`);
+    logger.log(`  Multi: ${multiGrade.emoji} ${multiGrade.label} (${window.career.multiWins || 0} victoires)`);
+    logger.log('═══════════════════════════════════════');
+
+    return { solo: soloGrade, multi: multiGrade };
+}
+
 // Exposer globalement
 window.initHub = initHub;
 window.updatePlayerGrades = updatePlayerGrades;
 window.updatePlayerInfo = updatePlayerInfo;
 window.calculateSoloGrade = calculateSoloGrade;
 window.calculateMultiGrade = calculateMultiGrade;
+window.testGrade = testGrade; // ✅ Fonction de test
 window.openChest = openChest;
 window.cleanupChestTimer = cleanupChestTimer;
 window.updateBoxCount = updateBoxCount;

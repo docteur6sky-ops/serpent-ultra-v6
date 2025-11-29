@@ -2,46 +2,36 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="assets/icon.png">
     <title>Snake Ultra - Deluxe Edition</title>
-    <link rel="stylesheet" href="snake.css">
-    <link rel="stylesheet" href="rules.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
-    
-    <!-- Nouveaux modules (ordre important!) -->
-    <script src="ScreenManager.js"></script>  <!-- PREMIER - Gère tous les écrans -->
-    <script src="BackgroundManager.js"></script>
-    <script src="AudioManager.js"></script>
-    <script src="render-utils.js"></script>
-    <script src="solo-game.js"></script>
-    <script src="network-multiplayer.js"></script>
-    <script src="multi-game.js"></script>
-    <script src="navigation.js"></script>
-    <script src="TouchControls.js"></script>
-    <script src="AppLifecycle.js"></script>
-    <script src="snake.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/snake.css">
+    <link rel="stylesheet" href="/rules.css">
+
+    <!-- Point d'entrée Vite - Bundle optimisé -->
+    <script type="module" src="/main.js"></script>
 </head>
 <body>
-    <!-- Bouton Carrière fixe (toujours visible) -->
-    <button id="career-btn-fixed"
-            class="career-btn-floating"
-            onclick="window.audio.buttonClick();showCareer()"
-            aria-label="Ouvrir Carrière"
-            title="Carrière">
-        🏆
-    </button>
 
-    <!-- ÉCRAN DE CHARGEMENT -->
+    <!-- ÉCRAN DE CHARGEMENT PRO - VIDEO -->
     <div class="screen" id="loading">
-        <div class="video-wrapper">
-            <img id="loading-image" src="assets/backgrounds/loading.jpg" alt="Écran de chargement Snake Ultra">
-            <div id="start-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); display: flex; justify-content: center; align-items: center; z-index: 1001;">
-                <button id="start-button" style="padding: 20px; font-size: 24px; background: #D4AF37; color: #00FF87; border: 2px solid #00FF87; border-radius: 15px; cursor: pointer;">Démarrer</button>
-            </div>
+        <video id="loading-video"
+               autoplay
+               muted
+               playsinline
+               preload="auto"
+               poster="assets/backgrounds/backgrounds_generique.webp">
+            <source src="assets/backgrounds/loading_pro.mp4" type="video/mp4">
+        </video>
+        <div class="loading-skip-hint" id="loading-skip-hint">
+            Appuyez pour passer
         </div>
     </div>
 
@@ -130,37 +120,222 @@
                     <span class="btn-text">JOUER EN RÉSEAU</span>
                 </button>
 
-                <!-- Bouton Jouer contre l'IA (désactivé pour l'instant) -->
-                <button class="primary-btn-unified btn-ai" id="btn-ai">
+                <!-- Bouton Jouer contre l'IA -->
+                <button class="primary-btn-unified btn-ai" id="btn-ai" onclick="window.audio.buttonClick();startAIGame()">
                     <span class="btn-icon">🤖</span>
                     <span class="btn-text">JOUER CONTRE L'IA</span>
                 </button>
 
-                <!-- Bouton Jouer Solo -->
-                <button class="primary-btn-unified" id="solo-btn">
+                <!-- Bouton Jouer Solo (Simple - Ancien Menu) -->
+                <button class="primary-btn-unified" id="solo-btn" onclick="window.audio.buttonClick();startSolo(0)">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">JOUER SOLO</span>
                 </button>
 
-                <!-- Boutons de difficulté (TOUJOURS VISIBLES - NE PAS MODIFIER) -->
-                <div class="difficulty-selector">
-                    <button class="diff-btn easy" onclick="setDiff(0)">
-                        <span class="diff-icon">😊</span>
-                        <span class="diff-text">Facile</span>
-                    </button>
-                    <button class="diff-btn normal" onclick="setDiff(1)">
-                        <span class="diff-icon">😮</span>
-                        <span class="diff-text">Normal</span>
-                    </button>
-                    <button class="diff-btn hard" onclick="setDiff(2)">
-                        <span class="diff-icon">😈</span>
-                        <span class="diff-text">Difficile</span>
-                    </button>
-                </div>
-
                 <button class="options-btn-small" onclick="window.audio.buttonClick();showOptions()">
                     <span class="btn-icon">⚙️</span>
                     <span class="btn-text">Options</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- HUB AAA - ÉCRAN PRINCIPAL REFONTE V6 -->
+        <!-- ============================================ -->
+        <div class="screen hidden" id="hub">
+            <!-- Background thématique du Hub -->
+            <div class="hub-theme-bg" id="hub-theme-bg">
+                <img class="hub-theme-bg-image" id="hub-theme-bg-image" src="" alt="">
+                <div class="hub-theme-bg-overlay"></div>
+            </div>
+
+            <!-- Banner Container (bannière + header) -->
+            <div class="hub-banner-container">
+                <!-- Bannière (derrière le header) -->
+                <div class="hub-banner" id="hub-banner">
+                    <img class="hub-banner-image" id="hub-banner-image" src="" alt="">
+                    <div class="hub-banner-overlay"></div>
+                </div>
+
+                <!-- Header avec Identity -->
+                <div class="hub-header">
+                    <!-- Cercle XP avec niveau -->
+                    <svg class="hub-level-circle" width="60" height="60" viewBox="0 0 60 60">
+                    <!-- Cercle de fond -->
+                    <circle
+                        class="hub-circle-bg"
+                        cx="30"
+                        cy="30"
+                        r="26"
+                        fill="none"
+                        stroke="rgba(255, 255, 255, 0.1)"
+                        stroke-width="4"
+                    />
+
+                    <!-- Cercle de progression (XP) -->
+                    <circle
+                        class="hub-circle-fill"
+                        id="hub-circle-fill"
+                        cx="30"
+                        cy="30"
+                        r="26"
+                        fill="none"
+                        stroke="url(#hub-xp-gradient)"
+                        stroke-width="4"
+                        stroke-dasharray="163.4"
+                        stroke-dashoffset="163.4"
+                        stroke-linecap="round"
+                        transform="rotate(-90 30 30)"
+                    />
+
+                    <!-- Gradient dynamique -->
+                    <defs>
+                        <linearGradient id="hub-xp-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" class="xp-stop-start" />
+                            <stop offset="100%" class="xp-stop-end" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Texte niveau au centre -->
+                    <text
+                        class="hub-level-number"
+                        id="hub-level-num"
+                        x="30"
+                        y="35"
+                        text-anchor="middle"
+                        fill="var(--text-primary)"
+                        fill-opacity="1"
+                        stroke="rgba(0, 0, 0, 0.3)"
+                        stroke-width="0.5"
+                        font-size="18"
+                        font-weight="bold"
+                    >1</text>
+                </svg>
+
+                <div class="hub-identity">
+                    <div class="hub-player-name" id="hub-player-name">Joueur</div>
+                    <div class="hub-progress-bar">
+                        <div class="hub-progress-fill" id="hub-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="hub-xp-text" id="hub-xp-text">0% → 2</div>
+                </div>
+                <div class="hub-grades">
+                    <div class="hub-grade-solo">
+                        <span class="hub-grade-label">Solo:</span>
+                        <span class="hub-grade-value" id="hub-grade-solo">Apprenti</span>
+                    </div>
+                    <div class="hub-grade-multi">
+                        <span class="hub-grade-label">Multi:</span>
+                        <span class="hub-grade-value" id="hub-grade-multi">BRONZE</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Stats Zone (Coffre + Ma Box) -->
+            <div class="hub-stats-zone">
+                <div class="hub-chest-card" id="hub-chest-card" onclick="window.audio.buttonClick();window.openChest()">
+                    <img src="assets/hub_pictures/hub_chess.png" alt="Coffre" class="hub-chest-icon">
+                    <div class="hub-chest-timer" id="hub-chest-timer">02:34</div>
+                    <div class="hub-chest-info" onclick="event.stopPropagation();window.showChestDropRates()">ℹ️</div>
+                </div>
+                <div class="hub-box-card" id="hub-box-card" onclick="window.audio.buttonClick();window.openBox()">
+                    <img src="assets/hub_pictures/hub_boxe.png" alt="Box" class="hub-box-icon">
+                    <div class="hub-box-label">Ma Box</div>
+                </div>
+            </div>
+
+            <!-- SPACER - Espace vide aéré -->
+            <div class="hub-spacer"></div>
+
+            <!-- Hero CTA (Bouton Principal Compact) -->
+            <div class="hub-hero-container">
+                <!-- Bouton principal Solo compact -->
+                <button class="hub-hero-btn hub-hero-btn-compact" id="hub-hero-btn" onclick="window.audio.buttonClick();showDifficultySelection()">
+                    <div class="hub-hero-icon">🎮</div>
+                    <div class="hub-hero-text">Solo</div>
+                </button>
+            </div>
+
+            <!-- Modes Secondaires (2 cartes agrandies) -->
+            <div class="hub-modes hub-modes-two">
+                <div class="hub-mode-card hub-mode-card-large" onclick="window.audio.buttonClick();window.showMultiplayer()">
+                    <div class="hub-mode-icon">👥</div>
+                    <div class="hub-mode-label">Multi</div>
+                    <div class="hub-mode-sublabel">En ligne</div>
+                    <div class="hub-mode-badge">NEW</div>
+                </div>
+                <div class="hub-mode-card hub-mode-card-large" onclick="window.audio.buttonClick();showDifficultyModal('ai')">
+                    <div class="hub-mode-icon">🤖</div>
+                    <div class="hub-mode-label">vs IA</div>
+                    <div class="hub-mode-sublabel">Entraîne</div>
+                </div>
+            </div>
+
+            <!-- Navigation Fixe (Bottom Nav) -->
+            <div class="hub-bottom-nav">
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();alert('Boutique - À venir !')">
+                    <div class="hub-nav-icon">🛒</div>
+                    <div class="hub-nav-label">Boutique</div>
+                </button>
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();showCareer()">
+                    <div class="hub-nav-icon">📊</div>
+                    <div class="hub-nav-label">Stats</div>
+                </button>
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();window.showTrophiesOverlay()">
+                    <div class="hub-nav-icon">🏆</div>
+                    <div class="hub-nav-label">Trophées</div>
+                </button>
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();window.showFriends()">
+                    <div class="hub-nav-icon">👥</div>
+                    <div class="hub-nav-label">Amis</div>
+                </button>
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();showOptions()">
+                    <div class="hub-nav-icon">⚙️</div>
+                    <div class="hub-nav-label">Settings</div>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ============================================ -->
+        <!-- MODAL SÉLECTION DIFFICULTÉ (SIMPLE) -->
+        <!-- ============================================ -->
+        <div class="diff-modal-overlay hidden" id="difficulty-modal">
+            <div class="diff-modal-content">
+                <!-- Bouton fermer -->
+                <button class="diff-modal-close" onclick="window.audio.buttonClick();closeDifficultyModal()">✕</button>
+
+                <h2 class="diff-modal-title">Choisis ta difficulté</h2>
+
+                <!-- Bouton Facile -->
+                <button class="diff-choice-btn diff-easy" id="diff-btn-easy" onclick="window.audio.buttonClick();launchDifficulty(0)">
+                    <div class="diff-choice-icon">😊</div>
+                    <div class="diff-choice-info">
+                        <div class="diff-choice-name">FACILE</div>
+                        <div class="diff-choice-desc">Parfait pour débuter</div>
+                    </div>
+                    <div class="diff-choice-arrow">▶</div>
+                </button>
+
+                <!-- Bouton Normal -->
+                <button class="diff-choice-btn diff-normal" id="diff-btn-normal" onclick="window.audio.buttonClick();launchDifficulty(1)">
+                    <div class="diff-choice-icon">😮</div>
+                    <div class="diff-choice-info">
+                        <div class="diff-choice-name">NORMAL</div>
+                        <div class="diff-choice-desc" id="diff-desc-normal">Équilibré et fun</div>
+                    </div>
+                    <div class="diff-choice-arrow">▶</div>
+                </button>
+
+                <!-- Bouton Difficile -->
+                <button class="diff-choice-btn diff-hard" id="diff-btn-hard" onclick="window.audio.buttonClick();launchDifficulty(2)">
+                    <div class="diff-choice-icon">😈</div>
+                    <div class="diff-choice-info">
+                        <div class="diff-choice-name">DIFFICILE</div>
+                        <div class="diff-choice-desc" id="diff-desc-hard">Pour les pros</div>
+                    </div>
+                    <div class="diff-choice-arrow">▶</div>
                 </button>
             </div>
         </div>
@@ -184,24 +359,77 @@
             </div>
 
             <div class="multiplayer-buttons">
-                <button class="primary-btn-unified" onclick="window.audio.buttonClick();startLocalMultiplayer()">
-                    <span class="btn-icon">🎮</span>
-                    <span class="btn-text">DÉMARRER</span>
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();savePseudoAndGoToMenu()">
+                    <span class="btn-icon">✅</span>
+                    <span class="btn-text">VALIDER</span>
                 </button>
             </div>
-            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToMain()">
-                <span class="btn-icon">⬅️</span>
-                <span class="btn-text">RETOUR</span>
-            </button>
         </div>
 
         <!-- Lobby Multijoueur -->
+        <!-- ============================================ -->
+        <!-- LOBBY PRINCIPAL - Liste des salons -->
+        <!-- ============================================ -->
+        <div id="main-lobby-screen" class="screen hidden">
+            <!-- Background versus -->
+            <div class="lobby-bg">
+                <img class="lobby-bg-image" src="assets/backgrounds/backgrounds_versus.webp" alt="">
+                <div class="lobby-bg-overlay"></div>
+            </div>
+            <div class="lobby-container">
+
+                <!-- Header -->
+                <div class="lobby-header">
+                    <h2>🏠 LOBBY PRINCIPAL</h2>
+                    <div class="room-info">
+                        <span class="player-count">Salons disponibles</span>
+                    </div>
+                </div>
+
+                <!-- Quick Play - Rejoindre automatiquement -->
+                <div class="quick-play-section">
+                    <button class="btn-quick-play" onclick="window.audio.buttonClick();window.quickPlay()">
+                        ⚡ QUICK PLAY
+                    </button>
+                    <p class="quick-play-hint">Rejoindre ou créer automatiquement une partie</p>
+                </div>
+
+                <!-- Actions Créer/Actualiser -->
+                <div class="main-lobby-actions">
+                    <button class="btn-create-room" id="btn-create-room" onclick="window.audio.buttonClick();window.showCreateRoomDialog()">
+                        ➕ CRÉER UN SALON
+                    </button>
+                    <button class="btn-refresh-rooms" id="btn-refresh-rooms" onclick="window.audio.buttonClick();window.refreshRoomList()">
+                        🔄 ACTUALISER
+                    </button>
+                </div>
+
+                <!-- Liste des salons -->
+                <div class="rooms-list" id="rooms-list">
+                    <div class="empty-rooms-message">
+                        🔍 Aucun salon disponible. Créez-en un !
+                    </div>
+                </div>
+
+                <!-- Bouton retour -->
+                <div class="lobby-actions">
+                    <button class="btn-cancel" onclick="window.audio.buttonClick();window.screenManager.show('hub')">
+                        ❌ RETOUR
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- LOBBY DE SALON - Attente dans une room -->
+        <!-- ============================================ -->
         <div id="lobby-screen" class="screen hidden">
             <div class="lobby-container">
 
                 <!-- Header -->
                 <div class="lobby-header">
-                    <h2>🎮 LOBBY MULTIJOUEUR</h2>
+                    <h2>🎮 SALON MULTIJOUEUR</h2>
                     <div class="room-info">
                         <span class="room-id">Salle: <span id="lobby-room-id">---</span></span>
                         <span class="player-count">Joueurs: <span id="lobby-player-count">0/2</span></span>
@@ -270,7 +498,7 @@
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showSound()">
-                    <span class="btn-icon">🔊</span>
+                    <span class="btn-icon">&#x1F50A;</span>
                     <span class="btn-text">SON</span>
                 </button>
 
@@ -288,6 +516,11 @@
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showLanguage()">
                     <span class="btn-icon">🌍</span>
                     <span class="btn-text">LANGUE</span>
+                </button>
+
+                <button class="option-btn-compact" style="background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%); border-color: #FF4444;" onclick="window.audio.buttonClick();resetAllStats()">
+                    <span class="btn-icon">⚠️</span>
+                    <span class="btn-text">RÉINITIALISER</span>
                 </button>
             </div>
 
@@ -334,13 +567,13 @@
 
         <!-- Menu Son -->
         <div class="screen hidden" id="sound-menu">
-            <h2>🔊 SON</h2>
+            <h2>&#x1F50A; SON</h2>
 
             <div class="sound-controls">
                 <!-- Volume Musique -->
                 <div class="sound-control-item">
                     <label for="music-volume">
-                        <span class="sound-icon">🎵</span>
+                        <span class="sound-icon">&#x1F3B5;</span>
                         <span class="sound-label">Musique</span>
                     </label>
                     <div class="slider-container">
@@ -360,7 +593,7 @@
                 <!-- Volume Effets -->
                 <div class="sound-control-item">
                     <label for="sfx-volume">
-                        <span class="sound-icon">🔔</span>
+                        <span class="sound-icon">&#x1F514;</span>
                         <span class="sound-label">Effets Sonores</span>
                     </label>
                     <div class="slider-container">
@@ -380,7 +613,7 @@
                 <!-- Mode Silencieux -->
                 <div class="sound-control-item">
                     <label>
-                        <span class="sound-icon">🔇</span>
+                        <span class="sound-icon">&#x1F507;</span>
                         <span class="sound-label">Mode Silencieux</span>
                     </label>
                     <button class="toggle-btn" id="mute-toggle" onclick="window.audio.buttonClick();toggleMute()">
@@ -395,16 +628,90 @@
             </button>
         </div>
 
-        <!-- Menu Carrière (placeholder) -->
+        <!-- Menu Carrière / Classement -->
         <div class="screen hidden" id="career-menu">
-            <h2>📊 CARRIÈRE</h2>
+            <h2>🏆 CLASSEMENT TOP 3</h2>
             <div class="career-content">
-                <p>Statistiques de carrière à venir...</p>
+                <!-- Contenu dynamique généré par renderLeaderboard() -->
             </div>
+
+            <!-- Bouton Changer de pseudo -->
+            <button class="pseudo-edit-btn-career" onclick="window.audio.buttonClick();window.editPseudoFromCareer()">
+                <span class="btn-icon">✏️</span>
+                <span class="btn-text">Changer de pseudo</span>
+            </button>
+
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
                 <span class="btn-icon">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- ÉCRAN STATS / CARRIÈRE - REFONTE AAA -->
+        <!-- ============================================ -->
+        <div class="screen hidden" id="stats-screen">
+            <div class="stats-container-new">
+                <!-- Mode Selector -->
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
+                    <button class="mode-btn" data-mode="multi" onclick="window.audio.buttonClick();window.switchStatsMode('multi')">Multi</button>
+                </div>
+
+                <!-- Rank Card - Hero Element -->
+                <div class="rank-card">
+                    <!-- Bannière en arrière-plan -->
+                    <div class="stats-banner" id="stats-banner">
+                        <img class="stats-banner-image" id="stats-banner-image" src="" alt="">
+                        <div class="stats-banner-overlay"></div>
+                    </div>
+                    <div class="rank-content">
+                        <!-- Partie haute : Badge + Info joueur -->
+                        <div class="rank-top">
+                            <!-- Badge en haut à gauche (photo d'identité) -->
+                            <div class="rank-badge" id="stats-rank-badge">
+                                <div class="rank-icon" id="stats-rank-icon">🥈</div>
+                            </div>
+
+                            <!-- Info à droite -->
+                            <div class="rank-info">
+                                <div class="rank-header">
+                                    <div class="player-name" id="stats-player-name">Joueur</div>
+                                    <div class="rank-name" id="stats-rank-name">Combattant nv 15</div>
+                                </div>
+
+                                <!-- Barre de progression -->
+                                <div class="progression">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="stats-progress-fill"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Stats importantes -->
+                                <div class="rank-stats" id="stats-card-stats">
+                                    <!-- Généré dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Vue d'ensemble -->
+                        <div class="overview-stats" id="stats-overview">
+                            <!-- Généré dynamiquement -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bouton Classement centré -->
+                <div style="margin-bottom: 24px; display: flex; justify-content: center;">
+                    <button class="btn btn-primary stats-ranking-btn" id="stats-ranking-btn" onclick="window.audio.buttonClick();window.showLeaderboardOverlay()" style="width: 80%; max-width: 400px;">Classement</button>
+                </div>
+
+                <!-- Bouton Retour -->
+                <button class="back-btn-compact" onclick="window.audio.buttonClick();window.backFromStats()">
+                    <span class="btn-icon">⬅️</span>
+                    <span class="btn-text">RETOUR</span>
+                </button>
+            </div>
         </div>
 
         <!-- Menu Règles (placeholder) -->
@@ -472,8 +779,80 @@
             </button>
         </div>
 
+        <!-- ============================================ -->
+        <!-- 📦 MA BOX - COLLECTION D'ITEMS -->
+        <!-- ============================================ -->
+        <div class="screen hidden" id="box-screen">
+            <!-- Header -->
+            <div class="box-header">
+                <div class="box-title">
+                    <span class="box-emoji">📦</span>
+                    <h2>Ma Box</h2>
+                </div>
+                <div class="box-progress">
+                    <span class="box-count" id="box-count">0</span>
+                    <span class="box-separator">/</span>
+                    <span class="box-total" id="box-total">16</span>
+                    <span class="box-percentage" id="box-percentage">(0%)</span>
+                </div>
+                <div class="box-coins">
+                    <span class="coins-icon">💰</span>
+                    <span class="coins-value" id="box-coins-value">0</span>
+                </div>
+                <button class="box-close" onclick="closeBox()">✕</button>
+            </div>
+
+            <!-- Tabs Catégories -->
+            <div class="box-tabs">
+                <button class="box-tab active" data-category="all" onclick="filterBoxItems('all')">
+                    <span class="tab-icon">📂</span>
+                    <span class="tab-label">Tous</span>
+                    <span class="tab-count" id="tab-count-all">(0)</span>
+                </button>
+                <button class="box-tab" data-category="skins" onclick="filterBoxItems('skins')">
+                    <span class="tab-icon">🐍</span>
+                    <span class="tab-label">Skins</span>
+                    <span class="tab-count" id="tab-count-skins">(0)</span>
+                </button>
+                <button class="box-tab" data-category="banners" onclick="filterBoxItems('banners')">
+                    <span class="tab-icon">🖼️</span>
+                    <span class="tab-label">Bannières</span>
+                    <span class="tab-count" id="tab-count-banners">(0)</span>
+                </button>
+            </div>
+
+            <!-- Grid Items -->
+            <div class="box-grid" id="boxGrid">
+                <!-- Items générés dynamiquement via JS -->
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="box-footer">
+                <div class="box-stat">
+                    <span class="stat-icon">📦</span>
+                    <span class="stat-value" id="box-stat-unlocked">0</span>
+                    <span class="stat-label">Débloqués</span>
+                </div>
+                <div class="box-stat">
+                    <span class="stat-icon">🔒</span>
+                    <span class="stat-value" id="box-stat-locked">16</span>
+                    <span class="stat-label">À débloquer</span>
+                </div>
+                <div class="box-stat">
+                    <span class="stat-icon">⭐</span>
+                    <span class="stat-value" id="box-stat-percentage">0%</span>
+                    <span class="stat-label">Collection</span>
+                </div>
+            </div>
+        </div>
+
         <!-- ÉCRAN JEU SOLO -->
         <div class="screen hidden" id="game-solo">
+            <!-- Background générique -->
+            <div class="game-bg">
+                <img class="game-bg-image" src="assets/backgrounds/backgrounds_generique.webp" alt="">
+                <div class="game-bg-overlay"></div>
+            </div>
             <div class="game-area">
                 <div class="game-column">
                     <div class="score-box" id="solo-score-box">
@@ -533,6 +912,11 @@
 
         <!-- ÉCRAN JEU MULTIJOUEUR -->
         <div class="screen hidden" id="game-multi">
+            <!-- Background générique -->
+            <div class="game-bg">
+                <img class="game-bg-image" src="assets/backgrounds/backgrounds_generique.webp" alt="">
+                <div class="game-bg-overlay"></div>
+            </div>
             <div class="game-area">
                 <div class="game-column">
                     <!-- Tableau Grid 3 Lignes : Noms | Scores | Power-ups -->
@@ -588,12 +972,67 @@
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
                     </div>
 
-                    <div class="game-controls" style="margin-top: 16px;">
+                    <div class="game-controls" style="margin-top: 16px; display: flex; justify-content: center;">
                         <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.abandonMulti()" aria-label="Abandonner la partie">
                             <span class="btn-icon">🚫</span>
                             <span class="btn-text">ABANDONNER</span>
                         </button>
-                        <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.quitMulti()" aria-label="Revenir au menu">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN JEU IA -->
+        <div class="screen hidden" id="game-ai">
+            <!-- Background générique -->
+            <div class="game-bg">
+                <img class="game-bg-image" src="assets/backgrounds/backgrounds_generique.webp" alt="">
+                <div class="game-bg-overlay"></div>
+            </div>
+            <div class="game-area">
+                <div class="game-column">
+                    <!-- Tableau Grid 2 Lignes : Noms + Scores (pas de power-ups en MVP) -->
+                    <div id="ai-score-board" class="mp-scoreboard-grid">
+                        <!-- LIGNE 1 : Noms + Emoji Chrono -->
+                        <div class="mp-cell player-1">
+                            <div class="mp-name" id="ai-player1-name">Joueur</div>
+                        </div>
+                        <div class="mp-cell center">
+                            <div class="mp-chrono-emoji">⏱️</div>
+                        </div>
+                        <div class="mp-cell player-2">
+                            <div class="mp-name" id="ai-player2-name">IA</div>
+                        </div>
+
+                        <!-- LIGNE 2 : Scores + Timer -->
+                        <div class="mp-cell player-1">
+                            <div class="mp-score" id="ai-player1-segments">1</div>
+                        </div>
+                        <div class="mp-cell center">
+                            <div class="mp-timer" id="ai-timer">5:00</div>
+                        </div>
+                        <div class="mp-cell player-2">
+                            <div class="mp-score" id="ai-player2-segments">1</div>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-ai" width="360" height="360" aria-label="Zone de jeu Snake Ultra vs IA"></canvas>
+
+                    <div class="dpad" id="ai-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
+                        <div class="dpad-btn dpad-empty"></div>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
+                    </div>
+
+                    <div class="game-controls" style="margin-top: 16px;">
+                        <button class="control-btn game-control-btn" onclick="window.pauseAI()" aria-label="Mettre le jeu en pause">
+                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-text">PAUSE</span>
+                        </button>
+                        <button class="control-btn game-control-btn" onclick="window.quitAI()" aria-label="Revenir au menu">
                             <span class="btn-icon">🏠</span>
                             <span class="btn-text">MENU</span>
                         </button>
@@ -695,6 +1134,30 @@
         </div>
     </div>
 
+    <!-- Overlay Quitter IA -->
+    <div id="ai-quit-overlay" class="overlay hidden" style="display: none;">
+        <div class="overlay-content">
+            <h2>🏠 Quitter la partie ?</h2>
+            <p>Votre progression sera perdue.</p>
+            <div class="overlay-buttons">
+                <button class="menu-btn danger-btn" onclick="confirmQuitAI()">Oui, quitter</button>
+                <button class="menu-btn" onclick="cancelQuitAI()">Non, continuer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Abandon Multi -->
+    <div id="multi-quit-overlay" class="overlay hidden" style="display: none;">
+        <div class="overlay-content">
+            <h2>🏳️ Abandonner la partie ?</h2>
+            <p>⚠️ Vous allez perdre cette partie.<br>Votre adversaire remportera la victoire.</p>
+            <div class="overlay-buttons">
+                <button class="menu-btn danger-btn" onclick="confirmAbandonMulti()">Oui, abandonner</button>
+                <button class="menu-btn" onclick="cancelAbandonMulti()">Non, continuer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Overlay Progression XP/Niveau -->
     <div id="progression-overlay" class="overlay hidden" style="display: none;">
         <div class="overlay-content progression-content">
@@ -769,6 +1232,14 @@
             <!-- Animation level up (cachée par défaut) -->
             <div class="level-up-animation hidden" id="level-up-animation">
                 <div class="level-up-text">🎉 NIVEAU <span id="new-level">2</span> ! 🎉</div>
+            </div>
+
+            <!-- Section Trophées Débloqués -->
+            <div class="progression-trophies hidden" id="progression-trophies">
+                <h3 style="color: #FFD700; margin: 20px 0 10px 0; font-size: 18px;">🏆 Trophées Débloqués</h3>
+                <div id="progression-trophies-list" style="max-height: 200px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                    <!-- Trophées ajoutés dynamiquement ici -->
+                </div>
             </div>
 
             <!-- Bouton -->
