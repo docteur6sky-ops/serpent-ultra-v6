@@ -1207,8 +1207,8 @@
                         x="75"
                         y="70"
                         text-anchor="middle"
-                        fill="var(--text-primary)"
-                        stroke="rgba(0, 0, 0, 0.3)"
+                        fill="#FFFFFF"
+                        stroke="rgba(0, 0, 0, 0.5)"
                         stroke-width="1"
                         font-size="36"
                         font-weight="bold"
@@ -1221,7 +1221,7 @@
                         x="75"
                         y="95"
                         text-anchor="middle"
-                        fill="var(--text-secondary)"
+                        fill="#FFFFFF"
                         font-size="14"
                     >0/100 XP</text>
                 </svg>
@@ -1231,7 +1231,7 @@
 
             <!-- Animation level up (cachée par défaut) -->
             <div class="level-up-animation hidden" id="level-up-animation">
-                <div class="level-up-text">🎉 NIVEAU <span id="new-level">2</span> ! 🎉</div>
+                <div class="level-up-text">NIVEAU <span id="new-level">2</span> !</div>
             </div>
 
             <!-- Section Trophées Débloqués -->
@@ -1242,10 +1242,13 @@
                 </div>
             </div>
 
-            <!-- Bouton -->
-            <div class="overlay-buttons">
-                <button class="menu-btn" id="progression-next-btn" onclick="showFinalStats()">
-                    <span id="progression-btn-text">Suivant</span> →
+            <!-- Boutons -->
+            <div class="overlay-buttons" style="flex-direction: column; gap: 10px;">
+                <button class="menu-btn" id="progression-next-btn" onclick="returnToHubFromProgression()">
+                    <span id="progression-btn-text">Menu Principal</span>
+                </button>
+                <button class="menu-btn" style="background: linear-gradient(135deg, #4CAF50, #2E7D32);" onclick="replayFromProgression()">
+                    Rejouer
                 </button>
             </div>
         </div>

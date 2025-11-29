@@ -30,7 +30,7 @@ import { audioService } from './services/audio.js';
     const defaultCareer = {
         level: 1,
         xp: 0,
-        xpNext: 100,
+        xpNext: 200, // Formule linéaire: 100 + (level * 100)
         totalGames: 0,
         totalScore: 0,
         bestScore: 0,
@@ -61,6 +61,24 @@ import { audioService } from './services/audio.js';
     };
 
     let career = { ...defaultCareer, ...load('career', {}) };
+
+    // ✅ RECALCULER xpNext selon la formule linéaire (évite les bugs de sauvegarde)
+    career.xpNext = 100 + (career.level * 100);
+
+    // ✅ Vérifier si level up nécessaire (au cas où XP > xpNext)
+    let needsSave = false;
+    while (career.xp >= career.xpNext && career.level < 100) {
+        career.xp -= career.xpNext;
+        career.level++;
+        career.xpNext = 100 + (career.level * 100);
+        needsSave = true;
+    }
+
+    // ✅ Sauvegarder si des corrections ont été faites
+    if (needsSave) {
+        save('career', career);
+        logger.log('[Career] Niveau corrigé au chargement:', career.level);
+    }
 
     // ✅ Initialisation des trophées AVEC LE VRAI CAREER chargé
     const TROPHIES = createTrophies(career);
@@ -101,12 +119,12 @@ import { audioService } from './services/audio.js';
         // Ajout de l'XP
         career.xp += xpGained;
 
-        // Gestion du level up (formule exponentielle × 1.5)
+        // Gestion du level up (formule linéaire : 100 + level×100)
         let leveledUp = false;
         while (career.xp >= career.xpNext && career.level < 100) {
             career.xp -= career.xpNext;
             career.level++;
-            career.xpNext = Math.floor(career.xpNext * 1.05);
+            career.xpNext = 100 + (career.level * 100); // Linéaire : ~500 parties pour nv100
             leveledUp = true;
         }
 
@@ -342,7 +360,7 @@ import { audioService } from './services/audio.js';
             while (career.xp >= career.xpNext && career.level < 100) {
                 career.xp -= career.xpNext;
                 career.level++;
-                career.xpNext = Math.floor(career.xpNext * 1.05);
+                career.xpNext = 100 + (career.level * 100); // Linéaire
             }
 
             // ✅ VÉRIFIER RANK UP

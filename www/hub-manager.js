@@ -72,7 +72,7 @@ function getPlayerData() {
     const career = window.career || {
         level: 1,
         xp: 0,
-        xpNext: 100,
+        xpNext: 200, // Formule linéaire: 100 + (level * 100)
         bestScore: 0,
         multiWins: 0
     };
@@ -149,8 +149,8 @@ function updatePlayerInfo() {
         levelNumEl.textContent = data.level;
     }
 
-    // Barre de progression XP
-    const xpMax = data.level * 100;
+    // Barre de progression XP (formule linéaire: 100 + level*100)
+    const xpMax = 100 + (data.level * 100);
     const percentage = (data.xp / xpMax) * 100;
 
     const progressFillEl = document.getElementById('hub-progress-fill');

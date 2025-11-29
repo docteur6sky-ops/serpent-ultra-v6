@@ -99,7 +99,7 @@ class StatsManager {
 
         // ✅ UNIFIÉ : Lecture depuis window.career uniquement
         const career = window.career || {
-            level: 1, xp: 0, xpNext: 100,
+            level: 1, xp: 0, xpNext: 200,
             totalGames: 0, totalScore: 0, bestScore: 0,
             maxLevel: 0, totalPowerups: 0, totalWalls: 0,
             maxSurvivalTime: 0
