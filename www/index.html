@@ -785,20 +785,24 @@
         <div class="screen hidden" id="box-screen">
             <!-- Header -->
             <div class="box-header">
-                <div class="box-title">
-                    <span class="box-emoji">📦</span>
-                    <h2>Ma Box</h2>
-                </div>
-                <div class="box-progress">
-                    <span class="box-count" id="box-count">0</span>
-                    <span class="box-separator">/</span>
-                    <span class="box-total" id="box-total">16</span>
-                    <span class="box-percentage" id="box-percentage">(0%)</span>
-                </div>
+                <!-- Coins à gauche -->
                 <div class="box-coins">
                     <span class="coins-icon">💰</span>
                     <span class="coins-value" id="box-coins-value">0</span>
                 </div>
+
+                <!-- Titre centré avec image -->
+                <div class="box-title-center">
+                    <img src="assets/hub_pictures/hub_boxe.png" alt="Box" class="box-title-icon">
+                    <div class="box-progress">
+                        <span class="box-count" id="box-count">0</span>
+                        <span class="box-separator">/</span>
+                        <span class="box-total" id="box-total">16</span>
+                        <span class="box-percentage" id="box-percentage">(0%)</span>
+                    </div>
+                </div>
+
+                <!-- Bouton fermer à droite -->
                 <button class="box-close" onclick="closeBox()">✕</button>
             </div>
 
@@ -831,24 +835,6 @@
                 <!-- Items générés dynamiquement via JS -->
             </div>
 
-            <!-- Footer Stats -->
-            <div class="box-footer">
-                <div class="box-stat">
-                    <span class="stat-icon">📦</span>
-                    <span class="stat-value" id="box-stat-unlocked">0</span>
-                    <span class="stat-label">Débloqués</span>
-                </div>
-                <div class="box-stat">
-                    <span class="stat-icon">🔒</span>
-                    <span class="stat-value" id="box-stat-locked">16</span>
-                    <span class="stat-label">À débloquer</span>
-                </div>
-                <div class="box-stat">
-                    <span class="stat-icon">⭐</span>
-                    <span class="stat-value" id="box-stat-percentage">0%</span>
-                    <span class="stat-label">Collection</span>
-                </div>
-            </div>
         </div>
 
         <!-- ÉCRAN JEU SOLO -->

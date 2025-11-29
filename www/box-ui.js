@@ -42,7 +42,6 @@ function refreshBoxUI() {
     updateHeader();
     updateTabs();
     renderItems(currentFilter);
-    updateFooter();
 }
 
 /**
@@ -89,17 +88,6 @@ function updateTabs() {
     document.getElementById('tab-count-skins').textContent = `(${skinsUnlocked}/${skins.length})`;
     document.getElementById('tab-count-banners').textContent = `(${bannersUnlocked}/${banners.length})`;
     document.getElementById('tab-count-backgrounds').textContent = `(${backgroundsUnlocked}/${backgrounds.length})`;
-}
-
-/**
- * Met à jour le footer (stats)
- */
-function updateFooter() {
-    const stats = window.boxManager.getCollectionStats();
-
-    document.getElementById('box-stat-unlocked').textContent = stats.unlocked;
-    document.getElementById('box-stat-locked').textContent = stats.locked;
-    document.getElementById('box-stat-percentage').textContent = `${stats.percentage}%`;
 }
 
 /**
@@ -168,72 +156,56 @@ function createItemCard(item) {
         card.classList.add('unlocked');
     } else {
         card.classList.add('locked');
+        // Ajouter classe purchasable pour bordure dorée
+        if (item.unlockType === 'coins' && item.price > 0) {
+            card.classList.add('purchasable');
+        }
     }
 
     if (isEquipped) {
         card.classList.add('equipped');
     }
 
-    // Preview
+    // Preview - toujours afficher l'aperçu (même pour les items verrouillés)
     let previewHTML = '';
-    if (isUnlocked) {
-        // Pour les skins, afficher un canvas avec l'aperçu du serpent
-        if (item.type === 'skin' && item.colors) {
-            const canvasId = `skin-preview-${item.id}`;
-            previewHTML = `
-                <div class="box-item-preview">
-                    <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas"></canvas>
-                    ${isEquipped ? '<div class="equipped-badge">⭐ ACTIF</div>' : ''}
-                </div>
-            `;
-        } else if (item.type === 'banner' && item.image) {
-            // Pour les bannières avec image, afficher une miniature
-            previewHTML = `
-                <div class="box-item-preview banner-preview">
-                    <img src="${item.image}" alt="${item.name}" class="banner-preview-image">
-                    ${isEquipped ? '<div class="equipped-badge">⭐ ACTIF</div>' : ''}
-                </div>
-            `;
-        } else if (item.type === 'background' && item.image) {
-            // Pour les backgrounds avec image, afficher une miniature
-            previewHTML = `
-                <div class="box-item-preview background-preview">
-                    <img src="${item.image}" alt="${item.name}" class="background-preview-image">
-                    ${isEquipped ? '<div class="equipped-badge">⭐ ACTIF</div>' : ''}
-                </div>
-            `;
-        } else {
-            // Pour les autres (bannière par défaut), utiliser l'emoji
-            previewHTML = `
-                <div class="box-item-preview">
-                    <div class="box-item-emoji">${item.emoji}</div>
-                    ${isEquipped ? '<div class="equipped-badge">⭐ ACTIF</div>' : ''}
-                </div>
-            `;
-        }
+
+    // Badge centré : ACTIF ou cadenas
+    const centerBadge = isEquipped
+        ? '<div class="center-badge active">ACTIF</div>'
+        : (!isUnlocked ? '<div class="center-badge lock">🔒</div>' : '');
+
+    if (item.type === 'skin' && item.colors) {
+        // Skins : canvas avec aperçu du serpent
+        const canvasId = `skin-preview-${item.id}`;
+        previewHTML = `
+            <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
+                ${centerBadge}
+            </div>
+        `;
+    } else if (item.type === 'banner' && item.image) {
+        // Bannières avec image
+        previewHTML = `
+            <div class="box-item-preview banner-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <img src="${item.image}" alt="${item.name}" class="banner-preview-image ${!isUnlocked ? 'locked-banner' : ''}">
+                ${centerBadge}
+            </div>
+        `;
+    } else if (item.type === 'background' && item.image) {
+        // Backgrounds avec image
+        previewHTML = `
+            <div class="box-item-preview background-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <img src="${item.image}" alt="${item.name}" class="background-preview-image ${!isUnlocked ? 'locked-background' : ''}">
+                ${centerBadge}
+            </div>
+        `;
     } else {
-        // Pour les items verrouillés, afficher une preview floue
-        if (item.type === 'banner' && item.image) {
-            previewHTML = `
-                <div class="box-item-preview locked-preview banner-preview">
-                    <img src="${item.image}" alt="${item.name}" class="banner-preview-image locked-banner">
-                    <div class="lock-icon">🔒</div>
-                </div>
-            `;
-        } else if (item.type === 'background' && item.image) {
-            previewHTML = `
-                <div class="box-item-preview locked-preview background-preview">
-                    <img src="${item.image}" alt="${item.name}" class="background-preview-image locked-background">
-                    <div class="lock-icon">🔒</div>
-                </div>
-            `;
-        } else {
-            previewHTML = `
-                <div class="box-item-preview locked-preview">
-                    <div class="lock-icon">🔒</div>
-                </div>
-            `;
-        }
+        // Bannière par défaut (sans emoji) ou autre
+        previewHTML = `
+            <div class="box-item-preview default-preview">
+                ${centerBadge}
+            </div>
+        `;
     }
 
     // Type label
@@ -254,40 +226,43 @@ function createItemCard(item) {
     // Status badge
     let statusHTML = '';
     if (isEquipped) {
-        statusHTML = '<div class="box-item-status"><span class="status-badge equipped">⭐ Équipé</span></div>';
+        statusHTML = '<span class="status-badge equipped">⭐ Équipé</span>';
     } else if (isUnlocked) {
-        statusHTML = '<div class="box-item-status"><span class="status-badge unlocked">✓ Possédé</span></div>';
+        statusHTML = '<span class="status-badge unlocked">✓ Possédé</span>';
     } else {
         // Afficher le prix ou le moyen de déblocage
-        let priceText = '';
         if (item.unlockType === 'coins' && item.price > 0) {
-            priceText = `💰 ${item.price}`;
+            statusHTML = `<span class="status-badge price">💰 ${item.price}</span>`;
         } else if (item.unlockType === 'level') {
-            priceText = `Niveau ${item.unlockLevel}`;
+            statusHTML = `<span class="status-badge locked">Niveau ${item.unlockLevel}</span>`;
         } else if (item.unlockType === 'achievement') {
-            priceText = 'Trophée';
+            statusHTML = '<span class="status-badge locked">Trophée</span>';
         } else if (item.unlockType === 'chest') {
-            priceText = 'Coffre';
+            statusHTML = '<span class="status-badge locked">Coffre</span>';
+        } else {
+            statusHTML = '<span class="status-badge locked">Verrouillé</span>';
         }
-        statusHTML = `<div class="box-item-status"><span class="status-badge locked">${priceText}</span></div>`;
     }
 
-    // Bouton
+    // Bouton - Uniformisé : Équiper ou Acheter
     let buttonHTML = '';
     if (isEquipped) {
-        buttonHTML = '<button class="btn-equipped" disabled>✅ Actif</button>';
+        buttonHTML = '<button class="btn-equipped" disabled>✅ Équipé</button>';
     } else if (isUnlocked) {
-        buttonHTML = `<button class="btn-equip" onclick="equipBoxItem('${item.id}')">✅ Équiper</button>`;
+        buttonHTML = `<button class="btn-equip" onclick="equipBoxItem('${item.id}')">Équiper</button>`;
     } else if (item.unlockType === 'coins' && item.price > 0) {
-        buttonHTML = `<button class="btn-buy" onclick="buyBoxItem('${item.id}')">🛒 Acheter</button>`;
+        buttonHTML = `<button class="btn-buy" onclick="buyBoxItem('${item.id}')">Acheter</button>`;
     } else {
-        buttonHTML = '<button class="btn-equipped" disabled>🔒 Verrouillé</button>';
+        buttonHTML = '<button class="btn-locked" disabled>Verrouillé</button>';
     }
 
-    card.innerHTML = previewHTML + infoHTML + statusHTML + buttonHTML;
+    // Footer : status + bouton groupés en bas
+    const footerHTML = `<div class="box-item-footer">${statusHTML}${buttonHTML}</div>`;
 
-    // Si c'est un skin débloqué, dessiner l'aperçu après l'ajout au DOM
-    if (isUnlocked && item.type === 'skin' && item.colors) {
+    card.innerHTML = previewHTML + infoHTML + footerHTML;
+
+    // Pour tous les skins (débloqués OU verrouillés), dessiner l'aperçu après l'ajout au DOM
+    if (item.type === 'skin' && item.colors) {
         // Attendre que le canvas soit dans le DOM
         setTimeout(() => {
             const canvasId = `skin-preview-${item.id}`;
