@@ -552,50 +552,42 @@ function showFriends() {
 }
 
 // ============================================
-// 🎨 SYSTÈME DE BACKGROUNDS THÉMATIQUES
+// 🎨 SYSTÈME DE BACKGROUNDS (Indépendant des bannières)
 // ============================================
 
-// Mapping bannière → background du hub
-const BANNER_TO_BACKGROUND = {
-    'banner_ice': 'assets/backgrounds/backgrounds_glace_hub.webp',
-    'banner_fire': 'assets/backgrounds/backgrounds_feu_hub.webp',
-    'banner_lightning': 'assets/backgrounds/backgrounds_foudre_hub.webp',
-    'banner_rock': 'assets/backgrounds/backgrounds_roche_hub.webp',
-    'banner_default': null // Gradient CSS par défaut
-};
-
 /**
- * Applique le background thématique du hub selon la bannière équipée
- * Applique directement sur .phone pour être plein écran
- * @param {object} bannerItem - Item bannière { id, name, image, ... }
+ * Applique le background équipé au hub
+ * Utilise boxManager.getEquippedBackground() pour être indépendant des bannières
  */
-function applyHubThemeBackground(bannerItem) {
+function applyHubBackground() {
     const phone = document.querySelector('.phone');
     if (!phone) {
         logger.warn('[HubManager] Élément .phone non trouvé');
         return;
     }
 
-    const bgPath = bannerItem ? BANNER_TO_BACKGROUND[bannerItem.id] : null;
+    // Récupérer le background équipé depuis boxManager
+    const bgItem = window.boxManager ? window.boxManager.getEquippedBackground() : null;
 
-    if (bgPath) {
-        // Appliquer le thème directement sur .phone
-        phone.style.backgroundImage = `url('${bgPath}')`;
+    if (bgItem && bgItem.bgValue) {
+        // Appliquer le background équipé
+        phone.style.backgroundImage = `url('${bgItem.bgValue}')`;
         phone.style.backgroundSize = 'cover';
         phone.style.backgroundPosition = 'center';
-        // Marquer qu'on a un thème actif
-        phone.dataset.hubTheme = bannerItem.id;
-        logger.log(`[HubManager] Background thème appliqué sur .phone: ${bgPath}`);
+        phone.dataset.hubTheme = bgItem.id;
+        logger.log(`[HubManager] Background équipé appliqué: ${bgItem.name}`);
     } else {
         // Revenir au background par défaut via BackgroundManager
         delete phone.dataset.hubTheme;
+        phone.style.backgroundImage = '';
         if (window.backgroundManager) {
             window.backgroundManager.currentBackground = null;
             window.backgroundManager.setBackground('hub');
         }
-        logger.log('[HubManager] Background thème retiré, défaut restauré');
+        logger.log('[HubManager] Background par défaut restauré');
     }
 }
+window.applyHubBackground = applyHubBackground;
 
 // ============================================
 // 🖼️ SYSTÈME DE BANNIÈRES
@@ -633,8 +625,7 @@ function applyHubBanner(bannerItem) {
         window.applyStatsBanner(bannerItem);
     }
 
-    // Synchroniser le background thématique du hub
-    applyHubThemeBackground(bannerItem);
+    // Note: Background géré séparément via applyHubBackground()
 }
 
 /**
@@ -660,6 +651,7 @@ function initHub() {
     initChestTimer();
     updateBoxCount();
     initHubBanner();
+    applyHubBackground(); // Background indépendant de la bannière
 
     logger.log('[HubManager] Hub initialisé ✅');
 }
