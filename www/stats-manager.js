@@ -359,7 +359,7 @@ class StatsManager {
         badgeEl.style.background = 'linear-gradient(135deg, rgba(100,100,100,0.3), rgba(50,50,50,0.5))';
         badgeEl.style.boxShadow = 'none';
 
-        document.getElementById('stats-rank-icon').textContent = '🤖';
+        document.getElementById('stats-rank-icon').innerHTML = '<img src="assets/hub_pictures/snake_ia.png" alt="IA" class="stats-ia-icon">';
         document.getElementById('stats-player-name').textContent = pseudo;
 
         // Update UI: Rank name avec conteneur gris (mode IA)

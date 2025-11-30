@@ -369,8 +369,7 @@ async function openChest() {
     const remaining = getChestTimeRemaining();
 
     if (remaining > 0) {
-        // Pas encore prêt
-        alert(`⏰ Le coffre sera prêt dans ${formatTime(remaining)}`);
+        // Pas encore prêt - pas de message, le timer est visible
         return;
     }
 

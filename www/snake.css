@@ -7692,6 +7692,30 @@ body.dark-mode .hub-chest-timer {
     line-height: 1;
 }
 
+/* Icônes kawaii custom pour modes de jeu */
+.mode-icon-img {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+}
+
+.hub-hero-icon .mode-icon-img {
+    width: 55px;
+    height: 55px;
+}
+
+.hub-mode-card-large .mode-icon-img {
+    width: 50px;
+    height: 50px;
+}
+
+/* Icône IA dans page stats */
+.stats-ia-icon {
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+}
+
 .hub-mode-label {
     font-size: 0.8rem;
     font-weight: 700;
