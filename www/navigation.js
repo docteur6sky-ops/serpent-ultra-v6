@@ -8,7 +8,12 @@ import {
     soloController,
     multiController,
     gameOverHandler,
-    menuController
+    menuController,
+    // Nouveaux modules extraits
+    initKeyboardControls,
+    loadSoundSettings,
+    loadDarkMode,
+    setDiff
 } from './ui/index.js';
 
 // Instances globales des jeux
@@ -303,10 +308,10 @@ window.handleSoloGameOver = function(stats) {
 
     // ✅ TRACKING TROPHÉES CRÉATIFS
     if (window.career && window.save) {
-        // KAMIKAZE: Mort en moins de 10 secondes
+        // KAMIKAZE: Mort en moins de 30 secondes
         const [min, sec] = (stats.timeString || "0:00").split(':').map(Number);
         const totalSeconds = (min * 60) + (sec || 0);
-        if (totalSeconds < 10) {
+        if (totalSeconds < 30) {
             if (!window.career.quickDeaths) window.career.quickDeaths = 0;
             window.career.quickDeaths++;
         }
@@ -319,6 +324,25 @@ window.handleSoloGameOver = function(stats) {
             window.career.phoenixRises++;
         }
         window.career.lastGameResult = currentResult;
+
+        // NOCTURNE: Jouer entre 20h et 8h du matin
+        const currentHour = new Date().getHours();
+        if (currentHour >= 20 || currentHour < 8) {
+            if (!window.career.nightOwlGames) window.career.nightOwlGames = 0;
+            window.career.nightOwlGames++;
+        }
+
+        // PATIENCE: Attendre 30 secondes sans changer de direction
+        if (stats.patienceWaitTime && stats.patienceWaitTime >= 30000) {
+            if (!window.career.patienceAchieved) window.career.patienceAchieved = 0;
+            window.career.patienceAchieved++;
+        }
+
+        // TÉLÉPORTATION: Première fois qu'on traverse un bord
+        if (stats.hasTeleported) {
+            if (!window.career.firstTeleport) window.career.firstTeleport = 0;
+            window.career.firstTeleport++;
+        }
 
         // Sauvegarder les changements
         window.save('career', window.career);
@@ -556,7 +580,21 @@ function showProgressionOverlay(stats) {
     const trophies = window.sessionTrophies || [];
 
     // ✅ Calculer XP de la partie (score ÷ 5)
-    const gameXP = Math.floor(stats.score / 5);
+    const baseGameXP = Math.floor(stats.score / 5);
+
+    // ⚗️ Calculer le bonus booster si actif
+    let boosterBonus = 0;
+    let boosterPercent = 0;
+    if (window.boxManager && window.boxManager.isBoosterActive()) {
+        const multiplier = window.boxManager.getXpMultiplier();
+        boosterPercent = Math.round((multiplier - 1) * 100);
+        boosterBonus = Math.floor(baseGameXP * (multiplier - 1));
+    }
+    const gameXP = baseGameXP + boosterBonus;
+
+    // Stocker pour l'écran final
+    window.lastGameXPGained = gameXP;
+    window.lastBoosterBonus = boosterBonus;
 
     // Récupérer niveau/XP actuel depuis career (pas localStorage)
     let currentXP = window.career ? window.career.xp : 0;
@@ -614,15 +652,21 @@ function showProgressionOverlay(stats) {
                 animation: trophySlideIn 0.5s ease-out;
             `;
 
+            // Affichage avec ou sans bonus booster
+            const boosterLine = boosterBonus > 0
+                ? `<div style="color: #E040FB; font-size: 12px; margin-top: 2px;">⚗️ Booster +${boosterPercent}%: +${boosterBonus} XP</div>`
+                : '';
+
             gameXPDiv.innerHTML = `
                 <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(76,175,80,0.3); border-radius: 8px; font-size: 24px;">
                     🎮
                 </div>
                 <div style="flex: 1;">
                     <div style="color: #4CAF50; font-weight: bold; font-size: 15px;">XP de la Partie</div>
-                    <div style="color: #aaa; font-size: 13px;">Score: ${stats.score} points</div>
+                    <div style="color: #aaa; font-size: 13px;">Score: ${stats.score} points${boosterBonus > 0 ? ` (base: ${baseGameXP})` : ''}</div>
+                    ${boosterLine}
                 </div>
-                <div style="color: #4CAF50; font-weight: bold; font-size: 16px;">+${gameXP} XP</div>
+                <div style="color: ${boosterBonus > 0 ? '#E040FB' : '#4CAF50'}; font-weight: bold; font-size: 16px;">+${gameXP} XP</div>
             `;
 
             if (trophiesList) trophiesList.appendChild(gameXPDiv);
@@ -814,8 +858,16 @@ function showFinalStats() {
 
         // Mettre à jour les valeurs
         if (elements.fsc) elements.fsc.textContent = stats.score || 0;
-        // ✅ NOUVEAU : Afficher XP gagné
-        if (elements.fxp) elements.fxp.textContent = `+${window.lastGameXPGained || 0} XP`;
+        // ✅ Afficher XP gagné avec bonus booster si présent
+        if (elements.fxp) {
+            const totalXP = window.lastGameXPGained || 0;
+            const bonus = window.lastBoosterBonus || 0;
+            if (bonus > 0) {
+                elements.fxp.innerHTML = `+${totalXP} XP <span style="color:#E040FB;font-size:0.8em;">(⚗️+${bonus})</span>`;
+            } else {
+                elements.fxp.textContent = `+${totalXP} XP`;
+            }
+        }
         if (elements.flv) elements.flv.textContent = stats.level || 1;
         if (elements.ffood) elements.ffood.textContent = stats.foodCount || 0;
         if (elements.ftime) elements.ftime.textContent = stats.timeString || '0:00';
@@ -1591,6 +1643,11 @@ function showMenu(menuId, direction = 'slide-in-right') {
             menu.classList.add('active');
         }, 10);
     }
+
+    // ✅ TRACKING pour trophée Explorateur (sous-menus)
+    if (window.screenManager && window.screenManager.trackScreenVisit) {
+        window.screenManager.trackScreenVisit(menuId);
+    }
 }
 
 // ============================================
@@ -1975,8 +2032,20 @@ window.awardXP = function(amount) {
         return { leveledUp: false, newLevel: 1, xpGained: amount };
     }
 
+    // ⚗️ Appliquer le multiplicateur si un booster est actif
+    let finalAmount = amount;
+    let boosterBonus = 0;
+    if (window.boxManager) {
+        const multiplier = window.boxManager.getXpMultiplier();
+        if (multiplier > 1) {
+            finalAmount = Math.floor(amount * multiplier);
+            boosterBonus = finalAmount - amount;
+            logger.log(`[awardXP] ⚗️ Booster actif! ${amount} × ${multiplier} = ${finalAmount} XP (+${boosterBonus} bonus)`);
+        }
+    }
+
     const oldLevel = window.career.level;
-    window.career.xp += amount;
+    window.career.xp += finalAmount;
     let leveledUp = false;
 
     // Formule linéaire : 100 + level×100
@@ -2007,8 +2076,11 @@ window.awardXP = function(amount) {
 // Charger les paramètres au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
     updatePlayerProgress();
-    loadDarkMode();
-    loadSoundSettings(); // Charger paramètres audio au démarrage
+    loadDarkMode();        // Depuis ui/settings.js
+    loadSoundSettings();   // Depuis ui/settings.js
+
+    // Initialiser les contrôles clavier (depuis ui/controls.js)
+    initKeyboardControls();
 
     // Initialiser l'input pseudo
     if (window.initPseudoInput) {
@@ -2023,10 +2095,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ✅ Event listener pour le bouton IA géré dans index.html (onclick="startAIGame()")
-
     // Sélectionner FACILE par défaut au chargement
-    setDiff(0);
+    setDiff(0);  // Depuis ui/difficulty.js
 });
 
 // ============================================
