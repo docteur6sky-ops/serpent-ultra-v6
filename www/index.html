@@ -235,12 +235,12 @@
             <!-- Stats Zone (Coffre + Ma Box) -->
             <div class="hub-stats-zone">
                 <div class="hub-chest-card" id="hub-chest-card" onclick="window.audio.buttonClick();window.openChest()">
-                    <img src="assets/hub_pictures/hub_chess.png" alt="Coffre" class="hub-chest-icon">
+                    <img src="assets/hub_pictures/hub_chess.webp" alt="Coffre" class="hub-chest-icon">
                     <div class="hub-chest-timer" id="hub-chest-timer">02:34</div>
                     <div class="hub-chest-info" onclick="event.stopPropagation();window.showChestDropRates()">ℹ️</div>
                 </div>
                 <div class="hub-box-card" id="hub-box-card" onclick="window.audio.buttonClick();window.openBox()">
-                    <img src="assets/hub_pictures/hub_boxe.png" alt="Box" class="hub-box-icon">
+                    <img src="assets/hub_pictures/hub_boxe.webp" alt="Box" class="hub-box-icon">
                     <div class="hub-box-label">Ma Box</div>
                 </div>
             </div>
@@ -252,22 +252,21 @@
             <div class="hub-hero-container">
                 <!-- Bouton principal Solo compact -->
                 <button class="hub-hero-btn hub-hero-btn-compact" id="hub-hero-btn" onclick="window.audio.buttonClick();showDifficultySelection()">
-                    <div class="hub-hero-icon"><img src="assets/hub_pictures/snake_solo.png" alt="Solo" class="mode-icon-img"></div>
+                    <div class="hub-hero-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="mode-icon-img"></div>
                     <div class="hub-hero-text">Solo</div>
                 </button>
             </div>
 
             <!-- Modes Secondaires (2 cartes agrandies) -->
             <div class="hub-modes hub-modes-two">
-                <div class="hub-mode-card hub-mode-card-large" onclick="window.audio.buttonClick();window.showMultiplayer()">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.png" alt="Multi" class="mode-icon-img"></div>
-                    <div class="hub-mode-label">Multi</div>
-                    <div class="hub-mode-sublabel">Online</div>
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();window.showMultiplayer()">
+                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Multi" class="mode-icon-img"></div>
+                    <div class="hub-mode-text">Online</div>
                     <div class="hub-mode-badge">NEW</div>
                 </div>
-                <div class="hub-mode-card hub-mode-card-large" onclick="window.audio.buttonClick();showDifficultyModal('ai')">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.png" alt="vs IA" class="mode-icon-img"></div>
-                    <div class="hub-mode-label">vs IA</div>
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();showDifficultyModal('ai')">
+                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="vs IA" class="mode-icon-img"></div>
+                    <div class="hub-mode-text">vs IA</div>
                 </div>
             </div>
 
@@ -787,15 +786,28 @@
         <div class="screen hidden" id="box-screen">
             <!-- Header -->
             <div class="box-header">
-                <!-- Coins à gauche -->
-                <div class="box-coins">
-                    <span class="coins-icon">💰</span>
-                    <span class="coins-value" id="box-coins-value">0</span>
+                <!-- Zone gauche: Coins + Boosters -->
+                <div class="box-header-left">
+                    <div class="box-coins">
+                        <span class="coins-icon">💰</span>
+                        <span class="coins-value" id="box-coins-value">0</span>
+                    </div>
+                    <!-- Boosters -->
+                    <div class="box-boosters">
+                        <div class="box-booster-item" id="box-booster-25" onclick="window.activateBooster(25)">
+                            <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25%" class="box-booster-icon">
+                            <span class="box-booster-count" id="box-booster-25-count">0</span>
+                        </div>
+                        <div class="box-booster-item" id="box-booster-50" onclick="window.activateBooster(50)">
+                            <img src="assets/items_chess_pictures/xp_boost_epic2.webp" alt="+50%" class="box-booster-icon">
+                            <span class="box-booster-count" id="box-booster-50-count">0</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Titre centré avec image -->
                 <div class="box-title-center">
-                    <img src="assets/hub_pictures/hub_boxe.png" alt="Box" class="box-title-icon">
+                    <img src="assets/hub_pictures/hub_boxe.webp" alt="Box" class="box-title-icon">
                     <div class="box-progress">
                         <span class="box-count" id="box-count">0</span>
                         <span class="box-separator">/</span>
@@ -1107,6 +1119,69 @@
                             🔄 Rejouer
                         </button>
                         <button class="menu-btn" onclick="returnToMenuFromStats()" aria-label="Retourner au menu">
+                            🏠 Menu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN GAME OVER MODE IA -->
+        <div class="screen hidden" id="over-ai">
+            <div class="game-area">
+                <div class="ai-gameover-container">
+                    <!-- Résultat avec animation -->
+                    <div class="ai-result" id="ai-result-title">
+                        <span class="result-icon" id="ai-result-icon">🏆</span>
+                        <h1 class="result-text" id="ai-result-text">VICTOIRE</h1>
+                    </div>
+
+                    <!-- VS Comparaison -->
+                    <div class="ai-vs-container">
+                        <div class="ai-player-card winner" id="ai-player-card">
+                            <div class="player-avatar">🐍</div>
+                            <div class="player-name" id="ai-go-player-name">Joueur</div>
+                            <div class="player-score" id="ai-go-player-score">0</div>
+                            <div class="player-label">segments</div>
+                        </div>
+
+                        <div class="vs-separator">
+                            <span class="vs-text">VS</span>
+                        </div>
+
+                        <div class="ai-player-card" id="ai-opponent-card">
+                            <div class="player-avatar">🤖</div>
+                            <div class="player-name">IA</div>
+                            <div class="player-score" id="ai-go-ai-score">0</div>
+                            <div class="player-label">segments</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats de la partie -->
+                    <div class="ai-stats-row">
+                        <div class="ai-stat-item">
+                            <span class="ai-stat-icon">👻</span>
+                            <span class="ai-stat-value" id="ai-go-stolen">0</span>
+                            <span class="ai-stat-label">Segments volés</span>
+                        </div>
+                        <div class="ai-stat-item">
+                            <span class="ai-stat-icon">⚡</span>
+                            <span class="ai-stat-value" id="ai-go-powerups">0</span>
+                            <span class="ai-stat-label">Power-ups</span>
+                        </div>
+                        <div class="ai-stat-item">
+                            <span class="ai-stat-icon">🏆</span>
+                            <span class="ai-stat-value" id="ai-go-wins">0</span>
+                            <span class="ai-stat-label">Victoires totales</span>
+                        </div>
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="ai-gameover-buttons">
+                        <button class="menu-btn ai-btn-replay" onclick="replayAIGame()">
+                            🔄 Rejouer
+                        </button>
+                        <button class="menu-btn" onclick="returnToHubFromAI()">
                             🏠 Menu
                         </button>
                     </div>

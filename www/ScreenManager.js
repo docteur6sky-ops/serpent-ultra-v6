@@ -1,3 +1,6 @@
+import { logger } from './services/logger.js';
+import { SnakeUltra } from './SnakeUltra.js';
+
 /**
  * ScreenManager - Gestionnaire centralisé pour tous les écrans
  *
@@ -18,14 +21,20 @@ class ScreenManager {
         this.screens = [
             'loading',
             'menu',
+            'hub',  // ✅ NOUVEAU HUB AAA
+            'box-screen',  // ✅ MA BOX (collection d'items)
+            'stats-screen',  // ✅ STATS/CARRIÈRE AAA
             'multiplayer-menu',
+            'main-lobby-screen',  // ✅ LOBBY PRINCIPAL
             'lobby-screen',
             'game-solo',
+            'game-ai',  // ✅ MODE CONTRE IA
             'game-multi',
-            'over'
+            'over',
+            'over-ai'  // ✅ GAME OVER MODE IA
         ];
 
-        console.log('🖥️ [ScreenManager] ScreenManager initialisé');
+        logger.log('🖥️ [ScreenManager] ScreenManager initialisé');
     }
 
     /**
@@ -33,7 +42,12 @@ class ScreenManager {
      * @param {string} screenId - ID de l'écran à afficher
      */
     show(screenId) {
-        console.log(`🖥️ [ScreenManager] show("${screenId}") appelé`);
+        logger.log(`🖥️ [ScreenManager] show("${screenId}") appelé`);
+
+        // ✅ CLEANUP HUB - Nettoyer le timer du coffre si on quitte le hub
+        if (this.currentScreen === 'hub' && screenId !== 'hub' && window.cleanupChestTimer) {
+            window.cleanupChestTimer();
+        }
 
         // Nettoyer d'abord
         this.cleanupAll();
@@ -46,7 +60,8 @@ class ScreenManager {
 
         // Changer l'audio selon l'écran (sauf pour game-multi)
         // La musique de game-multi sera lancée manuellement au countdown GO
-        if (window.audioManager && screenId !== 'game-multi') {
+        // ✅ Ne pas lancer la musique pendant le loading screen
+        if (window.audioManager && screenId !== 'game-multi' && window.loadingComplete) {
             window.audioManager.setAudio(screenId);
         }
 
@@ -60,12 +75,17 @@ class ScreenManager {
             screen.style.zIndex = '1';
 
             this.currentScreen = screenId;
-            console.log(`🖥️ [ScreenManager]   - ${screenId} affiché`);
+            logger.log(`🖥️ [ScreenManager]   - ${screenId} affiché`);
 
             // ✅ TRACKING ÉCRANS VISITÉS (pour trophée "Explorateur")
             this.trackScreenVisit(screenId);
+
+            // ✅ INIT HUB - Initialiser les données dynamiques du hub
+            if (screenId === 'hub' && window.initHub) {
+                setTimeout(() => window.initHub(), 100);
+            }
         } else {
-            console.warn(`⚠️ [ScreenManager] Écran "${screenId}" introuvable`);
+            logger.warn(`⚠️ [ScreenManager] Écran "${screenId}" introuvable`);
         }
     }
 
@@ -86,9 +106,15 @@ class ScreenManager {
 
         // Mapper les IDs d'écrans vers les noms trackés pour le trophée
         const screenMapping = {
-            'menu': 'menu',
+            'menu': 'hub',
+            'hub': 'hub',
             'game-solo': 'game-solo',
+            'game-multi': 'game-multi',
+            'game-ai': 'game-ai',
             'multiplayer-menu': 'multiplayer-menu',
+            'main-lobby-screen': 'main-lobby-screen',
+            'box-screen': 'box-screen',
+            'stats-screen': 'stats-screen',
             'options-menu': 'options-menu',
             'rules-menu': 'rules-menu',
             'credits-menu': 'credits-menu'
@@ -101,6 +127,14 @@ class ScreenManager {
             career.screensVisited.push(trackedName);
             window.save('career', career);
 
+            // ✅ SYNC avec window.career pour que TROPHIES.check() voit les changements
+            if (window.career) {
+                window.career.screensVisited = career.screensVisited;
+            }
+
+            logger.log(`🗺️ [ScreenManager] Écran visité: ${trackedName} (Total: ${career.screensVisited.length}/6)`);
+            logger.log(`🗺️ [ScreenManager] Écrans visités: ${career.screensVisited.join(', ')}`);
+
             // Vérifier les trophées
             if (window.checkTrophy) {
                 window.checkTrophy();
@@ -112,7 +146,7 @@ class ScreenManager {
      * Cache tous les écrans
      */
     hideAll() {
-        console.log('🖥️ [ScreenManager] hideAll() - Masquage de tous les écrans');
+        logger.log('🖥️ [ScreenManager] hideAll() - Masquage de tous les écrans');
 
         this.screens.forEach(id => {
             const element = document.getElementById(id);
@@ -122,7 +156,7 @@ class ScreenManager {
                 element.style.visibility = 'hidden';
                 element.style.opacity = '0';
                 element.style.zIndex = '-9999';
-                console.log(`🖥️ [ScreenManager]   - ${id} caché`);
+                logger.log(`🖥️ [ScreenManager]   - ${id} caché`);
             }
         });
     }
@@ -133,24 +167,37 @@ class ScreenManager {
      */
     registerOverlay(overlayId) {
         this.overlays.add(overlayId);
-        console.log(`🖥️ [ScreenManager] Overlay "${overlayId}" enregistré`);
+        logger.log(`🖥️ [ScreenManager] Overlay "${overlayId}" enregistré`);
     }
 
     /**
      * Nettoie tous les overlays dynamiques
      */
     cleanupAll() {
-        console.log('🖥️ [ScreenManager] cleanupAll() - Nettoyage des overlays');
+        logger.log('🖥️ [ScreenManager] cleanupAll() - Nettoyage des overlays');
 
         this.overlays.forEach(id => {
+            // ✅ FIX: Ne JAMAIS supprimer countdown-overlay (élément HTML permanent)
+            if (id === 'countdown-overlay') {
+                logger.warn(`⚠️ [ScreenManager] countdown-overlay ne doit PAS être enregistré - ignoré`);
+                return;
+            }
+
             const element = document.getElementById(id);
             if (element) {
                 element.remove();
-                console.log(`🧹 [ScreenManager] Overlay "${id}" supprimé`);
+                logger.log(`🧹 [ScreenManager] Overlay "${id}" supprimé`);
             }
         });
 
+        // ✅ FIX: Retirer countdown-overlay du Set si présent
+        this.overlays.delete('countdown-overlay');
         this.overlays.clear();
+
+        // Nettoyer les notifications actives (fuites mémoire)
+        if (window.NotificationManager) {
+            window.NotificationManager.cleanup();
+        }
     }
 
     /**
@@ -158,17 +205,17 @@ class ScreenManager {
      * À utiliser dans la console: window.diagScreen()
      */
     diagnostic() {
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('🔍 DIAGNOSTIC SCREENMANAGER');
-        console.log('═══════════════════════════════════════════════════════');
-        console.log(`📌 Écran actuel: ${this.currentScreen || 'AUCUN'}`);
-        console.log(`📌 Overlays enregistrés: ${this.overlays.size}`);
+        logger.log('═══════════════════════════════════════════════════════');
+        logger.log('🔍 DIAGNOSTIC SCREENMANAGER');
+        logger.log('═══════════════════════════════════════════════════════');
+        logger.log(`📌 Écran actuel: ${this.currentScreen || 'AUCUN'}`);
+        logger.log(`📌 Overlays enregistrés: ${this.overlays.size}`);
 
         if (this.overlays.size > 0) {
-            console.log('   Liste:', Array.from(this.overlays));
+            logger.log('   Liste:', Array.from(this.overlays));
         }
 
-        console.log('\n📊 État des écrans:');
+        logger.log('\n📊 État des écrans:');
         this.screens.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -177,25 +224,25 @@ class ScreenManager {
                 const opacity = window.getComputedStyle(el).opacity;
                 const zIndex = window.getComputedStyle(el).zIndex;
 
-                console.log(`   ${isVisible ? '✅' : '❌'} ${id}:`);
-                console.log(`      - display: ${display}`);
-                console.log(`      - opacity: ${opacity}`);
-                console.log(`      - z-index: ${zIndex}`);
-                console.log(`      - classList: ${el.classList}`);
+                logger.log(`   ${isVisible ? '✅' : '❌'} ${id}:`);
+                logger.log(`      - display: ${display}`);
+                logger.log(`      - opacity: ${opacity}`);
+                logger.log(`      - z-index: ${zIndex}`);
+                logger.log(`      - classList: ${el.classList}`);
             } else {
-                console.log(`   ⚠️ ${id}: INTROUVABLE`);
+                logger.log(`   ⚠️ ${id}: INTROUVABLE`);
             }
         });
 
-        console.log('\n🔍 Overlays dans le DOM:');
+        logger.log('\n🔍 Overlays dans le DOM:');
         ['mp-waiting-overlay', 'mp-gameover-overlay', 'mp-message', 'mp-lobby'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                console.log(`   ⚠️ ${id} existe encore dans le DOM !`);
+                logger.log(`   ⚠️ ${id} existe encore dans le DOM !`);
             }
         });
 
-        console.log('═══════════════════════════════════════════════════════');
+        logger.log('═══════════════════════════════════════════════════════');
     }
 }
 
@@ -204,10 +251,14 @@ class ScreenManager {
 // ============================================
 
 // Créer l'instance globale
-window.screenManager = new ScreenManager();
+const screenManager = new ScreenManager();
+window.screenManager = screenManager;
+
+// Attacher au namespace
+SnakeUltra.managers.screen = screenManager;
 
 // Exposer la fonction de diagnostic
 window.diagScreen = () => window.screenManager.diagnostic();
 
-console.log('✅ ScreenManager chargé');
-console.log('💡 Utilise window.diagScreen() pour diagnostiquer');
+logger.log('✅ ScreenManager chargé');
+logger.log('💡 Utilise window.diagScreen() pour diagnostiquer');

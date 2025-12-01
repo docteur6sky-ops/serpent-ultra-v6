@@ -2,78 +2,54 @@
 // SOLO SNAKE GAME - MODE SOLO ENCAPSULÉ
 // ============================================
 
-class SoloSnakeGame {
+import { logger } from './services/logger.js';
+import { BaseSnakeGame } from './core/BaseSnakeGame.js';
+import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+
+class SoloSnakeGame extends BaseSnakeGame {
     constructor() {
-        // Canvas et contexte
-        this.canvas = document.getElementById('canvas-solo');
-        if (!this.canvas) {
-            throw new Error('Canvas canvas-solo introuvable!');
-        }
-        this.ctx = this.canvas.getContext('2d');
+        // Appeler le constructeur parent
+        super('canvas-solo');
 
-        // Configuration (depuis CONFIG)
-        this.GRID_SIZE = 30;
-        this.CANVAS_SIZE = 360;  // ✅ CORRIGÉ: 360 au lieu de 400
-        this.CELL_SIZE = 360 / 30;  // ✅ CORRIGÉ: 360/30 = 12px
-        this.SNAKE_EYE_SIZE = 3;
-        this.SNAKE_EYE_OFFSET = 4;
-
-        // État du serpent
+        // État du serpent (spécifique solo)
         this.snake = [];
         this.dx = 0;
         this.dy = 0;
         this.ndx = 0;
         this.ndy = 0;
 
-        // Éléments du jeu
+        // Éléments du jeu (spécifique solo)
         this.food = null;
         this.bad = null;
         this.powerup = null;
         this.obstacles = [];
 
-        // Scores et stats
+        // Scores et stats (spécifique solo)
         this.score = 0;
-        this.level = 1;
         this.foodCount = 0;
         this.combo = 1;
         this.maxCombo = 1;
 
-        // Power-ups actifs
+        // Power-ups actifs (spécifique solo)
         this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
         this.powerupTime = 0;
-        this.powerupDuration = 8000;  // 8 secondes
         this.activePowerup = null;  // Type actif : 'ice', 'fire', ou 'rock'
         this.slowCount = 0;
         this.doubleCount = 0;
         this.invincibleCount = 0;
         this.ghostCount = 0;
 
-        // Contrôle du jeu
-        this.running = false;
-        this.paused = false;
+        // Contrôle du jeu (spécifique solo)
         this.locked = false;
-        this.difficulty = 0; // 0=Facile, 1=Normal, 2=Difficile
-        this.raf = null;
-        this.lastTime = 0;
 
-        // Stats de partie
+        // Stats de partie (spécifique solo)
         this.wallsDestroyed = 0;
         this.skullsEaten = 0;
-        this.gameStartTime = 0;
         this.maxSnakeLength = 1;
 
-        // Particules
-        this.particles = [];
-
-        // Audio
-        this.audio = window.audio;
-
-        // Couleurs
-        this.COLORS = {
-            GOLD: '#D4AF37',
-            BG_DARK: '#000',
-            ACCENT_WARM: '#B8860B'
-        };
+        // Note: canvas, ctx, GRID_SIZE, CELL_SIZE, running, paused, difficulty,
+        // raf, lastTime, level, particles, audio, COLORS, POWERUP_DURATION
+        // sont maintenant dans BaseSnakeGame
     }
 
     // ============================================
@@ -81,15 +57,10 @@ class SoloSnakeGame {
     // ============================================
 
     start(difficulty = 0) {
-        this.difficulty = difficulty;
-        this.reset();
-        this.running = true;
-        this.paused = false;
-        this.gameStartTime = Date.now();
-
-        // Lancer la boucle
-        this.lastTime = performance.now();
-        this.loop(this.lastTime);
+        // Appeler la méthode start() du parent qui gère:
+        // - difficulty, reset(), running, paused, gameStartTime, lastTime, loop()
+        super.start(difficulty);
+        // Note: La musique est gérée par ScreenManager.show('game-solo')
     }
 
     reset() {
@@ -99,6 +70,11 @@ class SoloSnakeGame {
         this.dy = 0;
         this.ndx = 1;
         this.ndy = 0;
+
+        // ✅ Reset flags
+        this.gameOverTriggered = false;
+        this.isExploding = false;
+        this.isFlashing = false;
 
         // Réinitialiser scores
         this.score = 0;
@@ -124,6 +100,12 @@ class SoloSnakeGame {
         this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
         this.activePowerup = null;
         this.particles = [];
+
+        // 🧘 PATIENCE: Tracker si le joueur a attendu 1 min avant de changer de direction
+        this.firstDirectionChangeTime = null;
+
+        // 🌀 TÉLÉPORTATION: Tracker si le joueur a traversé un bord
+        this.hasTeleported = false;
 
         // ✅ Réinitialiser la barre power-up
         const container = document.getElementById('powerup-bar-container');
@@ -151,24 +133,24 @@ class SoloSnakeGame {
     }
 
     // ============================================
-    // BOUCLE PRINCIPALE
+    // BOUCLE PRINCIPALE (surcharge BaseSnakeGame)
     // ============================================
 
     loop(timestamp) {
+        // ✅ FIX #1: Vérifier AVANT de programmer le prochain RAF
         if (!this.running) return;
-
-        this.raf = requestAnimationFrame((t) => this.loop(t));
 
         if (this.paused) {
             this.draw();
+            // ✅ Programmer RAF même en pause pour continuer à afficher
+            this.raf = requestAnimationFrame((t) => this.loop(t));
             return;
         }
 
         // Calculer vitesse selon difficulté et niveau
-        let baseSpeed = this.difficulty === 0 ? 2.5 : this.difficulty === 1 ? 5 : 8;
-        let speed = 1000 / (baseSpeed + (this.level - 1) * 0.5);
+        let speed = this.calculateSpeed();
 
-        // Ralentissement si power-up actif
+        // ✅ SPÉCIFICITÉ SOLO: Ralentissement si power-up actif
         if (this.powerupEffects.slow) {
             speed *= 1.5;
         }
@@ -179,7 +161,7 @@ class SoloSnakeGame {
             this.update();
         }
 
-        // Mettre à jour la barre power-up (gère l'expiration via removePowerup())
+        // ✅ SPÉCIFICITÉ SOLO: Mettre à jour la barre power-up
         this.updatePowerupBar();
 
         // Mettre à jour particules
@@ -187,6 +169,9 @@ class SoloSnakeGame {
 
         // Dessiner
         this.draw();
+
+        // ✅ FIX #1: Programmer le prochain RAF à la FIN (évite frames fantômes)
+        this.raf = requestAnimationFrame((t) => this.loop(t));
     }
 
     // ============================================
@@ -206,10 +191,16 @@ class SoloSnakeGame {
         };
 
         // Wrapping (téléportation aux bords)
-        if (head.x < 0) head.x = this.GRID_SIZE - 1;
-        if (head.x >= this.GRID_SIZE) head.x = 0;
-        if (head.y < 0) head.y = this.GRID_SIZE - 1;
-        if (head.y >= this.GRID_SIZE) head.y = 0;
+        let didTeleport = false;
+        if (head.x < 0) { head.x = this.GRID_SIZE - 1; didTeleport = true; }
+        if (head.x >= this.GRID_SIZE) { head.x = 0; didTeleport = true; }
+        if (head.y < 0) { head.y = this.GRID_SIZE - 1; didTeleport = true; }
+        if (head.y >= this.GRID_SIZE) { head.y = 0; didTeleport = true; }
+
+        // 🌀 Tracker première téléportation
+        if (didTeleport && !this.hasTeleported) {
+            this.hasTeleported = true;
+        }
 
         // Vérifier collision avec nourriture
         if (head.x === this.food.x && head.y === this.food.y) {
@@ -311,35 +302,23 @@ class SoloSnakeGame {
     eatSkull(head) {
         this.skullsEaten++;
 
-        // Vérifier si serpent trop petit
-        if (this.snake.length <= 6) {
-            if (this.audio) this.audio.bad();
-            this.gameOver();
-            return;
-        }
-
-        // Retirer 5 segments
-        for (let i = 0; i < 5; i++) {
-            if (this.snake.length > 1) {
-                this.snake.pop();
-            }
-        }
-
-        // Pénalité
-        this.score = Math.max(0, this.score - 5);
-        this.combo = 1;
+        // ✨ NOUVEAU COMPORTEMENT: Combo divisé par 2 (garde tous les segments)
+        // Punition modérée: combo 50 → 25, combo 10 → 5, etc.
+        this.combo = Math.max(1, Math.floor(this.combo / 2));
 
         if (this.audio) this.audio.bad();
 
-        // Déplacer
+        // Déplacer normalement (pas de perte de segments)
         this.snake.unshift(head);
 
-        // Générer nouveau
+        // Générer nouveau crâne
         this.spawnFood();
         this.spawnBad();
         this.spawnPowerup();
 
         this.updateUI();
+
+        logger.log(`[SoloGame] 💀 Crâne mangé: combo divisé par 2 → ${this.combo}`);
     }
 
     eatPowerup(head) {
@@ -484,7 +463,9 @@ class SoloSnakeGame {
                 for (let y = 0; y < this.GRID_SIZE && !found; y++) {
                     for (let x = 0; x < this.GRID_SIZE && !found; x++) {
                         if (!this.snake.some(s => s.x === x && s.y === y) &&
-                            !this.obstacles.some(o => o.x === x && o.y === y)) {
+                            !this.obstacles.some(o => o.x === x && o.y === y) &&
+                            !(this.bad && x === this.bad.x && y === this.bad.y) &&
+                            !(this.powerup && x === this.powerup.x && y === this.powerup.y)) {
                             this.food = { x, y };
                             found = true;
                         }
@@ -493,7 +474,9 @@ class SoloSnakeGame {
                 break;
             }
         } while (this.snake.some(s => s.x === this.food.x && s.y === this.food.y) ||
-                 this.obstacles.some(o => o.x === this.food.x && o.y === this.food.y));
+                 this.obstacles.some(o => o.x === this.food.x && o.y === this.food.y) ||
+                 (this.bad && this.food.x === this.bad.x && this.food.y === this.bad.y) ||
+                 (this.powerup && this.food.x === this.powerup.x && this.food.y === this.powerup.y));
     }
 
     spawnBad() {
@@ -513,7 +496,8 @@ class SoloSnakeGame {
                     for (let x = 0; x < this.GRID_SIZE && !found; x++) {
                         if (!this.snake.some(s => s.x === x && s.y === y) &&
                             !this.obstacles.some(o => o.x === x && o.y === y) &&
-                            !(x === this.food.x && y === this.food.y)) {
+                            !(x === this.food.x && y === this.food.y) &&
+                            !(this.powerup && x === this.powerup.x && y === this.powerup.y)) {
                             this.bad = { x, y };
                             found = true;
                         }
@@ -523,7 +507,8 @@ class SoloSnakeGame {
             }
         } while (this.snake.some(s => s.x === this.bad.x && s.y === this.bad.y) ||
                  this.obstacles.some(o => o.x === this.bad.x && o.y === this.bad.y) ||
-                 (this.bad.x === this.food.x && this.bad.y === this.food.y));
+                 (this.bad.x === this.food.x && this.bad.y === this.food.y) ||
+                 (this.powerup && this.bad.x === this.powerup.x && this.bad.y === this.powerup.y));
     }
 
     spawnPowerup() {
@@ -632,21 +617,7 @@ class SoloSnakeGame {
     // RENDU
     // ============================================
 
-    getDarkerColor(hexColor) {
-        // Convertit #RRGGBB en version plus foncée
-        const r = parseInt(hexColor.slice(1, 3), 16);
-        const g = parseInt(hexColor.slice(3, 5), 16);
-        const b = parseInt(hexColor.slice(5, 7), 16);
-
-        // Assombrir de 40%
-        const darker = (val) => Math.max(0, Math.floor(val * 0.6));
-
-        const newR = darker(r).toString(16).padStart(2, '0');
-        const newG = darker(g).toString(16).padStart(2, '0');
-        const newB = darker(b).toString(16).padStart(2, '0');
-
-        return `#${newR}${newG}${newB}`;
-    }
+    // getDarkerColor() est héritée de BaseSnakeGame ✅
 
     draw() {
         const dpr = this.ctx.getTransform().a;
@@ -694,72 +665,80 @@ class SoloSnakeGame {
             RenderUtils.drawWall(this.ctx, obs.x, obs.y, this.CELL_SIZE);
         }
 
-        // Dessiner serpent
-        this.snake.forEach((s, i) => {
-            let headColor = '#00FF00';
-            let bodyColor = '#008000';
+        // ============================================
+        // ✨ DESSINER SERPENT AVEC SKINS AAA
+        // ============================================
 
-            // Couleur selon power-up (harmonisées avec multi)
-            if (this.powerupEffects.ghost) {
-                headColor = '#FFFFFF';  // ✅ Blanc pur (fantôme)
-                bodyColor = '#FFFFFF';  // ✅ Blanc pur
-            } else if (this.powerupEffects.invincible) {
-                headColor = '#D2B48C';  // ✅ Tan (ROCK - comme multi)
-                bodyColor = '#D2B48C';
-            } else if (this.powerupEffects.double) {
-                headColor = '#FF5722';  // ✅ Deep Orange (FIRE - moins agressif)
-                bodyColor = '#FF5722';
-            } else if (this.powerupEffects.slow) {
-                headColor = '#00A5A5';  // ✅ Cyan medium (ICE)
-                bodyColor = '#00A5A5';
+        // Obtenir les couleurs du skin (ou couleurs par défaut selon power-up)
+        let skinColors = null;
+
+        // Si un power-up est actif, utiliser des couleurs temporaires
+        if (this.powerupEffects.ghost) {
+            skinColors = {
+                head: { light: '#FFFFFF', dark: '#CCCCCC' },
+                body: { from: '#FFFFFF', to: '#999999' },
+                tail: { color: '#999999' },
+                outline: '#666666',
+                glow: '#FFFFFF'
+            };
+        } else if (this.powerupEffects.invincible) {
+            skinColors = {
+                head: { light: '#D2B48C', dark: '#A0826D' },
+                body: { from: '#D2B48C', to: '#8B7355' },
+                tail: { color: '#8B7355' },
+                outline: '#654321',
+                glow: '#D2B48C'
+            };
+        } else if (this.powerupEffects.double) {
+            skinColors = {
+                head: { light: '#FF5722', dark: '#E64A19' },
+                body: { from: '#FF5722', to: '#BF360C' },
+                tail: { color: '#BF360C' },
+                outline: '#5D0F00',
+                glow: '#FF5722'
+            };
+        } else if (this.powerupEffects.slow) {
+            skinColors = {
+                head: { light: '#00A5A5', dark: '#008080' },
+                body: { from: '#00A5A5', to: '#006666' },
+                tail: { color: '#006666' },
+                outline: '#003333',
+                glow: '#00A5A5'
+            };
+        }
+        // Sinon, utiliser le skin équipé (géré dans drawSnakeEnhanced)
+
+        // Convertir la direction en string
+        const directionString = getDirectionString(this.dx, this.dy);
+
+        // 💥 Ne pas dessiner le serpent s'il explose
+        if (!this.isExploding) {
+            // ✨ Si clignotement actif, alterner rouge/normal
+            let finalColors = skinColors;
+            if (this.isFlashing) {
+                const shouldBeRed = Math.floor(Date.now() / 80) % 2 === 0;
+                if (shouldBeRed) {
+                    finalColors = {
+                        head: { light: '#FF0000', dark: '#CC0000' },
+                        body: { from: '#FF0000', to: '#990000' },
+                        tail: { color: '#990000' },
+                        outline: '#660000',
+                        glow: '#FF0000'
+                    };
+                }
             }
 
-            if (i === 0) {
-                // Tête avec yeux
-                const eyeSize = this.SNAKE_EYE_SIZE * (dpr > 1 ? 0.75 : 1);
-                const eyeOffset = this.SNAKE_EYE_OFFSET * (dpr > 1 ? 0.5 : 1);
-                RenderUtils.drawSnakeHead(
-                    this.ctx,
-                    s.x,
-                    s.y,
-                    this.CELL_SIZE,
-                    headColor,
-                    eyeOffset,
-                    eyeSize
-                );
+            // Dessiner le serpent avec le nouveau système AAA
+            drawSnakeEnhanced(
+                this.ctx,
+                this.snake,
+                directionString,
+                this.CELL_SIZE,
+                finalColors
+            );
+        }
 
-                // ✅ BORDURE TÊTE
-                this.ctx.strokeStyle = this.getDarkerColor(headColor);
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(
-                    s.x * this.CELL_SIZE,
-                    s.y * this.CELL_SIZE,
-                    this.CELL_SIZE,
-                    this.CELL_SIZE
-                );
-            } else {
-                // Corps
-                this.ctx.fillStyle = bodyColor;
-                this.ctx.fillRect(
-                    s.x * this.CELL_SIZE,
-                    s.y * this.CELL_SIZE,
-                    this.CELL_SIZE,
-                    this.CELL_SIZE
-                );
-
-                // ✅ BORDURE CORPS
-                this.ctx.strokeStyle = this.getDarkerColor(bodyColor);
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(
-                    s.x * this.CELL_SIZE,
-                    s.y * this.CELL_SIZE,
-                    this.CELL_SIZE,
-                    this.CELL_SIZE
-                );
-            }
-        });
-
-        // Dessiner particules
+        // Dessiner particules (toujours, pour l'explosion)
         this.drawParticles();
 
         // Overlay pause
@@ -829,28 +808,40 @@ class SoloSnakeGame {
         if (this.locked) return;
         if (newDx === -this.dx && newDy === -this.dy) return;
 
+        // 🧘 PATIENCE: Tracker le premier changement de direction
+        if (this.firstDirectionChangeTime === null) {
+            this.firstDirectionChangeTime = Date.now();
+        }
+
         this.ndx = newDx;
         this.ndy = newDy;
         this.locked = true;
     }
 
-    pause() {
-        this.paused = !this.paused;
-    }
-
-    stop() {
-        this.running = false;
-        if (this.raf) {
-            cancelAnimationFrame(this.raf);
-            this.raf = null;
-        }
-    }
+    // pause() et stop() sont héritées de BaseSnakeGame ✅
 
     // ============================================
     // GAME OVER
     // ============================================
 
     gameOver() {
+        // ✅ Empêcher appels multiples
+        if (this.gameOverTriggered) return;
+        this.gameOverTriggered = true;
+
+        // 💥 Séquence: Clignotement (400ms) → Explosion (1000ms)
+        this.triggerDeathEffects();
+
+        // Délai total: 400ms clignotement + 1000ms explosion
+        setTimeout(() => {
+            this._finalizeGameOver();
+        }, 1400);
+    }
+
+    /**
+     * Finalise le game over après les effets visuels
+     */
+    _finalizeGameOver() {
         this.running = false;
 
         if (this.raf) {
@@ -863,6 +854,15 @@ class SoloSnakeGame {
         const minutes = Math.floor(gameDuration / 60);
         const seconds = gameDuration % 60;
         const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // 🧘 PATIENCE: Calculer temps avant premier changement de direction
+        let patienceWaitTime = 0;
+        if (this.firstDirectionChangeTime === null) {
+            // Jamais changé de direction = toute la partie
+            patienceWaitTime = Date.now() - this.gameStartTime;
+        } else {
+            patienceWaitTime = this.firstDirectionChangeTime - this.gameStartTime;
+        }
 
         // L'XP sera attribué dans handleSoloGameOver
 
@@ -881,7 +881,9 @@ class SoloSnakeGame {
                 timeString: timeString,
                 wallsDestroyed: this.wallsDestroyed,
                 skullsEaten: this.skullsEaten,
-                maxSnakeLength: this.maxSnakeLength
+                maxSnakeLength: this.maxSnakeLength,
+                patienceWaitTime: patienceWaitTime,
+                hasTeleported: this.hasTeleported
             });
         }
     }

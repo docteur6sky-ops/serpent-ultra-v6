@@ -6,6 +6,7 @@ import { logger } from './services/logger.js';
 import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { SnakeAI } from './ai/snake-ai.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+import { POWERUP_SKIN_COLORS } from './config/constants.js';
 
 class AISnakeGame extends BaseSnakeGame {
     constructor() {
@@ -54,6 +55,11 @@ class AISnakeGame extends BaseSnakeGame {
         this.aiActivePowerup = null;
         this.aiPowerupTime = 0;
         this.aiGhostUsed = false; // Flag pour usage unique de GHOST
+
+        // 🏆 Tracking segments volés par le joueur (pour trophée Voleur)
+        this.playerSegmentsStolenThisGame = 0;
+        // 💎 Tracking power-ups collectés par le joueur (pour trophée Collectionneur)
+        this.playerPowerupsCollectedThisGame = 0;
 
         // États de ralentissement (ICE) - 500ms au lieu de freeze total
         this.playerSlowed = false;
@@ -138,9 +144,15 @@ class AISnakeGame extends BaseSnakeGame {
     start(difficulty = 0) {
         super.start(difficulty);
         this.startTimer();
+        // Note: La musique est gérée par ScreenManager.show('game-ai')
     }
 
     reset() {
+        // ✅ Reset flags
+        this.gameOverTriggered = false;
+        this.isExploding = false;
+        this.isFlashing = false;
+
         // Serpents aux coins opposés
         this.playerSnake = [{ x: 5, y: 25 }]; // Bas-gauche
         this.playerDx = 1;
@@ -173,6 +185,8 @@ class AISnakeGame extends BaseSnakeGame {
         this.playerActivePowerup = null;
         this.playerPowerupTime = 0;
         this.playerGhostUsed = false;
+        this.playerSegmentsStolenThisGame = 0; // Reset compteur segments volés
+        this.playerPowerupsCollectedThisGame = 0; // Reset compteur power-ups
         this.aiPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
         this.aiActivePowerup = null;
         this.aiPowerupTime = 0;
@@ -532,6 +546,12 @@ class AISnakeGame extends BaseSnakeGame {
 
         logger.log(`[AIGame] 👻 GHOST: ${attacker} vole ${stolen} segment(s) à ${defender}`);
 
+        // 🏆 Tracker segments volés par le joueur (pour trophée Voleur)
+        if (attacker === 'player' && stolen > 0) {
+            this.playerSegmentsStolenThisGame += stolen;
+            logger.log(`[AIGame] 🏆 Segments volés cette partie: ${this.playerSegmentsStolenThisGame}`);
+        }
+
         // ✨ Clignotement blanc sur le défenseur (1.5 secondes)
         const now = Date.now();
         if (defender === 'player') {
@@ -757,6 +777,9 @@ class AISnakeGame extends BaseSnakeGame {
         if (eater === 'player') {
             this.playerSnake.unshift(head);
 
+            // 💎 Tracking pour trophée Collectionneur
+            this.playerPowerupsCollectedThisGame++;
+
             // ✅ Annuler ancien power-up avant activer nouveau
             if (this.playerActivePowerup) {
                 this.disablePowerup('player');
@@ -878,51 +901,14 @@ class AISnakeGame extends BaseSnakeGame {
         // Obtenir les couleurs du skin joueur (ou couleurs temporaires selon power-up)
         let playerSkinColors = null;
 
-        // Si un power-up est actif, utiliser des couleurs temporaires
-        if (this.playerActivePowerup === 'ghost') {
-            playerSkinColors = {
-                head: { light: '#FFFFFF', dark: '#CCCCCC' },
-                body: { from: '#FFFFFF', to: '#999999' },
-                tail: { color: '#999999' },
-                outline: '#666666',
-                glow: '#FFFFFF'
-            };
-        } else if (this.playerActivePowerup === 'rock') {
-            playerSkinColors = {
-                head: { light: '#D2B48C', dark: '#A0826D' },
-                body: { from: '#D2B48C', to: '#8B7355' },
-                tail: { color: '#8B7355' },
-                outline: '#654321',
-                glow: '#D2B48C'
-            };
-        } else if (this.playerActivePowerup === 'lightning') {
-            playerSkinColors = {
-                head: { light: '#FFD700', dark: '#FFC107' },
-                body: { from: '#FFD700', to: '#FF9800' },
-                tail: { color: '#FF9800' },
-                outline: '#F57F17',
-                glow: '#FFD700'
-            };
-        } else if (this.playerActivePowerup === 'ice') {
-            playerSkinColors = {
-                head: { light: '#5DC1F9', dark: '#42A5F5' },
-                body: { from: '#5DC1F9', to: '#1976D2' },
-                tail: { color: '#1976D2' },
-                outline: '#0D47A1',
-                glow: '#5DC1F9'
-            };
+        // Si un power-up est actif, utiliser des couleurs centralisées
+        if (this.playerActivePowerup && POWERUP_SKIN_COLORS[this.playerActivePowerup]) {
+            playerSkinColors = POWERUP_SKIN_COLORS[this.playerActivePowerup];
         }
-        // Sinon, utiliser le skin équipé (géré dans drawSnakeEnhanced)
 
         // ✅ Si ralenti par ICE ennemi, forcer couleur cyan
         if (this.playerSlowed) {
-            playerSkinColors = {
-                head: { light: '#00A5A5', dark: '#008080' },
-                body: { from: '#00A5A5', to: '#006666' },
-                tail: { color: '#006666' },
-                outline: '#003333',
-                glow: '#00A5A5'
-            };
+            playerSkinColors = POWERUP_SKIN_COLORS.slowed;
         }
 
         // ✨ Si clignotement actif (impact GHOST), couleur blanche
@@ -943,72 +929,47 @@ class AISnakeGame extends BaseSnakeGame {
         // Convertir la direction en string
         const playerDirectionString = getDirectionString(this.playerDx, this.playerDy);
 
-        // Dessiner le serpent joueur avec skins
-        drawSnakeEnhanced(
-            this.ctx,
-            this.playerSnake,
-            playerDirectionString,
-            this.CELL_SIZE,
-            playerSkinColors
-        );
+        // 💥 Ne pas dessiner le serpent joueur s'il explose
+        if (!this.isExploding) {
+            // ✨ Si clignotement actif, alterner rouge/normal
+            let finalPlayerColors = playerSkinColors;
+            if (this.isFlashing) {
+                const shouldBeRed = Math.floor(Date.now() / 80) % 2 === 0;
+                if (shouldBeRed) {
+                    finalPlayerColors = {
+                        head: { light: '#FF0000', dark: '#CC0000' },
+                        body: { from: '#FF0000', to: '#990000' },
+                        tail: { color: '#990000' },
+                        outline: '#660000',
+                        glow: '#FF0000'
+                    };
+                }
+            }
+
+            drawSnakeEnhanced(
+                this.ctx,
+                this.playerSnake,
+                playerDirectionString,
+                this.CELL_SIZE,
+                finalPlayerColors
+            );
+        }
 
         // ============================================
-        // ✨ DESSINER SERPENT IA (couleurs fixes rouge)
+        // ✨ DESSINER SERPENT IA (couleurs centralisées)
         // ============================================
 
-        // L'IA utilise toujours des couleurs rouges par défaut (pas de skin perso)
-        let aiSkinColors = {
-            head: { light: '#FF6B6B', dark: '#CC3636' },
-            body: { from: '#FF6B6B', to: '#CC3636' },
-            tail: { color: '#CC3636' },
-            outline: '#8B0000',
-            glow: '#FF6B6B'
-        };
+        // L'IA utilise couleurs rouges par défaut ou power-up actif
+        let aiSkinColors = POWERUP_SKIN_COLORS.aiDefault;
 
         // Power-up actif change la couleur de l'IA
-        if (this.aiActivePowerup === 'ghost') {
-            aiSkinColors = {
-                head: { light: '#FFFFFF', dark: '#CCCCCC' },
-                body: { from: '#FFFFFF', to: '#999999' },
-                tail: { color: '#999999' },
-                outline: '#666666',
-                glow: '#FFFFFF'
-            };
-        } else if (this.aiActivePowerup === 'rock') {
-            aiSkinColors = {
-                head: { light: '#D2B48C', dark: '#A0826D' },
-                body: { from: '#D2B48C', to: '#8B7355' },
-                tail: { color: '#8B7355' },
-                outline: '#654321',
-                glow: '#D2B48C'
-            };
-        } else if (this.aiActivePowerup === 'lightning') {
-            aiSkinColors = {
-                head: { light: '#FFD700', dark: '#FFC107' },
-                body: { from: '#FFD700', to: '#FF9800' },
-                tail: { color: '#FF9800' },
-                outline: '#F57F17',
-                glow: '#FFD700'
-            };
-        } else if (this.aiActivePowerup === 'ice') {
-            aiSkinColors = {
-                head: { light: '#5DC1F9', dark: '#42A5F5' },
-                body: { from: '#5DC1F9', to: '#1976D2' },
-                tail: { color: '#1976D2' },
-                outline: '#0D47A1',
-                glow: '#5DC1F9'
-            };
+        if (this.aiActivePowerup && POWERUP_SKIN_COLORS[this.aiActivePowerup]) {
+            aiSkinColors = POWERUP_SKIN_COLORS[this.aiActivePowerup];
         }
 
         // ✅ Si ralenti par ICE ennemi, forcer couleur cyan
         if (this.aiSlowed) {
-            aiSkinColors = {
-                head: { light: '#00A5A5', dark: '#008080' },
-                body: { from: '#00A5A5', to: '#006666' },
-                tail: { color: '#006666' },
-                outline: '#003333',
-                glow: '#00A5A5'
-            };
+            aiSkinColors = POWERUP_SKIN_COLORS.slowed;
         }
 
         // ✨ Si clignotement actif (impact GHOST), couleur blanche
@@ -1029,16 +990,33 @@ class AISnakeGame extends BaseSnakeGame {
         // Convertir la direction en string
         const aiDirectionString = getDirectionString(this.aiDx, this.aiDy);
 
-        // Dessiner le serpent IA avec skins
-        drawSnakeEnhanced(
-            this.ctx,
-            this.aiSnake,
-            aiDirectionString,
-            this.CELL_SIZE,
-            aiSkinColors
-        );
+        // 💥 Ne pas dessiner le serpent IA s'il explose
+        if (!this.isExploding) {
+            // ✨ Si clignotement actif, alterner rouge/blanc
+            let finalAIColors = aiSkinColors;
+            if (this.isFlashing) {
+                const shouldBeWhite = Math.floor(Date.now() / 80) % 2 === 0;
+                if (shouldBeWhite) {
+                    finalAIColors = {
+                        head: { light: '#FFFFFF', dark: '#CCCCCC' },
+                        body: { from: '#FFFFFF', to: '#AAAAAA' },
+                        tail: { color: '#AAAAAA' },
+                        outline: '#888888',
+                        glow: '#FFFFFF'
+                    };
+                }
+            }
 
-        // 💥 Dessiner toutes les particules
+            drawSnakeEnhanced(
+                this.ctx,
+                this.aiSnake,
+                aiDirectionString,
+                this.CELL_SIZE,
+                finalAIColors
+            );
+        }
+
+        // 💥 Dessiner toutes les particules (toujours, pour l'explosion)
         this.drawParticles();
     }
 
@@ -1090,6 +1068,35 @@ class AISnakeGame extends BaseSnakeGame {
     }
 
     gameOver() {
+        // ✅ Empêcher appels multiples
+        if (this.gameOverTriggered) return;
+        this.gameOverTriggered = true;
+        this.stopTimer();
+
+        // 1️⃣ D'abord clignotement rouge (400ms)
+        this.isFlashing = true;
+
+        // 2️⃣ Après 400ms, explosion des deux serpents
+        setTimeout(() => {
+            this.isFlashing = false;
+            if (this.playerSnake && this.playerSnake.length > 0) {
+                this.explodeSnake(this.playerSnake, '#00FF87');  // Joueur = vert
+            }
+            if (this.aiSnake && this.aiSnake.length > 0) {
+                this.explodeSnake(this.aiSnake, '#FF6B6B');  // IA = rouge
+            }
+        }, 400);
+
+        // Délai total: 400ms clignotement + 1200ms explosion
+        setTimeout(() => {
+            this._finalizeGameOver();
+        }, 1600);
+    }
+
+    /**
+     * Finalise le game over après les effets visuels
+     */
+    _finalizeGameOver() {
         this.stop();
 
         // Déterminer gagnant
@@ -1120,18 +1127,101 @@ class AISnakeGame extends BaseSnakeGame {
         const isPlayerWinner = (winner === 'Vous');
         this.trackAIVictory(isPlayerWinner);
 
-        // TODO: Afficher écran game over
-        alert(`Temps écoulé !\n\n${winner} gagne avec ${winnerScore} segments !`);
+        // ✅ Afficher écran Game Over animé
+        this.showGameOverScreen(winner, playerScore, aiScore, isPlayerWinner);
+    }
 
-        // Retour HUB V6
+    /**
+     * Affiche l'écran Game Over animé
+     */
+    showGameOverScreen(winner, playerScore, aiScore, isPlayerWinner) {
+        // Récupérer les éléments DOM
+        const resultTitle = document.getElementById('ai-result-title');
+        const resultIcon = document.getElementById('ai-result-icon');
+        const resultText = document.getElementById('ai-result-text');
+        const playerCard = document.getElementById('ai-player-card');
+        const opponentCard = document.getElementById('ai-opponent-card');
+        const playerScoreElem = document.getElementById('ai-go-player-score');
+        const aiScoreElem = document.getElementById('ai-go-ai-score');
+        const playerNameElem = document.getElementById('ai-go-player-name');
+        const stolenElem = document.getElementById('ai-go-stolen');
+        const powerupsElem = document.getElementById('ai-go-powerups');
+        const winsElem = document.getElementById('ai-go-wins');
+
+        // Mettre à jour le pseudo
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
+        if (playerNameElem) playerNameElem.textContent = pseudo;
+
+        // Mettre à jour les scores
+        if (playerScoreElem) playerScoreElem.textContent = playerScore;
+        if (aiScoreElem) aiScoreElem.textContent = aiScore;
+
+        // Mettre à jour les stats
+        if (stolenElem) stolenElem.textContent = this.playerSegmentsStolenThisGame || 0;
+        if (powerupsElem) powerupsElem.textContent = this.playerPowerupsCollectedThisGame || 0;
+
+        // Récupérer victoires totales
+        let career = window.load ? window.load('career', {}) : {};
+        if (winsElem) winsElem.textContent = career.aiWins || 0;
+
+        // Configurer l'affichage selon le résultat
+        if (resultTitle) {
+            resultTitle.classList.remove('defeat', 'tie');
+        }
+
+        if (winner === 'Vous') {
+            // Victoire
+            if (resultIcon) resultIcon.textContent = '🏆';
+            if (resultText) resultText.textContent = 'VICTOIRE';
+            if (playerCard) {
+                playerCard.classList.add('winner');
+                playerCard.classList.remove('loser');
+            }
+            if (opponentCard) {
+                opponentCard.classList.remove('winner');
+                opponentCard.classList.add('loser');
+            }
+        } else if (winner === 'IA') {
+            // Défaite
+            if (resultTitle) resultTitle.classList.add('defeat');
+            if (resultIcon) resultIcon.textContent = '💀';
+            if (resultText) resultText.textContent = 'DÉFAITE';
+            if (playerCard) {
+                playerCard.classList.remove('winner');
+                playerCard.classList.add('loser');
+            }
+            if (opponentCard) {
+                opponentCard.classList.add('winner');
+                opponentCard.classList.remove('loser');
+            }
+        } else {
+            // Égalité
+            if (resultTitle) resultTitle.classList.add('tie');
+            if (resultIcon) resultIcon.textContent = '🤝';
+            if (resultText) resultText.textContent = 'ÉGALITÉ';
+            if (playerCard) {
+                playerCard.classList.remove('winner', 'loser');
+            }
+            if (opponentCard) {
+                opponentCard.classList.remove('winner', 'loser');
+            }
+        }
+
+        // Jouer le son approprié
+        if (this.audio) {
+            if (isPlayerWinner) {
+                this.audio.victory?.() || this.audio.eat?.();
+            } else {
+                this.audio.gameover?.();
+            }
+        }
+
+        // Afficher l'écran
         if (window.screenManager) {
-            window.screenManager.show('hub');
+            window.screenManager.show('over-ai');
         }
 
-        // Rafraîchir le hub
-        if (window.initHub) {
-            setTimeout(() => window.initHub(), 100);
-        }
+        logger.log('[AIGame] Écran Game Over affiché');
     }
 
     /**
@@ -1150,20 +1240,57 @@ class AISnakeGame extends BaseSnakeGame {
         // Initialiser les variables IA si besoin
         if (typeof career.aiWins === 'undefined') career.aiWins = 0;
         if (typeof career.aiGames === 'undefined') career.aiGames = 0;
-        if (typeof career.totalApples === 'undefined') career.totalApples = 0;
+        if (typeof career.aiApples === 'undefined') career.aiApples = 0;
+        if (typeof career.ghostThiefAchieved === 'undefined') career.ghostThiefAchieved = 0;
+        if (typeof career.aiMaxSegments === 'undefined') career.aiMaxSegments = 0;
+        if (typeof career.aiPowerups === 'undefined') career.aiPowerups = 0;
+        if (typeof career.aiWinStreak === 'undefined') career.aiWinStreak = 0;
+        if (typeof career.ecrasantAchieved === 'undefined') career.ecrasantAchieved = 0;
 
         // ✅ Incrémenter compteur parties IA (toujours)
         career.aiGames++;
 
+        // ✅ Compter les pommes mangées vs IA (séparé des pommes solo)
+        const playerSegments = this.playerSnake ? this.playerSnake.length : 0;
+        const aiSegments = this.aiSnake ? this.aiSnake.length : 0;
+        const applesEaten = Math.max(0, playerSegments - 3); // 3 = taille initiale
+        career.aiApples += applesEaten;
+
+        // 🦕 GÉANT: Max segments atteints vs IA
+        if (playerSegments > career.aiMaxSegments) {
+            career.aiMaxSegments = playerSegments;
+        }
+
+        // 💎 COLLECTIONNEUR: Power-ups collectés vs IA
+        career.aiPowerups += this.playerPowerupsCollectedThisGame || 0;
+
         // ✅ Incrémenter victoires si le joueur gagne
         if (isPlayerWinner) {
             career.aiWins++;
+            career.aiWinStreak++;
+
+            // 💪 ÉCRASANT: Gagner avec 20+ segments d'avance
+            const segmentAdvantage = playerSegments - aiSegments;
+            if (segmentAdvantage >= 20) {
+                career.ecrasantAchieved++;
+                logger.log(`[AIGame] 🏆 ÉCRASANT débloqué! (${segmentAdvantage} segments d'avance)`);
+            }
+        } else {
+            // Défaite = reset streak
+            career.aiWinStreak = 0;
         }
 
-        // ✅ Compter les pommes mangées (approximation depuis le score du joueur)
-        if (this.playerSnake) {
-            const applesEaten = Math.max(0, this.playerSnake.length - 3); // 3 = taille initiale
-            career.totalApples += applesEaten;
+        // 🏆 VOLEUR: A volé 10+ segments en une partie avec GHOST
+        if (this.playerSegmentsStolenThisGame >= 10) {
+            career.ghostThiefAchieved++;
+            logger.log(`[AIGame] 🏆 VOLEUR débloqué! (${this.playerSegmentsStolenThisGame} segments volés)`);
+        }
+
+        // 🌙 NOCTURNE: Jouer entre 20h et 8h du matin
+        const currentHour = new Date().getHours();
+        if (currentHour >= 20 || currentHour < 8) {
+            if (typeof career.nightOwlGames === 'undefined') career.nightOwlGames = 0;
+            career.nightOwlGames++;
         }
 
         // ✅ SYNC: Mettre à jour window.career pour que TROPHIES.check() voit les changements
@@ -1196,6 +1323,31 @@ window.startAIGame = function(difficulty = 0) {
 
     if (window.screenManager) {
         window.screenManager.show('game-ai');
+    }
+};
+
+// Fonction rejouer (appelée depuis écran Game Over)
+window.replayAIGame = function() {
+    logger.log('[AIGame] Rejouer...');
+    window.startAIGame(0);
+};
+
+// Fonction retour au hub (appelée depuis écran Game Over)
+window.returnToHubFromAI = function() {
+    logger.log('[AIGame] Retour au hub...');
+
+    if (window.aiGame) {
+        window.aiGame.stop();
+        window.aiGame = null;
+    }
+
+    if (window.screenManager) {
+        window.screenManager.show('hub');
+    }
+
+    // Rafraîchir le hub
+    if (window.initHub) {
+        setTimeout(() => window.initHub(), 100);
     }
 };
 
