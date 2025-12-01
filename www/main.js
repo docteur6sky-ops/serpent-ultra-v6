@@ -10,6 +10,8 @@
 import { logger } from './services/logger.js';
 import './services/CareerManager.js';  // ✅ Gestion carrière/XP/rangs
 import './managers/TrophyManager.js';  // ✅ Gestion trophées
+import './managers/ProgressionManager.js';  // ✅ Overlay progression XP
+import './managers/LeaderboardManager.js';  // ✅ Scores et classement
 
 // 2. Managers UI
 import './ScreenManager.js';
