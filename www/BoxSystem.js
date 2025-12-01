@@ -1,20 +1,21 @@
 /**
- * BOX MANAGER - Gestion de la collection d'items
+ * BOX SYSTEM - Gestion complète de la collection d'items
  *
- * Gère :
- * - Système de monnaie (coins)
- * - Items débloqués/équipés
- * - Achat d'items
- * - Déblocage par niveau/achievement
- * - Loot du coffre quotidien
+ * Fusion de box-manager.js + box-ui.js
+ *
+ * Contient :
+ * - BoxManager (classe) : logique métier, données, sauvegarde
+ * - BoxUI (fonctions) : interface utilisateur, rendu
  */
 
 import { logger } from './services/logger.js';
-import { ITEMS, getAllItems, getItemById, RARITY } from './data/items.js';
+import { ITEMS, getAllItems, getItemById, getItemsByType, RARITY } from './data/items.js';
+import { drawSkinPreview } from './SkinsRenderer.js';
 
-/**
- * CLASS BoxManager
- */
+// ============================================
+// CLASSE BOXMANAGER - LOGIQUE MÉTIER
+// ============================================
+
 class BoxManager {
     constructor() {
         this.coins = 0;
@@ -36,40 +37,21 @@ class BoxManager {
     // 💰 SYSTÈME DE MONNAIE
     // ============================================
 
-    /**
-     * Récupère le nombre de coins du joueur
-     * @returns {number} Nombre de coins
-     */
     getCoins() {
         return this.coins;
     }
 
-    /**
-     * Ajoute des coins au joueur
-     * @param {number} amount - Montant à ajouter
-     * @param {string} reason - Raison du gain (pour logs)
-     */
     addCoins(amount, reason = 'unknown') {
         this.coins += amount;
         this.save();
 
         logger.log(`💰 [BoxManager] +${amount} coins (${reason}) → Total: ${this.coins}`);
 
-        // Notification visuelle
         if (window.NotificationManager && window.NotificationManager.show) {
-            window.NotificationManager.show(
-                `+${amount} 💰`,
-                'success',
-                2000
-            );
+            window.NotificationManager.show(`+${amount} 💰`, 'success', 2000);
         }
     }
 
-    /**
-     * Retire des coins au joueur
-     * @param {number} amount - Montant à retirer
-     * @returns {boolean} True si succès, false si pas assez de coins
-     */
     removeCoins(amount) {
         if (this.coins < amount) {
             logger.warn(`⚠️ [BoxManager] Pas assez de coins (${this.coins} < ${amount})`);
@@ -80,7 +62,6 @@ class BoxManager {
         this.save();
 
         logger.log(`💸 [BoxManager] -${amount} coins → Total: ${this.coins}`);
-
         return true;
     }
 
@@ -88,10 +69,6 @@ class BoxManager {
     // ⚗️ SYSTÈME DE BOOSTERS XP
     // ============================================
 
-    /**
-     * Ajoute un booster à l'inventaire
-     * @param {number} percent - 25 ou 50
-     */
     addBooster(percent) {
         const key = percent === 50 ? 'boost50' : 'boost25';
         this.boosters[key]++;
@@ -100,53 +77,32 @@ class BoxManager {
         logger.log(`⚗️ [BoxManager] +1 Booster ${percent}% → Total: ${this.boosters[key]}`);
 
         if (window.NotificationManager && window.NotificationManager.show) {
-            window.NotificationManager.show(
-                `⚗️ Booster +${percent}% XP obtenu !`,
-                'success',
-                3000
-            );
+            window.NotificationManager.show(`⚗️ Booster +${percent}% XP obtenu !`, 'success', 3000);
         }
     }
 
-    /**
-     * Récupère le nombre de boosters disponibles
-     * @returns {object} { boost25: n, boost50: n }
-     */
     getBoosters() {
         return { ...this.boosters };
     }
 
-    /**
-     * Active un booster (durée 1h)
-     * @param {number} percent - 25 ou 50
-     * @returns {boolean} True si activé
-     */
     activateBooster(percent) {
-        // Vérifier si un booster est déjà actif
         if (this.isBoosterActive()) {
             logger.warn('⚗️ [BoxManager] Un booster est déjà actif !');
             if (window.NotificationManager && window.NotificationManager.show) {
-                window.NotificationManager.show(
-                    '⚠️ Un booster est déjà actif !',
-                    'warning',
-                    3000
-                );
+                window.NotificationManager.show('⚠️ Un booster est déjà actif !', 'warning', 3000);
             }
             return false;
         }
 
         const key = percent === 50 ? 'boost50' : 'boost25';
 
-        // Vérifier si le joueur a ce booster
         if (this.boosters[key] <= 0) {
             logger.warn(`⚗️ [BoxManager] Pas de booster ${percent}% disponible`);
             return false;
         }
 
-        // Consommer le booster
         this.boosters[key]--;
 
-        // Activer pour 1 heure
         const DURATION_MS = 60 * 60 * 1000; // 1 heure
         this.activeBooster = {
             percent: percent,
@@ -158,24 +114,15 @@ class BoxManager {
         logger.log(`⚗️ [BoxManager] Booster ${percent}% activé pour 1h !`);
 
         if (window.NotificationManager && window.NotificationManager.show) {
-            window.NotificationManager.show(
-                `⚗️ Booster +${percent}% XP activé pour 1h !`,
-                'success',
-                3000
-            );
+            window.NotificationManager.show(`⚗️ Booster +${percent}% XP activé pour 1h !`, 'success', 3000);
         }
 
         return true;
     }
 
-    /**
-     * Vérifie si un booster est actif (et nettoie si expiré)
-     * @returns {boolean}
-     */
     isBoosterActive() {
         if (!this.activeBooster) return false;
 
-        // Vérifier si expiré
         if (Date.now() >= this.activeBooster.expiresAt) {
             logger.log('⚗️ [BoxManager] Booster expiré');
             this.activeBooster = null;
@@ -186,10 +133,6 @@ class BoxManager {
         return true;
     }
 
-    /**
-     * Récupère le booster actif
-     * @returns {object|null} { percent, expiresAt, remainingMs }
-     */
     getActiveBooster() {
         if (!this.isBoosterActive()) return null;
 
@@ -200,10 +143,6 @@ class BoxManager {
         };
     }
 
-    /**
-     * Récupère le multiplicateur XP actuel
-     * @returns {number} 1.0, 1.25 ou 1.5
-     */
     getXpMultiplier() {
         if (!this.isBoosterActive()) return 1.0;
         return 1 + (this.activeBooster.percent / 100);
@@ -213,28 +152,16 @@ class BoxManager {
     // 🎁 GESTION DES ITEMS
     // ============================================
 
-    /**
-     * Vérifie si un item est débloqué
-     * @param {string} itemId - ID de l'item
-     * @returns {boolean} True si débloqué
-     */
     isUnlocked(itemId) {
         const item = getItemById(itemId);
 
-        // Items gratuits de base
         if (item && item.unlocked === true) {
             return true;
         }
 
-        // Vérifier dans la liste des items débloqués
         return this.unlockedItems.includes(itemId);
     }
 
-    /**
-     * Débloque un item
-     * @param {string} itemId - ID de l'item
-     * @param {string} reason - Raison du déblocage (pour logs)
-     */
     unlockItem(itemId, reason = 'unknown') {
         if (this.isUnlocked(itemId)) {
             logger.warn(`⚠️ [BoxManager] Item ${itemId} déjà débloqué`);
@@ -252,23 +179,13 @@ class BoxManager {
 
         logger.log(`🎁 [BoxManager] Item ${itemId} débloqué (${reason})`);
 
-        // Notification avec emoji de l'item
         if (window.NotificationManager && window.NotificationManager.show) {
-            window.NotificationManager.show(
-                `${item.emoji} ${item.name} débloqué !`,
-                'success',
-                3000
-            );
+            window.NotificationManager.show(`${item.emoji} ${item.name} débloqué !`, 'success', 3000);
         }
 
         return true;
     }
 
-    /**
-     * Achète un item avec des coins
-     * @param {string} itemId - ID de l'item
-     * @returns {boolean} True si achat réussi
-     */
     buyItem(itemId) {
         const item = getItemById(itemId);
 
@@ -280,11 +197,7 @@ class BoxManager {
         if (this.isUnlocked(itemId)) {
             logger.warn(`⚠️ [BoxManager] Item ${itemId} déjà possédé`);
             if (window.NotificationManager && window.NotificationManager.show) {
-                window.NotificationManager.show(
-                    'Déjà possédé !',
-                    'error',
-                    2000
-                );
+                window.NotificationManager.show('Déjà possédé !', 'error', 2000);
             }
             return false;
         }
@@ -297,31 +210,18 @@ class BoxManager {
         if (this.coins < item.price) {
             logger.warn(`⚠️ [BoxManager] Pas assez de coins (${this.coins} < ${item.price})`);
             if (window.NotificationManager && window.NotificationManager.show) {
-                window.NotificationManager.show(
-                    `Pas assez de coins ! (${this.coins}/${item.price})`,
-                    'error',
-                    2000
-                );
+                window.NotificationManager.show(`Pas assez de coins ! (${this.coins}/${item.price})`, 'error', 2000);
             }
             return false;
         }
 
-        // Débiter les coins
         this.removeCoins(item.price);
-
-        // Débloquer l'item
         this.unlockItem(itemId, `achat ${item.price} coins`);
 
         logger.log(`✅ [BoxManager] Achat réussi: ${item.name}`);
-
         return true;
     }
 
-    /**
-     * Équipe un item (skin ou background)
-     * @param {string} itemId - ID de l'item
-     * @returns {boolean} True si équipement réussi
-     */
     equipItem(itemId) {
         const item = getItemById(itemId);
 
@@ -338,24 +238,18 @@ class BoxManager {
         if (item.type === 'skin') {
             this.equippedSkin = itemId;
             logger.log(`🐍 [BoxManager] Skin équipé: ${item.name}`);
-
-            // Appliquer le skin au snake
             if (window.applySkin) {
                 window.applySkin(item);
             }
         } else if (item.type === 'background') {
             this.equippedBackground = itemId;
             logger.log(`🎨 [BoxManager] Background équipé: ${item.name}`);
-
-            // Appliquer le background au hub
             if (window.applyHubBackground) {
                 window.applyHubBackground();
             }
         } else if (item.type === 'banner') {
             this.equippedBanner = itemId;
             logger.log(`🖼️ [BoxManager] Bannière équipée: ${item.name}`);
-
-            // Appliquer la bannière au hub
             if (window.applyHubBanner) {
                 window.applyHubBanner(item);
             }
@@ -364,36 +258,20 @@ class BoxManager {
         this.save();
 
         if (window.NotificationManager && window.NotificationManager.show) {
-            window.NotificationManager.show(
-                `${item.emoji} ${item.name} équipé !`,
-                'success',
-                2000
-            );
+            window.NotificationManager.show(`${item.emoji} ${item.name} équipé !`, 'success', 2000);
         }
 
         return true;
     }
 
-    /**
-     * Récupère l'item skin équipé
-     * @returns {object} Item skin
-     */
     getEquippedSkin() {
         return getItemById(this.equippedSkin);
     }
 
-    /**
-     * Récupère l'item background équipé
-     * @returns {object} Item background
-     */
     getEquippedBackground() {
         return getItemById(this.equippedBackground);
     }
 
-    /**
-     * Récupère l'item bannière équipé
-     * @returns {object} Item banner
-     */
     getEquippedBanner() {
         return getItemById(this.equippedBanner);
     }
@@ -402,11 +280,6 @@ class BoxManager {
     // 🎲 DÉBLOCAGE AUTOMATIQUE
     // ============================================
 
-    /**
-     * Vérifie et débloque les items par niveau
-     * Appelé quand le joueur monte de niveau
-     * @param {number} level - Niveau du joueur
-     */
     checkLevelUnlocks(level) {
         const allItems = getAllItems();
 
@@ -419,11 +292,6 @@ class BoxManager {
         });
     }
 
-    /**
-     * Vérifie et débloque les items par achievement
-     * Appelé quand le joueur obtient un trophée
-     * @param {string} trophyKey - Clé du trophée obtenu
-     */
     checkAchievementUnlocks(trophyKey) {
         const allItems = getAllItems();
 
@@ -440,61 +308,31 @@ class BoxManager {
     // 📦 COFFRE QUOTIDIEN
     // ============================================
 
-    /**
-     * Ouvre le coffre quotidien (coins, item OU booster)
-     * @returns {object} Récompense { type: 'coins'|'item'|'booster', ... }
-     */
     openChest() {
-        // 40% coins, 40% item, 20% booster
         const roll = Math.random();
 
         if (roll < 0.4) {
-            // 💰 Récompense en coins: 100 (petit seau) ou 250 (gros coffre)
-            const amount = Math.random() < 0.7 ? 100 : 250; // 70% petit, 30% gros
+            const amount = Math.random() < 0.7 ? 100 : 250;
             this.addCoins(amount, 'coffre quotidien');
-
-            return {
-                type: 'coins',
-                value: amount
-            };
+            return { type: 'coins', value: amount };
         } else if (roll < 0.8) {
-            // 🎁 Récompense item random (selon rareté)
             const item = this.rollRandomItem();
 
             if (item) {
                 this.unlockItem(item.id, 'coffre quotidien');
-
-                return {
-                    type: 'item',
-                    value: item.id,
-                    item: item
-                };
+                return { type: 'item', value: item.id, item: item };
             } else {
-                // Fallback si pas d'item disponible → booster 25%
                 this.addBooster(25);
-                return {
-                    type: 'booster',
-                    boostPercent: 25
-                };
+                return { type: 'booster', boostPercent: 25 };
             }
         } else {
-            // ⚗️ Booster XP: 75% boost25, 25% boost50
             const boostPercent = Math.random() < 0.75 ? 25 : 50;
             this.addBooster(boostPercent);
-
-            return {
-                type: 'booster',
-                boostPercent: boostPercent
-            };
+            return { type: 'booster', boostPercent: boostPercent };
         }
     }
 
-    /**
-     * Tire un item random selon les taux de rareté
-     * @returns {object|null} Item tiré ou null
-     */
     rollRandomItem() {
-        // Récupérer tous les items non débloqués
         const allItems = getAllItems();
         const lockedItems = allItems.filter(item => !this.isUnlocked(item.id) && !item.unlocked);
 
@@ -503,7 +341,6 @@ class BoxManager {
             return null;
         }
 
-        // Tirer une rareté selon les drop rates
         const roll = Math.random();
         let cumulativeRate = 0;
         let rolledRarity = 'common';
@@ -516,17 +353,14 @@ class BoxManager {
             }
         }
 
-        // Filtrer les items de cette rareté
         const itemsOfRarity = lockedItems.filter(item => item.rarity === rolledRarity);
 
         if (itemsOfRarity.length === 0) {
-            // Si aucun item de cette rareté, fallback sur n'importe quel item non débloqué
             const randomItem = lockedItems[Math.floor(Math.random() * lockedItems.length)];
             logger.log(`🎲 [BoxManager] Aucun item ${rolledRarity}, fallback sur ${randomItem.name}`);
             return randomItem;
         }
 
-        // Tirer un item random parmi ceux de cette rareté
         const randomItem = itemsOfRarity[Math.floor(Math.random() * itemsOfRarity.length)];
         logger.log(`🎲 [BoxManager] Item tiré: ${randomItem.name} (${rolledRarity})`);
 
@@ -537,9 +371,6 @@ class BoxManager {
     // 💾 SAUVEGARDE / CHARGEMENT
     // ============================================
 
-    /**
-     * Sauvegarde l'état dans localStorage
-     */
     save() {
         const data = {
             coins: this.coins,
@@ -554,9 +385,6 @@ class BoxManager {
         localStorage.setItem('boxData', JSON.stringify(data));
     }
 
-    /**
-     * Charge l'état depuis localStorage
-     */
     load() {
         const saved = localStorage.getItem('boxData');
 
@@ -572,7 +400,7 @@ class BoxManager {
                 this.boosters = data.boosters || { boost25: 0, boost50: 0 };
                 this.activeBooster = data.activeBooster || null;
 
-                logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items, boosters: ${this.boosters.boost25}x25% + ${this.boosters.boost50}x50%`);
+                logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items`);
             } catch (e) {
                 logger.error('❌ [BoxManager] Erreur chargement:', e);
             }
@@ -581,15 +409,14 @@ class BoxManager {
         }
     }
 
-    /**
-     * Réinitialise toutes les données
-     */
     reset() {
         this.coins = 0;
         this.unlockedItems = [];
         this.equippedSkin = 'classic';
         this.equippedBackground = 'default';
         this.equippedBanner = 'banner_default';
+        this.boosters = { boost25: 0, boost50: 0 };
+        this.activeBooster = null;
         this.save();
 
         logger.log('🔄 [BoxManager] Reset complet');
@@ -599,10 +426,6 @@ class BoxManager {
     // 📊 STATS
     // ============================================
 
-    /**
-     * Récupère les stats de la collection
-     * @returns {object} Stats { total, unlocked, locked, percentage }
-     */
     getCollectionStats() {
         const allItems = getAllItems();
         const total = allItems.length;
@@ -610,20 +433,272 @@ class BoxManager {
         const locked = total - unlocked;
         const percentage = Math.round((unlocked / total) * 100);
 
-        return {
-            total,
-            unlocked,
-            locked,
-            percentage
-        };
+        return { total, unlocked, locked, percentage };
     }
 
-    /**
-     * Récupère le nombre d'items débloqués
-     * @returns {number} Nombre d'items débloqués
-     */
     getUnlockedCount() {
         return this.getCollectionStats().unlocked;
+    }
+}
+
+// ============================================
+// FONCTIONS UI - INTERFACE UTILISATEUR
+// ============================================
+
+let currentFilter = 'all';
+
+function openBox() {
+    if (window.audio) window.audio.buttonClick();
+
+    window.screenManager.show('box-screen');
+    refreshBoxUI();
+
+    if (window.updateBoostersDisplay) {
+        window.updateBoostersDisplay();
+    }
+
+    logger.log('[BoxUI] Box ouverte');
+}
+
+function closeBox() {
+    if (window.audio) window.audio.buttonClick();
+
+    window.screenManager.show('hub');
+
+    logger.log('[BoxUI] Box fermée');
+}
+
+function refreshBoxUI() {
+    updateHeader();
+    updateTabs();
+    renderItems(currentFilter);
+}
+
+function updateHeader() {
+    const stats = window.boxManager.getCollectionStats();
+
+    const countEl = document.getElementById('box-count');
+    const totalEl = document.getElementById('box-total');
+    const percentEl = document.getElementById('box-percentage');
+    const coinsEl = document.getElementById('box-coins-value');
+
+    if (countEl) countEl.textContent = stats.unlocked;
+    if (totalEl) totalEl.textContent = stats.total;
+    if (percentEl) percentEl.textContent = `(${stats.percentage}%)`;
+    if (coinsEl) coinsEl.textContent = window.boxManager.getCoins();
+}
+
+function updateTabs() {
+    const allItems = getAllItems();
+    const skins = getItemsByType('skin');
+    const banners = getItemsByType('banner');
+    const backgrounds = getItemsByType('background');
+
+    const allUnlocked = allItems.filter(item =>
+        window.boxManager.isUnlocked(item.id) || item.unlocked
+    ).length;
+
+    const skinsUnlocked = skins.filter(item =>
+        window.boxManager.isUnlocked(item.id) || item.unlocked
+    ).length;
+
+    const bannersUnlocked = banners.filter(item =>
+        window.boxManager.isUnlocked(item.id) || item.unlocked
+    ).length;
+
+    const backgroundsUnlocked = backgrounds.filter(item =>
+        window.boxManager.isUnlocked(item.id) || item.unlocked
+    ).length;
+
+    const tabAll = document.getElementById('tab-count-all');
+    const tabSkins = document.getElementById('tab-count-skins');
+    const tabBanners = document.getElementById('tab-count-banners');
+    const tabBg = document.getElementById('tab-count-backgrounds');
+
+    if (tabAll) tabAll.textContent = `(${allUnlocked}/${allItems.length})`;
+    if (tabSkins) tabSkins.textContent = `(${skinsUnlocked}/${skins.length})`;
+    if (tabBanners) tabBanners.textContent = `(${bannersUnlocked}/${banners.length})`;
+    if (tabBg) tabBg.textContent = `(${backgroundsUnlocked}/${backgrounds.length})`;
+}
+
+function filterBoxItems(category) {
+    if (window.audio) window.audio.buttonClick();
+
+    currentFilter = category;
+
+    document.querySelectorAll('.box-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    const activeTab = document.querySelector(`[data-category="${category}"]`);
+    if (activeTab) activeTab.classList.add('active');
+
+    renderItems(category);
+
+    logger.log(`[BoxUI] Filtre changé: ${category}`);
+}
+
+function renderItems(category) {
+    let items;
+
+    if (category === 'all') {
+        items = getAllItems();
+    } else if (category === 'skins') {
+        items = getItemsByType('skin');
+    } else if (category === 'banners') {
+        items = getItemsByType('banner');
+    } else if (category === 'backgrounds') {
+        items = getItemsByType('background');
+    }
+
+    const grid = document.getElementById('boxGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    items.forEach(item => {
+        const card = createItemCard(item);
+        grid.appendChild(card);
+    });
+}
+
+function createItemCard(item) {
+    const isUnlocked = window.boxManager.isUnlocked(item.id) || item.unlocked;
+    const isEquipped = (item.type === 'skin' && window.boxManager.equippedSkin === item.id) ||
+                       (item.type === 'background' && window.boxManager.equippedBackground === item.id) ||
+                       (item.type === 'banner' && window.boxManager.equippedBanner === item.id);
+
+    const card = document.createElement('div');
+    card.className = 'box-item';
+
+    if (isUnlocked) {
+        card.classList.add('unlocked');
+    } else {
+        card.classList.add('locked');
+        if (item.unlockType === 'coins' && item.price > 0) {
+            card.classList.add('purchasable');
+        }
+    }
+
+    if (isEquipped) {
+        card.classList.add('equipped');
+    }
+
+    // Preview
+    let previewHTML = '';
+    const centerBadge = isEquipped
+        ? '<div class="center-badge active">ACTIF</div>'
+        : (!isUnlocked ? '<div class="center-badge lock">🔒</div>' : '');
+
+    if (item.type === 'skin' && item.colors) {
+        const canvasId = `skin-preview-${item.id}`;
+        previewHTML = `
+            <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
+                ${centerBadge}
+            </div>
+        `;
+    } else if (item.type === 'banner' && item.image) {
+        previewHTML = `
+            <div class="box-item-preview banner-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <img src="${item.image}" alt="${item.name}" class="banner-preview-image ${!isUnlocked ? 'locked-banner' : ''}">
+                ${centerBadge}
+            </div>
+        `;
+    } else if (item.type === 'background' && item.image) {
+        previewHTML = `
+            <div class="box-item-preview background-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                <img src="${item.image}" alt="${item.name}" class="background-preview-image ${!isUnlocked ? 'locked-background' : ''}">
+                ${centerBadge}
+            </div>
+        `;
+    } else {
+        previewHTML = `
+            <div class="box-item-preview default-preview">
+                ${centerBadge}
+            </div>
+        `;
+    }
+
+    // Type label
+    const typeLabels = { 'skin': 'Skin', 'background': 'Background', 'banner': 'Bannière' };
+
+    // Info
+    const infoHTML = `
+        <div class="box-item-info">
+            <h4 class="box-item-name">${item.name}</h4>
+            <p class="box-item-type">${typeLabels[item.type] || item.type}</p>
+        </div>
+    `;
+
+    // Status badge
+    let statusHTML = '';
+    if (isEquipped) {
+        statusHTML = '<span class="status-badge equipped">⭐ Équipé</span>';
+    } else if (isUnlocked) {
+        statusHTML = '<span class="status-badge unlocked">✓ Possédé</span>';
+    } else {
+        if (item.unlockType === 'coins' && item.price > 0) {
+            statusHTML = `<span class="status-badge price">💰 ${item.price}</span>`;
+        } else if (item.unlockType === 'level') {
+            statusHTML = `<span class="status-badge locked">Niveau ${item.unlockLevel}</span>`;
+        } else if (item.unlockType === 'achievement') {
+            statusHTML = '<span class="status-badge locked">Trophée</span>';
+        } else if (item.unlockType === 'chest') {
+            statusHTML = '<span class="status-badge locked">Coffre</span>';
+        } else {
+            statusHTML = '<span class="status-badge locked">Verrouillé</span>';
+        }
+    }
+
+    // Button
+    let buttonHTML = '';
+    if (isEquipped) {
+        buttonHTML = '<button class="btn-equipped" disabled>✅ Équipé</button>';
+    } else if (isUnlocked) {
+        buttonHTML = `<button class="btn-equip" onclick="equipBoxItem('${item.id}')">Équiper</button>`;
+    } else if (item.unlockType === 'coins' && item.price > 0) {
+        buttonHTML = `<button class="btn-buy" onclick="buyBoxItem('${item.id}')">Acheter</button>`;
+    } else {
+        buttonHTML = '<button class="btn-locked" disabled>Verrouillé</button>';
+    }
+
+    // Footer
+    const footerHTML = `<div class="box-item-footer">${statusHTML}${buttonHTML}</div>`;
+
+    card.innerHTML = previewHTML + infoHTML + footerHTML;
+
+    // Draw skin preview after DOM insertion
+    if (item.type === 'skin' && item.colors) {
+        setTimeout(() => {
+            const canvasId = `skin-preview-${item.id}`;
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                drawSkinPreview(ctx, item.id, 100);
+            }
+        }, 10);
+    }
+
+    return card;
+}
+
+function buyBoxItem(itemId) {
+    if (window.audio) window.audio.buttonClick();
+
+    const success = window.boxManager.buyItem(itemId);
+
+    if (success) {
+        refreshBoxUI();
+    }
+}
+
+function equipBoxItem(itemId) {
+    if (window.audio) window.audio.buttonClick();
+
+    const success = window.boxManager.equipItem(itemId);
+
+    if (success) {
+        refreshBoxUI();
     }
 }
 
@@ -634,6 +709,23 @@ class BoxManager {
 const boxManager = new BoxManager();
 window.boxManager = boxManager;
 
-logger.log('✅ BoxManager chargé');
+// Exports globaux UI
+window.openBox = openBox;
+window.closeBox = closeBox;
+window.filterBoxItems = filterBoxItems;
+window.buyBoxItem = buyBoxItem;
+window.equipBoxItem = equipBoxItem;
+window.refreshBoxUI = refreshBoxUI;
 
-export { boxManager };
+logger.log('✅ BoxSystem chargé (Manager + UI)');
+
+export {
+    boxManager,
+    BoxManager,
+    openBox,
+    closeBox,
+    filterBoxItems,
+    buyBoxItem,
+    equipBoxItem,
+    refreshBoxUI
+};

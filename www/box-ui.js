@@ -20,6 +20,11 @@ function openBox() {
     // Rafraîchir les données
     refreshBoxUI();
 
+    // Mettre à jour les boosters dans le header
+    if (window.updateBoostersDisplay) {
+        window.updateBoostersDisplay();
+    }
+
     logger.log('[BoxUI] Box ouverte');
 }
 
