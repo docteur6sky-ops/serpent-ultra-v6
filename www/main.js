@@ -6,8 +6,12 @@
 // Import des modules dans l'ordre de dépendance
 // (ordre critique pour éviter les erreurs de référence)
 
-// 1. Managers de base (pas de dépendances)
+// 1. Services de base (pas de dépendances)
 import { logger } from './services/logger.js';
+import './services/CareerManager.js';  // ✅ Gestion carrière/XP/rangs
+import './managers/TrophyManager.js';  // ✅ Gestion trophées
+
+// 2. Managers UI
 import './ScreenManager.js';
 import './BackgroundManager.js';
 import './AudioManager.js';
