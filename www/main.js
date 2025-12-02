@@ -12,6 +12,9 @@ import './services/CareerManager.js';  // ✅ Gestion carrière/XP/rangs
 import './managers/TrophyManager.js';  // ✅ Gestion trophées
 import './managers/ProgressionManager.js';  // ✅ Overlay progression XP
 import './managers/LeaderboardManager.js';  // ✅ Scores et classement
+import './managers/GradeManager.js';  // ✅ Grades Solo/Multi
+import './managers/BoosterManager.js';  // ✅ Boosters XP
+import './managers/ChestManager.js';  // ✅ Coffre quotidien
 
 // 2. Managers UI
 import './ScreenManager.js';

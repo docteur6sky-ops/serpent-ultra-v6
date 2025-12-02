@@ -1,83 +1,42 @@
 /**
- * HUB MANAGER - Gestion des données dynamiques du Hub
+ * HUB MANAGER - Orchestrateur du Hub principal
+ *
+ * Responsabilités :
+ * - Initialisation du Hub
+ * - Données joueur (getPlayerData, updatePlayerInfo)
+ * - Système de bannières et backgrounds
+ * - Système d'amis
+ *
+ * Délègue à :
+ * - GradeManager : Calcul et affichage des grades
+ * - BoosterManager : Système de boosters XP
+ * - ChestManager : Coffre quotidien et récompenses
  */
 
 import { logger } from './services/logger.js';
-import { RANKS } from './data/trophies.js';
 
-/**
- * GRADES MULTI - Basés sur multiWins
- * Couleurs alignées sur les grades Solo
- */
-const MULTI_GRADES = {
-    LEGEND: { min: 50, emoji: '👑', color: '#9400D3', label: 'LÉGENDE' },
-    PLATINUM: { min: 30, emoji: '💎', color: '#E5E4E2', label: 'PLATINE' },
-    GOLD: { min: 20, emoji: '🥇', color: '#FFD700', label: 'OR' },
-    SILVER: { min: 10, emoji: '🥈', color: '#C0C0C0', label: 'ARGENT' },
-    BRONZE: { min: 0, emoji: '🥉', color: '#CD7F32', label: 'BRONZE' }
-};
+// Import des managers délégués
+import { gradeManager } from './managers/GradeManager.js';
+import { boosterManager } from './managers/BoosterManager.js';
+import { chestManager } from './managers/ChestManager.js';
 
-/**
- * Calcule le grade solo basé sur le niveau du joueur
- * @param {number} level - Niveau du joueur
- * @returns {object} Grade { emoji, color, label }
- */
-function calculateSoloGrade(level) {
-    // ✅ Convertir les RANKS en tableau trié par minLevel (du plus bas au plus haut)
-    const sortedRanks = Object.entries(RANKS)
-        .map(([key, rank]) => ({ key, ...rank }))
-        .sort((a, b) => a.minLevel - b.minLevel);
-
-    // Parcourir les grades triés
-    for (const rank of sortedRanks) {
-        if (level >= rank.minLevel && level <= rank.maxLevel) {
-            logger.log(`[HubManager] Grade Solo calculé: ${rank.title} (niveau ${level}, plage ${rank.minLevel}-${rank.maxLevel})`);
-            return {
-                emoji: rank.emoji,
-                color: rank.color,
-                label: rank.title
-            };
-        }
-    }
-
-    // Par défaut : BRONZE (Apprenti)
-    logger.log(`[HubManager] Grade Solo par défaut: Apprenti (niveau ${level})`);
-    return {
-        emoji: RANKS.bronze.emoji,
-        color: RANKS.bronze.color,
-        label: RANKS.bronze.title
-    };
-}
-
-/**
- * Calcule le grade multi basé sur les victoires
- * @param {number} multiWins - Nombre de victoires multi
- * @returns {object} Grade { emoji, color, label }
- */
-function calculateMultiGrade(multiWins) {
-    for (const [key, grade] of Object.entries(MULTI_GRADES)) {
-        if (multiWins >= grade.min) {
-            return grade;
-        }
-    }
-    return MULTI_GRADES.BRONZE;
-}
+// ============================================
+// DONNÉES JOUEUR
+// ============================================
 
 /**
  * Récupère les données du joueur depuis window.career (source unique de vérité)
  * @returns {object} Données du joueur
  */
 function getPlayerData() {
-    // ✅ UNIFIÉ : Lecture depuis window.career uniquement
     const career = window.career || {
         level: 1,
         xp: 0,
-        xpNext: 200, // Formule linéaire: 100 + (level * 100)
+        xpNext: 200,
         bestScore: 0,
         multiWins: 0
     };
 
-    // Récupérer pseudo
     const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
 
     return {
@@ -88,47 +47,6 @@ function getPlayerData() {
         bestScore: career.bestScore,
         multiWins: career.multiWins || 0
     };
-}
-
-/**
- * Met à jour l'affichage des grades dans le Hub
- */
-function updatePlayerGrades() {
-    const data = getPlayerData();
-
-    // Calculer les grades
-    const soloGrade = calculateSoloGrade(data.level);  // ✅ Basé sur le NIVEAU
-    const multiGrade = calculateMultiGrade(data.multiWins);
-
-    // Mettre à jour le DOM - Texte
-    const soloValueEl = document.getElementById('hub-grade-solo');
-    const multiValueEl = document.getElementById('hub-grade-multi');
-
-    if (soloValueEl) {
-        soloValueEl.textContent = soloGrade.label;
-        soloValueEl.style.color = soloGrade.color;
-
-        // ✅ Mettre à jour la couleur du CONTENEUR parent
-        const soloContainer = soloValueEl.closest('.hub-grade-solo');
-        if (soloContainer) {
-            soloContainer.style.background = `linear-gradient(135deg, ${soloGrade.color}dd 0%, ${soloGrade.color}88 100%)`;
-            soloContainer.style.borderColor = soloGrade.color;
-        }
-    }
-
-    if (multiValueEl) {
-        multiValueEl.textContent = multiGrade.label;
-        multiValueEl.style.color = multiGrade.color;
-
-        // ✅ Mettre à jour la couleur du CONTENEUR parent
-        const multiContainer = multiValueEl.closest('.hub-grade-multi');
-        if (multiContainer) {
-            multiContainer.style.background = `linear-gradient(135deg, ${multiGrade.color}dd 0%, ${multiGrade.color}88 100%)`;
-            multiContainer.style.borderColor = multiGrade.color;
-        }
-    }
-
-    logger.log(`[HubManager] Grades mis à jour - Solo: ${soloGrade.label} (niveau ${data.level}), Multi: ${multiGrade.label} (${data.multiWins} victoires)`);
 }
 
 /**
@@ -174,346 +92,16 @@ function updatePlayerInfo() {
     logger.log(`[HubManager] Infos joueur mises à jour - ${data.pseudo}, Niveau ${data.level}, XP ${data.xp}/${xpMax}`);
 }
 
-/**
- * TIMER COFFRE QUOTIDIEN
- */
-let chestTimerInterval = null;
-const CHEST_COOLDOWN = 3600; // 1 heure en secondes
-
-/**
- * Formate les secondes en MM:SS
- * @param {number} seconds - Secondes à formater
- * @returns {string} Format "MM:SS"
- */
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-/**
- * Calcule le temps restant avant que le coffre soit prêt
- * @returns {number} Secondes restantes (0 si prêt)
- */
-function getChestTimeRemaining() {
-    const lastOpen = parseInt(localStorage.getItem('lastChestOpen') || '0');
-
-    if (lastOpen === 0) {
-        // Jamais ouvert, prêt immédiatement
-        return 0;
-    }
-
-    const now = Date.now();
-    const elapsed = Math.floor((now - lastOpen) / 1000); // secondes écoulées
-    const remaining = CHEST_COOLDOWN - elapsed;
-
-    return remaining > 0 ? remaining : 0;
-}
-
-/**
- * Met à jour l'affichage du timer coffre
- */
-function updateChestDisplay() {
-    const remaining = getChestTimeRemaining();
-    const timerEl = document.getElementById('hub-chest-timer');
-    const cardEl = document.getElementById('hub-chest-card');
-
-    if (!timerEl || !cardEl) return;
-
-    if (remaining === 0) {
-        // Coffre PRÊT !
-        timerEl.textContent = 'PRÊT !';
-        timerEl.style.color = '#00FF87';
-        cardEl.classList.add('ready');
-    } else {
-        // Afficher le temps restant
-        timerEl.textContent = formatTime(remaining);
-        timerEl.style.color = 'var(--hub-cyan)';
-        cardEl.classList.remove('ready');
-    }
-}
-
-/**
- * Initialise le timer du coffre (décompte toutes les secondes)
- */
-function initChestTimer() {
-    // Nettoyer l'ancien interval si existe
-    if (chestTimerInterval) {
-        clearInterval(chestTimerInterval);
-    }
-
-    // Mettre à jour immédiatement
-    updateChestDisplay();
-
-    // Puis toutes les secondes
-    chestTimerInterval = setInterval(() => {
-        updateChestDisplay();
-    }, 1000);
-
-    logger.log('[HubManager] Timer coffre initialisé');
-}
-
-/**
- * REWARD POOL - Items débloquables via le coffre
- */
-const REWARD_POOL = {
-    skins: [
-        { id: 'rainbow-snake', name: 'Arc-en-ciel', rarity: 'rare', emoji: '🌈' },
-        { id: 'golden-snake', name: 'Serpent Doré', rarity: 'epic', emoji: '🟡' },
-        { id: 'neon-snake', name: 'Néon', rarity: 'rare', emoji: '💜' },
-        { id: 'fire-snake', name: 'Flammes', rarity: 'epic', emoji: '🔥' },
-        { id: 'ice-snake', name: 'Glace', rarity: 'rare', emoji: '❄️' },
-        { id: 'shadow-snake', name: 'Ombre', rarity: 'legendary', emoji: '🌑' },
-        { id: 'cyber-snake', name: 'Cyber', rarity: 'epic', emoji: '🤖' }
-    ],
-    backgrounds: [
-        { id: 'galaxy-bg', name: 'Galaxie', rarity: 'rare', emoji: '🌌' },
-        { id: 'ocean-bg', name: 'Océan', rarity: 'common', emoji: '🌊' },
-        { id: 'forest-bg', name: 'Forêt', rarity: 'common', emoji: '🌲' },
-        { id: 'desert-bg', name: 'Désert', rarity: 'common', emoji: '🏜️' },
-        { id: 'volcano-bg', name: 'Volcan', rarity: 'epic', emoji: '🌋' },
-        { id: 'space-bg', name: 'Espace', rarity: 'legendary', emoji: '🚀' },
-        { id: 'neon-city-bg', name: 'Ville Néon', rarity: 'epic', emoji: '🌃' }
-    ],
-    musiques: [
-        { id: 'synthwave-music', name: 'Synthwave', rarity: 'rare', emoji: '🎹' },
-        { id: 'epic-music', name: 'Epic Orchestra', rarity: 'epic', emoji: '🎻' },
-        { id: 'chill-music', name: 'Chill Lofi', rarity: 'common', emoji: '🎧' },
-        { id: 'battle-music', name: 'Battle Theme', rarity: 'epic', emoji: '⚔️' },
-        { id: 'space-music', name: 'Space Ambient', rarity: 'rare', emoji: '🌠' }
-    ],
-    boosts: [
-        { id: 'xp-boost-10', name: 'Boost XP +10%', rarity: 'common', emoji: '⭐' },
-        { id: 'xp-boost-25', name: 'Boost XP +25%', rarity: 'rare', emoji: '💫' },
-        { id: 'score-boost-10', name: 'Boost Score +10%', rarity: 'common', emoji: '📈' },
-        { id: 'score-boost-25', name: 'Boost Score +25%', rarity: 'rare', emoji: '💯' },
-        { id: 'speed-boost', name: 'Boost Vitesse', rarity: 'epic', emoji: '⚡' },
-        { id: 'lucky-coin', name: 'Pièce Chanceuse', rarity: 'legendary', emoji: '🪙' },
-        { id: 'trophy-hunter', name: 'Chasseur de Trophées', rarity: 'epic', emoji: '🏆' },
-        { id: 'double-reward', name: 'Récompense Double', rarity: 'legendary', emoji: '💎' }
-    ]
-};
-
-/**
- * Génère des récompenses aléatoires (1-3 items)
- * @returns {Array} Liste des items générés [{ category, item }]
- */
-function generateRewards() {
-    const rewards = [];
-    const numRewards = Math.floor(Math.random() * 3) + 1; // 1-3 items
-
-    // Pool de toutes les catégories
-    const categories = ['skins', 'backgrounds', 'musiques', 'boosts'];
-
-    for (let i = 0; i < numRewards; i++) {
-        // Sélectionner une catégorie aléatoire
-        const category = categories[Math.floor(Math.random() * categories.length)];
-        const pool = REWARD_POOL[category];
-
-        // Sélectionner un item aléatoire dans cette catégorie
-        const item = pool[Math.floor(Math.random() * pool.length)];
-
-        rewards.push({ category, item });
-    }
-
-    return rewards;
-}
-
-/**
- * Débloque un item et l'ajoute au localStorage
- * @param {string} category - Catégorie ('skins', 'backgrounds', 'musiques', 'boosts')
- * @param {object} item - Item à débloquer { id, name, rarity, emoji }
- * @returns {boolean} True si nouvellement débloqué, false si déjà possédé
- */
-function unlockItem(category, item) {
-    // Mapper category vers localStorage key
-    const storageKeys = {
-        skins: 'unlockedSkins',
-        backgrounds: 'unlockedBackgrounds',
-        musiques: 'unlockedMusiques',
-        boosts: 'unlockedBoosts'
-    };
-
-    const storageKey = storageKeys[category];
-    if (!storageKey) {
-        logger.warn(`[HubManager] Catégorie inconnue: ${category}`);
-        return false;
-    }
-
-    try {
-        // Récupérer la liste actuelle
-        const unlocked = JSON.parse(localStorage.getItem(storageKey) || '[]');
-
-        // Vérifier si déjà débloqué
-        if (unlocked.includes(item.id)) {
-            logger.log(`[HubManager] Item déjà débloqué: ${item.name}`);
-            return false; // Déjà possédé
-        }
-
-        // Ajouter l'item
-        unlocked.push(item.id);
-        localStorage.setItem(storageKey, JSON.stringify(unlocked));
-
-        logger.log(`[HubManager] ✅ Item débloqué: ${item.name} (${category})`);
-        return true; // Nouvellement débloqué
-    } catch (e) {
-        logger.warn(`[HubManager] Erreur déblocage item: ${e.message}`);
-        return false;
-    }
-}
-
-/**
- * Ouvre le coffre et distribue les récompenses
- */
-async function openChest() {
-    const remaining = getChestTimeRemaining();
-
-    if (remaining > 0) {
-        // Pas encore prêt - pas de message, le timer est visible
-        return;
-    }
-
-    // Coffre prêt, on peut l'ouvrir
-    logger.log('[HubManager] Ouverture du coffre...');
-
-    // 1. DONNER DE VRAIS XP
-    const xpAmount = 50;
-    if (window.awardXP) {
-        const result = window.awardXP(xpAmount);
-        logger.log(`[HubManager] +${xpAmount} XP donnés (Level up: ${result.leveledUp})`);
-    } else {
-        logger.warn('[HubManager] window.awardXP non disponible');
-    }
-
-    // 2. ✅ Tirer récompense via BoxManager
-    const rewardData = {
-        xp: xpAmount
-    };
-
-    if (window.boxManager) {
-        const reward = window.boxManager.openChest();
-
-        if (reward.type === 'coins') {
-            rewardData.coins = reward.value;
-        } else if (reward.type === 'item') {
-            rewardData.item = reward.item;
-        }
-    } else {
-        logger.warn('[HubManager] BoxManager non disponible');
-    }
-
-    // 3. ✨ AFFICHER EXPÉRIENCE AAA au lieu de alert()
-    if (window.chestOpening) {
-        await window.chestOpening.open(rewardData);
-    } else {
-        logger.warn('[HubManager] ChestOpening non disponible, fallback alert()');
-        // Fallback si chestOpening pas chargé
-        alert(`🎁 Coffre ouvert!\n+${rewardData.xp} XP${rewardData.coins ? `\n+${rewardData.coins} coins` : ''}${rewardData.item ? `\n${rewardData.item.emoji} ${rewardData.item.name}` : ''}`);
-    }
-
-    // 4. RESET LE TIMER
-    localStorage.setItem('lastChestOpen', Date.now().toString());
-
-    // 5. METTRE À JOUR L'AFFICHAGE
-    updateChestDisplay();
-    updateBoxCount(); // Mettre à jour le compteur Ma Box
-    updatePlayerInfo(); // Mettre à jour niveau/XP
-
-    logger.log('[HubManager] Coffre ouvert avec succès ✅');
-}
-
-/**
- * Nettoie le timer (appelé quand on quitte le hub)
- */
-function cleanupChestTimer() {
-    if (chestTimerInterval) {
-        clearInterval(chestTimerInterval);
-        chestTimerInterval = null;
-        logger.log('[HubManager] Timer coffre nettoyé');
-    }
-}
-
-/**
- * MA BOX - COMPTEUR D'ITEMS
- */
-
-/**
- * Compte tous les items débloqués du joueur
- * @returns {number} Nombre total d'items
- */
-function countBoxItems() {
-    // ✅ CORRECTION: Utiliser les vraies données de BoxManager
-    // Les items sont stockés dans boxData.unlockedItems, pas dans des clés séparées
-
-    try {
-        // Si BoxManager est disponible, utiliser directement
-        if (window.boxManager && window.boxManager.unlockedItems) {
-            return window.boxManager.unlockedItems.length;
-        }
-
-        // Sinon, charger depuis localStorage
-        const boxDataStr = localStorage.getItem('boxData');
-        if (boxDataStr) {
-            const boxData = JSON.parse(boxDataStr);
-            if (boxData.unlockedItems && Array.isArray(boxData.unlockedItems)) {
-                return boxData.unlockedItems.length;
-            }
-        }
-
-        // Aucune donnée trouvée
-        return 0;
-    } catch (e) {
-        logger.warn('[HubManager] Erreur lecture boxData:', e);
-        return 0;
-    }
-}
-
-/**
- * Met à jour l'affichage du compteur Ma Box
- */
-function updateBoxCount() {
-    const count = countBoxItems();
-    const countEl = document.getElementById('hub-box-count');
-
-    if (countEl) {
-        countEl.textContent = `${count} item${count > 1 ? 's' : ''}`;
-    }
-
-    logger.log(`[HubManager] Ma Box: ${count} items`);
-}
-
-/**
- * Récupère les détails d'un item par son ID
- * @param {string} itemId - ID de l'item
- * @returns {object|null} Item trouvé ou null
- */
-function getItemDetails(itemId) {
-    for (const category in REWARD_POOL) {
-        const item = REWARD_POOL[category].find(i => i.id === itemId);
-        if (item) return item;
-    }
-    return null;
-}
-
-/**
- * ⚠️ NOTE: La fonction openBox() est maintenant définie dans box-ui.js
- * Elle affiche l'écran Box complet avec interface graphique AAA
- */
-
-/**
- * SYSTÈME D'AMIS
- */
+// ============================================
+// SYSTÈME D'AMIS
+// ============================================
 
 /**
  * Affiche l'écran des amis
  */
 function showFriends() {
-    // TODO: Créer un vrai système d'amis avec serveur
-    // Pour l'instant, affichage basique
-
     let message = `👥 AMIS\n\n`;
 
-    // Récupérer la liste d'amis depuis localStorage
     try {
         const friends = JSON.parse(localStorage.getItem('friendsList') || '[]');
         const pending = JSON.parse(localStorage.getItem('friendsPending') || '[]');
@@ -551,12 +139,11 @@ function showFriends() {
 }
 
 // ============================================
-// 🎨 SYSTÈME DE BACKGROUNDS (Indépendant des bannières)
+// SYSTÈME DE BACKGROUNDS
 // ============================================
 
 /**
  * Applique le background équipé au hub
- * Utilise boxManager.getEquippedBackground() pour être indépendant des bannières
  */
 function applyHubBackground() {
     const phone = document.querySelector('.phone');
@@ -565,18 +152,15 @@ function applyHubBackground() {
         return;
     }
 
-    // Récupérer le background équipé depuis boxManager
     const bgItem = window.boxManager ? window.boxManager.getEquippedBackground() : null;
 
     if (bgItem && bgItem.bgValue) {
-        // Appliquer le background équipé
         phone.style.backgroundImage = `url('${bgItem.bgValue}')`;
         phone.style.backgroundSize = 'cover';
         phone.style.backgroundPosition = 'center';
         phone.dataset.hubTheme = bgItem.id;
         logger.log(`[HubManager] Background équipé appliqué: ${bgItem.name}`);
     } else {
-        // Revenir au background par défaut via BackgroundManager
         delete phone.dataset.hubTheme;
         phone.style.backgroundImage = '';
         if (window.backgroundManager) {
@@ -586,10 +170,9 @@ function applyHubBackground() {
         logger.log('[HubManager] Background par défaut restauré');
     }
 }
-window.applyHubBackground = applyHubBackground;
 
 // ============================================
-// 🖼️ SYSTÈME DE BANNIÈRES
+// SYSTÈME DE BANNIÈRES
 // ============================================
 
 /**
@@ -606,13 +189,11 @@ function applyHubBanner(bannerItem) {
     }
 
     if (bannerItem && bannerItem.image) {
-        // Bannière avec image
         imageEl.src = bannerItem.image;
         imageEl.style.display = 'block';
         bannerEl.classList.remove('default');
         logger.log(`[HubManager] Bannière appliquée: ${bannerItem.name}`);
     } else {
-        // Bannière par défaut (gradient CSS)
         imageEl.src = '';
         imageEl.style.display = 'none';
         bannerEl.classList.add('default');
@@ -623,8 +204,6 @@ function applyHubBanner(bannerItem) {
     if (window.applyStatsBanner) {
         window.applyStatsBanner(bannerItem);
     }
-
-    // Note: Background géré séparément via applyHubBackground()
 }
 
 /**
@@ -639,203 +218,59 @@ function initHubBanner() {
     }
 }
 
+// ============================================
+// INITIALISATION HUB
+// ============================================
+
 /**
  * Initialise le Hub (appelé au chargement)
  */
 function initHub() {
     logger.log('[HubManager] Initialisation du Hub...');
 
+    // Données joueur
     updatePlayerInfo();
-    updatePlayerGrades();
-    initChestTimer();
-    updateBoxCount();
+
+    // Grades (délégué à GradeManager)
+    gradeManager.updatePlayerGrades();
+
+    // Coffre quotidien (délégué à ChestManager)
+    chestManager.initTimer();
+    chestManager.updateBoxCount();
+
+    // Boosters XP (délégué à BoosterManager)
+    boosterManager.updateBoostersDisplay();
+    boosterManager.initBoosterTimer();
+
+    // Apparence
     initHubBanner();
-    applyHubBackground(); // Background indépendant de la bannière
+    applyHubBackground();
 
     logger.log('[HubManager] Hub initialisé ✅');
 }
 
-/**
- * Affiche la popup des taux de drop du coffre (par dessus le conteneur)
- */
-function showChestDropRates() {
-    const chestCard = document.getElementById('hub-chest-card');
-    if (!chestCard) return;
+// ============================================
+// EXPORTS GLOBAUX
+// ============================================
 
-    // Supprimer si déjà ouvert
-    const existing = document.getElementById('chest-drop-rates-popup');
-    if (existing) {
-        existing.remove();
-        chestCard.classList.remove('info-open');
-        return;
-    }
-
-    // Ajouter classe pour cacher le ℹ️
-    chestCard.classList.add('info-open');
-
-    // ✅ STRATÉGIE OVERLAY : Créer un overlay plein écran
-    const overlay = document.createElement('div');
-    overlay.id = 'chest-drop-overlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 9998;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
-
-    const popup = document.createElement('div');
-    popup.id = 'chest-drop-rates-popup';
-    // ✅ PAS DE CLASSE CSS - Seulement styles inline avec !important
-    popup.style.cssText = `
-        position: relative !important;
-        z-index: 9999 !important;
-        background: linear-gradient(135deg, rgba(40, 40, 80, 0.98), rgba(20, 20, 50, 0.98)) !important;
-        border: 3px solid #d8d800 !important;
-        border-radius: 20px !important;
-        padding: 25px !important;
-        max-width: 400px !important;
-        width: 90% !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 100px rgba(216, 216, 0, 0.3) !important;
-    `;
-    popup.innerHTML = `
-        <div style="position: relative; display: flex; flex-direction: column;">
-            <div style="margin-bottom: 20px; text-align: center; position: relative;">
-                <h3 style="color: #d8d800 !important; font-size: 24px !important; margin: 0 !important; text-shadow: 0 0 10px rgba(216, 216, 0, 0.5) !important;">📦 Taux de drop</h3>
-                <button style="position: absolute !important; top: -10px !important; right: -10px !important; background: rgba(255,0,0,0.3) !important; border: 2px solid #ff0000 !important; color: white !important; font-size: 20px !important; font-weight: bold !important; width: 35px !important; height: 35px !important; border-radius: 50% !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all 0.3s ease !important;" id="close-drop-rates-btn">✖</button>
-            </div>
-            <div style="display: flex !important; flex-direction: column !important; gap: 12px !important;">
-                <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; background: rgba(255,255,255,0.05) !important; padding: 12px 15px !important; border-radius: 10px !important; border-left: 4px solid #aaa !important;">
-                    <span style="color: #fff !important; font-size: 16px !important; font-weight: bold !important;">⚪ Commun</span>
-                    <span style="color: #d8d800 !important; font-size: 18px !important; font-weight: bold !important;">60%</span>
-                </div>
-                <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; background: rgba(255,255,255,0.05) !important; padding: 12px 15px !important; border-radius: 10px !important; border-left: 4px solid #4287f5 !important;">
-                    <span style="color: #fff !important; font-size: 16px !important; font-weight: bold !important;">🔵 Rare</span>
-                    <span style="color: #d8d800 !important; font-size: 18px !important; font-weight: bold !important;">25%</span>
-                </div>
-                <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; background: rgba(255,255,255,0.05) !important; padding: 12px 15px !important; border-radius: 10px !important; border-left: 4px solid #a855f7 !important;">
-                    <span style="color: #fff !important; font-size: 16px !important; font-weight: bold !important;">🟣 Épique</span>
-                    <span style="color: #d8d800 !important; font-size: 18px !important; font-weight: bold !important;">12%</span>
-                </div>
-                <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; background: rgba(255,255,255,0.05) !important; padding: 12px 15px !important; border-radius: 10px !important; border-left: 4px solid #fbbf24 !important;">
-                    <span style="color: #fff !important; font-size: 16px !important; font-weight: bold !important;">🟡 Légendaire</span>
-                    <span style="color: #d8d800 !important; font-size: 18px !important; font-weight: bold !important;">3%</span>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Ajouter popup dans l'overlay
-    overlay.appendChild(popup);
-
-    // Ajouter l'overlay au body (pas dans le chest card)
-    document.body.appendChild(overlay);
-
-    // ✅ Fermer au clic sur l'overlay (fond sombre)
-    overlay.onclick = function(e) {
-        if (e.target === overlay) {
-            logger.log('[HubManager] Clic sur overlay - fermeture');
-            try {
-                window.audio.buttonClick();
-            } catch (err) {
-                logger.warn('[HubManager] Audio error:', err);
-            }
-            closeChestDropRates();
-        }
-    };
-
-    // ✅ Fermer au clic sur le bouton X
-    const closeBtn = document.getElementById('close-drop-rates-btn');
-    if (closeBtn) {
-        closeBtn.onclick = function(e) {
-            e.stopPropagation();
-            logger.log('[HubManager] Bouton X cliqué');
-            try {
-                window.audio.buttonClick();
-            } catch (err) {
-                logger.warn('[HubManager] Audio error:', err);
-            }
-            closeChestDropRates();
-        };
-    }
-
-    logger.log('[HubManager] Popup taux de drop affichée avec overlay plein écran');
-}
-
-/**
- * Ferme la popup des taux de drop
- */
-function closeChestDropRates() {
-    logger.log('[HubManager] closeChestDropRates() appelée');
-
-    // Supprimer l'overlay plein écran (qui contient la popup)
-    const overlay = document.getElementById('chest-drop-overlay');
-    const chestCard = document.getElementById('hub-chest-card');
-
-    if (overlay) {
-        overlay.remove();
-        logger.log('[HubManager] Overlay popup supprimé');
-    } else {
-        logger.log('[HubManager] ⚠️ Overlay introuvable');
-    }
-
-    if (chestCard) {
-        chestCard.classList.remove('info-open');
-    }
-}
-
-/**
- * ✅ FONCTION DE TEST CONSOLE
- * Permet de tester les grades rapidement
- * Usage: testGrade(niveau, victoires) ou testGrade(1) pour solo seul
- */
-function testGrade(level = null, multiWins = null) {
-    if (level !== null) {
-        window.career.level = level;
-        logger.log(`[TEST] Niveau solo défini à ${level}`);
-    }
-    if (multiWins !== null) {
-        window.career.multiWins = multiWins;
-        logger.log(`[TEST] Victoires multi définies à ${multiWins}`);
-    }
-
-    // Rafraîchir l'affichage
-    updatePlayerGrades();
-    updatePlayerInfo();
-
-    // Afficher les grades actuels
-    const soloGrade = calculateSoloGrade(window.career.level);
-    const multiGrade = calculateMultiGrade(window.career.multiWins || 0);
-
-    logger.log('═══════════════════════════════════════');
-    logger.log(`📊 GRADES ACTUELS:`);
-    logger.log(`  Solo: ${soloGrade.emoji} ${soloGrade.label} (niveau ${window.career.level})`);
-    logger.log(`  Multi: ${multiGrade.emoji} ${multiGrade.label} (${window.career.multiWins || 0} victoires)`);
-    logger.log('═══════════════════════════════════════');
-
-    return { solo: soloGrade, multi: multiGrade };
-}
-
-// Exposer globalement
+// Fonctions principales
 window.initHub = initHub;
-window.updatePlayerGrades = updatePlayerGrades;
+window.getPlayerData = getPlayerData;
 window.updatePlayerInfo = updatePlayerInfo;
-window.calculateSoloGrade = calculateSoloGrade;
-window.calculateMultiGrade = calculateMultiGrade;
-window.testGrade = testGrade; // ✅ Fonction de test
-window.openChest = openChest;
-window.cleanupChestTimer = cleanupChestTimer;
-window.updateBoxCount = updateBoxCount;
-window.applyHubBanner = applyHubBanner;
-window.showChestDropRates = showChestDropRates;
-window.closeChestDropRates = closeChestDropRates;
-// window.openBox est défini dans box-ui.js
 window.showFriends = showFriends;
+
+// Apparence
+window.applyHubBackground = applyHubBackground;
+window.applyHubBanner = applyHubBanner;
+
+// Redirection vers GradeManager (compatibilité)
+window.updatePlayerGrades = () => gradeManager.updatePlayerGrades();
+window.calculateSoloGrade = (level) => gradeManager.calculateSoloGrade(level);
+window.calculateMultiGrade = (wins) => gradeManager.calculateMultiGrade(wins);
+window.testGrade = (level, wins) => gradeManager.testGrade(level, wins);
+
+// Note: openChest, updateBoxCount, etc. sont déjà exposés par ChestManager
+// Note: activateBooster, updateBoostersDisplay sont déjà exposés par BoosterManager
 
 // Auto-init si le hub est déjà visible
 if (document.readyState === 'loading') {
@@ -849,4 +284,11 @@ if (document.readyState === 'loading') {
 
 logger.log('✅ HubManager chargé');
 
-export { initHub, updatePlayerGrades, updatePlayerInfo, calculateSoloGrade, calculateMultiGrade, openChest, cleanupChestTimer, updateBoxCount, showFriends, applyHubBanner };
+export {
+    initHub,
+    getPlayerData,
+    updatePlayerInfo,
+    showFriends,
+    applyHubBackground,
+    applyHubBanner
+};
