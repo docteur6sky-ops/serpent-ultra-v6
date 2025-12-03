@@ -36,6 +36,10 @@ import './network-multiplayer.js';
 import './main-lobby.js'; // ✅ LOBBY PRINCIPAL
 import './multi-game.js';
 
+// 3.5 Mode Roguelike
+import { initRoguelike } from './roguelike/index.js';
+initRoguelike();
+
 // 4. Navigation (dépend des classes de jeu)
 import './navigation.js';
 

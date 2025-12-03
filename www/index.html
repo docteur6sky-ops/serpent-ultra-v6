@@ -14,6 +14,8 @@
     <!-- Styles -->
     <!-- <link rel="stylesheet" href="/snake.css"> -->
     <link rel="stylesheet" href="/snake.min.css"> <!-- CSS optimisé (-48%) -->
+    <link rel="stylesheet" href="/game-fixes.css"> <!-- FIX: Corrections layout écran de jeu -->
+    <link rel="stylesheet" href="/roguelike/roguelike.css"> <!-- Mode Roguelike -->
     <link rel="stylesheet" href="/rules.css">
 
     <!-- Point d'entrée Vite - Bundle optimisé -->
@@ -258,8 +260,14 @@
                 </button>
             </div>
 
-            <!-- Modes Secondaires (2 cartes agrandies) -->
-            <div class="hub-modes hub-modes-two">
+            <!-- Modes Secondaires (3 cartes) -->
+            <div class="hub-modes hub-modes-three">
+                <!-- NOUVEAU: Mode Roguelike -->
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal hub-mode-roguelike" onclick="window.audio.buttonClick();window.startRoguelikeRun()">
+                    <div class="hub-mode-icon">🎲</div>
+                    <div class="hub-mode-text">Roguelike</div>
+                    <div class="hub-mode-badge hub-mode-badge-hot">HOT</div>
+                </div>
                 <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();window.showMultiplayer()">
                     <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Multi" class="mode-icon-img"></div>
                     <div class="hub-mode-text">Online</div>
@@ -886,8 +894,15 @@
                                 <div id="powerup-fill"></div>
                             </div>
                         </div>
+
+                        <!-- ✅ OBJECTIF ROGUELIKE (caché en mode classique) -->
+                        <div id="roguelike-objective" class="roguelike-objective hidden">
+                            <span class="rl-obj-icon">🎯</span>
+                            <span class="rl-obj-text">Niveau <span id="rl-obj-level">1</span></span>
+                            <span class="rl-obj-progress"><span id="rl-obj-current">0</span>/<span id="rl-obj-target">8</span> 🍎</span>
+                        </div>
                     </div>
-                    <canvas id="canvas-solo" width="360" height="360" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
+                    <canvas id="canvas-solo" width="540" height="540" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
                     <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
                         <div class="dpad-btn dpad-empty"></div>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
@@ -967,7 +982,7 @@
                         </div>
                     </div>
 
-                    <canvas id="canvas-multi" width="360" height="360" aria-label="Zone de jeu Snake Ultra Multijoueur"></canvas>
+                    <canvas id="canvas-multi" width="540" height="540" aria-label="Zone de jeu Snake Ultra Multijoueur"></canvas>
 
                     <div class="dpad" id="multi-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
                         <div class="dpad-btn dpad-empty"></div>
@@ -1022,7 +1037,7 @@
                         </div>
                     </div>
 
-                    <canvas id="canvas-ai" width="360" height="360" aria-label="Zone de jeu Snake Ultra vs IA"></canvas>
+                    <canvas id="canvas-ai" width="540" height="540" aria-label="Zone de jeu Snake Ultra vs IA"></canvas>
 
                     <div class="dpad" id="ai-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
                         <div class="dpad-btn dpad-empty"></div>

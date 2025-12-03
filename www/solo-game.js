@@ -5,6 +5,7 @@
 import { logger } from './services/logger.js';
 import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+import roguelikeManager from './roguelike/RoguelikeManager.js';
 
 class SoloSnakeGame extends BaseSnakeGame {
     constructor() {
@@ -42,6 +43,13 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Contrôle du jeu (spécifique solo)
         this.locked = false;
 
+        // ========== MODE ROGUELIKE ==========
+        this.isRoguelikeMode = false;
+        this.roguelikeLevelData = null;
+        this.roguelikeModifiers = null;
+        this.roguelikeObjective = null;
+        this.roguelikeProgress = 0;
+
         // Stats de partie (spécifique solo)
         this.wallsDestroyed = 0;
         this.skullsEaten = 0;
@@ -63,8 +71,117 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Note: La musique est gérée par ScreenManager.show('game-solo')
     }
 
+    // ============================================
+    // MODE ROGUELIKE - Démarrer un niveau
+    // ============================================
+
+    startRoguelikeLevel(levelData, modifiers) {
+        logger.log(`[SoloGame] Démarrage niveau roguelike ${levelData.level}: ${levelData.name}`);
+
+        this.isRoguelikeMode = true;
+        this.roguelikeLevelData = levelData;
+        this.roguelikeModifiers = modifiers || {};
+        this.roguelikeObjective = levelData.objective;
+        this.roguelikeProgress = 0;
+
+        // Difficulté basée sur le monde
+        const worldDifficulty = Math.min(2, levelData.world - 1);
+        this.difficulty = worldDifficulty;
+
+        // Reset et démarrage
+        this.reset();
+        this.running = true;
+        this.paused = false;
+        this.gameStartTime = Date.now();
+        this.lastTime = performance.now();
+
+        // Appliquer les modificateurs roguelike
+        this.applyRoguelikeModifiers();
+
+        // Générer les obstacles du niveau
+        this.generateRoguelikeObstacles();
+
+        // Afficher l'écran de jeu
+        if (window.screenManager) {
+            window.screenManager.show('game-solo');
+        }
+
+        // Démarrer la boucle
+        this.loop(this.lastTime);
+    }
+
+    applyRoguelikeModifiers() {
+        if (!this.roguelikeModifiers) return;
+
+        // Appliquer les segments bonus
+        const bonusSegments = this.roguelikeModifiers.bonusSegments || 0;
+        for (let i = 0; i < bonusSegments; i++) {
+            this.snake.push({ ...this.snake[this.snake.length - 1] });
+        }
+
+        logger.log('[SoloGame] Modificateurs roguelike appliqués:', this.roguelikeModifiers);
+    }
+
+    generateRoguelikeObstacles() {
+        if (!this.roguelikeLevelData?.obstacles) return;
+
+        this.obstacles = [];
+
+        for (const obs of this.roguelikeLevelData.obstacles) {
+            if (obs.type === 'wall_static') {
+                // Générer des murs statiques
+                for (let i = 0; i < obs.count; i++) {
+                    let newObs;
+                    let attempts = 0;
+                    do {
+                        newObs = {
+                            x: Math.floor(Math.random() * (this.GRID_SIZE - 4)) + 2,
+                            y: Math.floor(Math.random() * (this.GRID_SIZE - 4)) + 2
+                        };
+                        attempts++;
+                    } while (attempts < 50 && (
+                        this.snake.some(s => s.x === newObs.x && s.y === newObs.y) ||
+                        this.obstacles.some(o => o.x === newObs.x && o.y === newObs.y) ||
+                        (this.food && newObs.x === this.food.x && newObs.y === this.food.y)
+                    ));
+
+                    if (attempts < 50) {
+                        this.obstacles.push(newObs);
+                    }
+                }
+            }
+            // TODO: Ajouter skull, wall_moving, etc.
+        }
+
+        logger.log(`[SoloGame] ${this.obstacles.length} obstacles générés pour le niveau`);
+    }
+
+    checkRoguelikeObjective() {
+        if (!this.isRoguelikeMode || !this.roguelikeObjective) return;
+
+        const obj = this.roguelikeObjective;
+
+        if (obj.type === 'apples') {
+            if (this.roguelikeProgress >= obj.count) {
+                this.completeRoguelikeLevel();
+            }
+        }
+        // TODO: Ajouter survival, boss, etc.
+    }
+
+    completeRoguelikeLevel() {
+        logger.log(`[SoloGame] Niveau roguelike ${this.roguelikeLevelData.level} complété!`);
+
+        // Pause le jeu
+        this.paused = true;
+
+        // Notifier le manager
+        roguelikeManager.onAppleEaten(this.roguelikeProgress);
+        roguelikeManager.completeLevel();
+    }
+
     reset() {
-        // Réinitialiser serpent
+        // Réinitialiser serpent (centre de la grille 30x30)
         this.snake = [{ x: 15, y: 15 }];
         this.dx = 1;
         this.dy = 0;
@@ -75,6 +192,9 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.gameOverTriggered = false;
         this.isExploding = false;
         this.isFlashing = false;
+
+        // Reset roguelike progress (mais PAS le mode)
+        this.roguelikeProgress = 0;
 
         // Réinitialiser scores
         this.score = 0;
@@ -264,14 +384,36 @@ class SoloSnakeGame extends BaseSnakeGame {
     eatFood(head) {
         // Calculer points
         let diffMultiplier = this.difficulty === 0 ? 1 : this.difficulty === 1 ? 1.5 : 2;
-        let points = Math.floor(10 * this.combo * (this.powerupEffects.double ? 2 : 1) * diffMultiplier);
+
+        // Appliquer multiplicateur roguelike si actif
+        let roguelikeMultiplier = 1;
+        if (this.isRoguelikeMode && this.roguelikeModifiers?.scoreMultiplier) {
+            roguelikeMultiplier = this.roguelikeModifiers.scoreMultiplier;
+        }
+
+        let points = Math.floor(10 * this.combo * (this.powerupEffects.double ? 2 : 1) * diffMultiplier * roguelikeMultiplier);
 
         this.score += points;
         this.foodCount++;
         if (this.audio) this.audio.eat();
 
-        // Monter de niveau tous les 5 pommes
-        if (this.foodCount % 5 === 0) {
+        // ========== MODE ROGUELIKE ==========
+        if (this.isRoguelikeMode) {
+            this.roguelikeProgress++;
+            roguelikeManager.onAppleEaten(1);
+
+            // Vérifier objectif
+            if (this.roguelikeObjective?.type === 'apples') {
+                if (this.roguelikeProgress >= this.roguelikeObjective.count) {
+                    // Niveau complété!
+                    this.completeRoguelikeLevel();
+                    return;
+                }
+            }
+        }
+
+        // Monter de niveau tous les 5 pommes (mode classique uniquement)
+        if (!this.isRoguelikeMode && this.foodCount % 5 === 0) {
             this.level++;
             if (this.audio) this.audio.lvlup();
             this.spawnObstacles();
@@ -797,6 +939,46 @@ class SoloSnakeGame extends BaseSnakeGame {
             else if (this.powerupEffects.double) status = '💰 Double Points';
             powerupStatus.textContent = status;
         }
+
+        // ========== OBJECTIF ROGUELIKE ==========
+        this.updateRoguelikeObjective();
+    }
+
+    updateRoguelikeObjective() {
+        const objectiveDiv = document.getElementById('roguelike-objective');
+        if (!objectiveDiv) return;
+
+        if (this.isRoguelikeMode && this.roguelikeObjective) {
+            // Afficher l'objectif
+            objectiveDiv.classList.remove('hidden');
+
+            // Mettre à jour le niveau
+            const levelEl = document.getElementById('rl-obj-level');
+            if (levelEl) levelEl.textContent = this.roguelikeLevelData?.level || 1;
+
+            // Mettre à jour la progression
+            const currentEl = document.getElementById('rl-obj-current');
+            const targetEl = document.getElementById('rl-obj-target');
+
+            if (currentEl) currentEl.textContent = this.roguelikeProgress;
+            if (targetEl) targetEl.textContent = this.roguelikeObjective.count || '?';
+
+            // Animation flash quand on progresse
+            if (this.roguelikeProgress > 0) {
+                objectiveDiv.classList.add('apple-eaten');
+                setTimeout(() => objectiveDiv.classList.remove('apple-eaten'), 300);
+            }
+        } else {
+            // Cacher l'objectif en mode classique
+            objectiveDiv.classList.add('hidden');
+        }
+    }
+
+    hideRoguelikeObjective() {
+        const objectiveDiv = document.getElementById('roguelike-objective');
+        if (objectiveDiv) {
+            objectiveDiv.classList.add('hidden');
+        }
     }
 
     // ============================================
@@ -866,6 +1048,46 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // L'XP sera attribué dans handleSoloGameOver
 
+        // ========== MODE ROGUELIKE ==========
+        if (this.isRoguelikeMode) {
+            // Notifier le manager roguelike
+            const result = roguelikeManager.onPlayerDeath();
+
+            if (result?.continueRun) {
+                // Le joueur a des vies restantes ou un bouclier
+                logger.log('[SoloGame] Roguelike: Vie/bouclier utilisé, reprise...');
+
+                if (result.shieldUsed) {
+                    // Retirer des segments
+                    for (let i = 0; i < result.segmentsLost && this.snake.length > 1; i++) {
+                        this.snake.pop();
+                    }
+                }
+
+                // Réinitialiser les flags et reprendre
+                this.gameOverTriggered = false;
+                this.isExploding = false;
+                this.isFlashing = false;
+                this.running = true;
+
+                // Repositionner le serpent au centre
+                this.snake = [{ x: 15, y: 15 }];
+                this.dx = 1;
+                this.dy = 0;
+                this.ndx = 1;
+                this.ndy = 0;
+
+                this.loop(performance.now());
+                return;
+            }
+
+            // Fin de run - désactiver le mode roguelike
+            this.isRoguelikeMode = false;
+            this.roguelikeLevelData = null;
+            return;
+        }
+
+        // ========== MODE CLASSIQUE ==========
         // Appeler callback si existe
         if (typeof window.handleSoloGameOver === 'function') {
             window.handleSoloGameOver({
@@ -886,6 +1108,19 @@ class SoloSnakeGame extends BaseSnakeGame {
                 hasTeleported: this.hasTeleported
             });
         }
+    }
+
+    // ============================================
+    // MÉTHODE POUR QUITTER LE MODE ROGUELIKE
+    // ============================================
+
+    exitRoguelikeMode() {
+        this.isRoguelikeMode = false;
+        this.roguelikeLevelData = null;
+        this.roguelikeModifiers = null;
+        this.roguelikeObjective = null;
+        this.roguelikeProgress = 0;
+        logger.log('[SoloGame] Mode roguelike désactivé');
     }
 }
 

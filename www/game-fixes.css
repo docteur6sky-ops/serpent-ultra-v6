@@ -1,0 +1,44 @@
+/* ============================================
+   GAME-FIXES.CSS - Corrections layout écran de jeu
+   ============================================ */
+
+/* FIX: game-column doit avoir une hauteur pour que flex fonctionne */
+#game-solo .game-column,
+#game-ai .game-column,
+#game-multi .game-column {
+    height: 100% !important;
+    min-height: 0 !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    padding-bottom: 16px !important;
+}
+
+/* FIX: game-area doit prendre toute la hauteur */
+#game-solo .game-area,
+#game-ai .game-area,
+#game-multi .game-area {
+    height: 100% !important;
+    flex: 1 !important;
+}
+
+/* FIX: Empêcher les éléments de se compresser */
+#game-solo .score-box,
+#game-ai .score-box,
+#game-multi .score-box,
+#game-solo canvas,
+#game-ai canvas,
+#game-multi canvas,
+#game-solo .dpad,
+#game-ai .dpad,
+#game-multi .dpad {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+}
+
+/* FIX: Pousser les boutons vers le bas */
+#game-solo .game-controls,
+#game-ai .game-controls,
+#game-multi .game-controls {
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+}
