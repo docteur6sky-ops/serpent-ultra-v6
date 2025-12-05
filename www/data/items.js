@@ -112,8 +112,10 @@ export const ITEMS = {
             type: 'skin',
             rarity: 'rare',
             unlocked: false,
-            price: 1500,
-            unlockType: 'coins',
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'ghost_master',
+            unlockLabel: '👻 Fantôme (traverser 20 murs)',
             colors: {
                 head: { light: '#F0F0F0', dark: '#C0C0C0' },
                 body: { from: '#E0E0E0', to: '#808080' },
@@ -155,8 +157,10 @@ export const ITEMS = {
             type: 'skin',
             rarity: 'epic',
             unlocked: false,
-            price: 2500,
-            unlockType: 'coins',
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'boss_flawless',
+            unlockLabel: '💎 Sans Égratignure (boss parfait)',
             colors: {
                 head: { light: '#E0FFFF', dark: '#B9F2FF' },
                 body: { from: '#E0FFFF', to: '#00D9FF' },
@@ -198,8 +202,10 @@ export const ITEMS = {
             type: 'skin',
             rarity: 'epic',
             unlocked: false,
-            price: 6000,
-            unlockType: 'coins',
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'boss_speedrun',
+            unlockLabel: '⚡ Speed Demon (boss < 30s)',
             effect: 'scan', // Effet spécial: lumière rouge va-et-vient
             colors: {
                 head: { light: '#FF0000', dark: '#CC0000' },
@@ -243,8 +249,10 @@ export const ITEMS = {
             type: 'skin',
             rarity: 'legendary',
             unlocked: false,
-            price: 10000,
-            unlockType: 'coins',
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'runs_100',
+            unlockLabel: '🏆 Légende (100 runs)',
             effect: 'crown', // Effet spécial: accessoire couronne sur la tête
             colors: {
                 head: { light: '#FFD700', dark: '#FFA500' },
@@ -254,6 +262,193 @@ export const ITEMS = {
                 glow: '#FFD700'
             },
             description: 'Le roi des serpents avec sa couronne royale'
+        },
+
+        // ============================================
+        // TIER 6 - SKINS ROGUELIKE (Achievements)
+        // ============================================
+
+        toxic: {
+            id: 'toxic',
+            name: 'Toxique',
+            emoji: '☣️',
+            image: 'assets/skins/skin_toxic.webp',
+            type: 'skin',
+            rarity: 'epic',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'boss_venin',
+            unlockLabel: '🧪 Antidote (vaincre VENIN)',
+            effect: 'pulse', // Effet spécial: pulsation verte
+            colors: {
+                head: { light: '#39FF14', dark: '#00CC00' },
+                body: { from: '#39FF14', to: '#006600' },
+                tail: { color: '#003300' },
+                outline: '#001A00',
+                glow: '#39FF14'
+            },
+            description: 'Radioactif et mortel, résistant au poison'
+        },
+
+        blood: {
+            id: 'blood',
+            name: 'Sang',
+            emoji: '🩸',
+            image: 'assets/skins/skin_blood.webp',
+            type: 'skin',
+            rarity: 'epic',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'apples_1000',
+            unlockLabel: '🥧 Insatiable (1000 pommes)',
+            colors: {
+                head: { light: '#DC143C', dark: '#8B0000' },
+                body: { from: '#DC143C', to: '#4A0000' },
+                tail: { color: '#2D0000' },
+                outline: '#1A0000',
+                glow: '#FF0000'
+            },
+            description: 'Le serpent assoiffé de sang'
+        },
+
+        void: {
+            id: 'void',
+            name: 'Néant',
+            emoji: '🕳️',
+            image: 'assets/skins/skin_void.webp',
+            type: 'skin',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'world_4_clear',
+            unlockLabel: '👑 Conquérant du Néant (finir le jeu)',
+            effect: 'void', // Effet spécial: aura sombre
+            colors: {
+                head: { light: '#4B0082', dark: '#1A0033' },
+                body: { from: '#4B0082', to: '#0D001A' },
+                tail: { color: '#050008' },
+                outline: '#000000',
+                glow: '#8B00FF'
+            },
+            description: 'Né des ténèbres, maître du vide'
+        },
+
+        golden: {
+            id: 'golden',
+            name: 'Doré',
+            emoji: '✨',
+            image: 'assets/skins/skin_golden.webp',
+            type: 'skin',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'score_100000',
+            unlockLabel: '💯 Score Legend (100k points)',
+            effect: 'sparkle', // Effet spécial: particules dorées
+            colors: {
+                head: { light: '#FFD700', dark: '#DAA520' },
+                body: { from: '#FFD700', to: '#B8860B' },
+                tail: { color: '#8B6914' },
+                outline: '#5C4A00',
+                glow: '#FFD700'
+            },
+            description: 'Brillant de mille feux, le serpent doré'
+        },
+
+        glitch: {
+            id: 'glitch',
+            name: 'Glitch',
+            emoji: '📺',
+            image: 'assets/skins/skin_glitch.webp',
+            type: 'skin',
+            rarity: 'epic',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'runs_50',
+            unlockLabel: '🎖️ Vétéran (50 runs)',
+            effect: 'glitch', // Effet spécial: glitch visuel
+            colors: {
+                head: { light: '#00FFFF', dark: '#FF00FF' },
+                body: { from: '#00FFFF', to: '#FF00FF' },
+                tail: { color: '#FF0000' },
+                outline: '#000000',
+                glow: '#FFFFFF'
+            },
+            description: 'Erreur système, réalité corrompue'
+        },
+
+        phoenix: {
+            id: 'phoenix',
+            name: 'Phoenix',
+            emoji: '🔥',
+            image: 'assets/skins/skin_phoenix.webp',
+            type: 'skin',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'boss_all',
+            unlockLabel: '🎯 Chasseur Ultime (tous les boss)',
+            effect: 'flame', // Effet spécial: flammes animées
+            colors: {
+                head: { light: '#FF4500', dark: '#FF6347' },
+                body: { from: '#FF4500', to: '#FF8C00' },
+                tail: { color: '#FFD700' },
+                outline: '#8B0000',
+                glow: '#FF4500'
+            },
+            description: 'Renaît de ses cendres, immortel'
+        },
+
+        cyber: {
+            id: 'cyber',
+            name: 'Cyber',
+            emoji: '🤖',
+            image: 'assets/skins/skin_cyber.webp',
+            type: 'skin',
+            rarity: 'epic',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'endless_25',
+            unlockLabel: '♾️ Sans Limites (niveau 25)',
+            effect: 'circuit', // Effet spécial: circuits lumineux
+            colors: {
+                head: { light: '#00BFFF', dark: '#0080FF' },
+                body: { from: '#00BFFF', to: '#003366' },
+                tail: { color: '#001A33' },
+                outline: '#00FFFF',
+                glow: '#00BFFF'
+            },
+            description: 'Technologie avancée, circuits lumineux'
+        },
+
+        spectral: {
+            id: 'spectral',
+            name: 'Spectral',
+            emoji: '💀',
+            image: 'assets/skins/skin_spectral.webp',
+            type: 'skin',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 0,
+            unlockType: 'achievement',
+            unlockAchievement: 'endless_30',
+            unlockLabel: '⭐ Immortel (niveau 30)',
+            effect: 'ethereal', // Effet spécial: translucide fantomatique
+            colors: {
+                head: { light: 'rgba(200, 200, 255, 0.8)', dark: 'rgba(150, 150, 200, 0.7)' },
+                body: { from: 'rgba(180, 180, 220, 0.6)', to: 'rgba(100, 100, 150, 0.4)' },
+                tail: { color: 'rgba(80, 80, 120, 0.3)' },
+                outline: 'rgba(255, 255, 255, 0.5)',
+                glow: '#AAAAFF'
+            },
+            description: 'Entre les mondes, ni vivant ni mort'
         }
     },
 

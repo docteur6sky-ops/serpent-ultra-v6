@@ -17,6 +17,11 @@ const animationState = {
     scanPosition: 0,        // Position du scan (0-1)
     scanDirection: 1,       // Direction du scan (1 ou -1)
     chameleonHue: 0,        // Teinte du caméléon (0-360)
+    pulsePhase: 0,          // Phase de pulsation (0-2π)
+    glitchOffset: 0,        // Offset du glitch
+    sparklePhase: 0,        // Phase des particules
+    flamePhase: 0,          // Phase des flammes
+    voidPhase: 0,           // Phase du void
     lastUpdate: Date.now()
 };
 
@@ -40,6 +45,25 @@ function updateAnimations() {
 
     // Caméléon: rotation de teinte (0-360°)
     animationState.chameleonHue = (animationState.chameleonHue + delta * 60) % 360; // 60°/s
+
+    // Pulse: pulsation sinusoïdale
+    animationState.pulsePhase = (animationState.pulsePhase + delta * 3) % (Math.PI * 2);
+
+    // Glitch: offset aléatoire périodique
+    if (Math.random() < delta * 5) { // ~5 glitches par seconde
+        animationState.glitchOffset = (Math.random() - 0.5) * 4;
+    } else {
+        animationState.glitchOffset *= 0.9; // Retour progressif à 0
+    }
+
+    // Sparkle: phase des particules
+    animationState.sparklePhase = (animationState.sparklePhase + delta * 2) % 1;
+
+    // Flame: ondulation des flammes
+    animationState.flamePhase = (animationState.flamePhase + delta * 4) % (Math.PI * 2);
+
+    // Void: pulsation sombre
+    animationState.voidPhase = (animationState.voidPhase + delta * 1.5) % (Math.PI * 2);
 }
 
 /**
@@ -82,11 +106,27 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
         skinColors = applyChameleonEffect(skinColors);
     }
 
+    // Effet Glitch: décalage des couleurs
+    if (skinEffect === 'glitch') {
+        skinColors = applyGlitchEffect(skinColors);
+    }
+
+    // Effet Pulse: intensité variable
+    const pulseIntensity = skinEffect === 'pulse' ? 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(animationState.pulsePhase)) : 1;
+
+    // Effet Void: aura sombre pulsante
+    const voidAura = skinEffect === 'void' ? 0.5 + 0.5 * Math.sin(animationState.voidPhase) : 0;
+
     snake.forEach((segment, index) => {
         const x = segment.x * gridSize;
         const y = segment.y * gridSize;
-        const centerX = x + gridSize / 2;
-        const centerY = y + gridSize / 2;
+        let centerX = x + gridSize / 2;
+        let centerY = y + gridSize / 2;
+
+        // Effet Glitch: décalage de position aléatoire
+        if (skinEffect === 'glitch' && index > 0) {
+            centerX += animationState.glitchOffset * (Math.random() > 0.5 ? 1 : -1);
+        }
 
         // Effet Scanner: calculer l'intensité lumineuse pour ce segment
         let scanIntensity = 0;
@@ -94,6 +134,12 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
             const segmentRatio = index / snake.length;
             const distance = Math.abs(segmentRatio - animationState.scanPosition);
             scanIntensity = Math.max(0, 1 - distance * 5); // Rayon de lumière
+        }
+
+        // Effet Flame: ondulation
+        let flameOffset = 0;
+        if (skinEffect === 'flame') {
+            flameOffset = Math.sin(animationState.flamePhase + index * 0.5) * 2;
         }
 
         if (index === 0) {
@@ -463,6 +509,7 @@ function hslToHex(h, s, l) {
 
 /**
  * Dessiner un aperçu miniature du skin (pour la Box)
+ * Forme en S élégante avec plus de segments
  * @param {CanvasRenderingContext2D} ctx - Contexte du canvas
  * @param {string} skinId - ID du skin
  * @param {number} size - Taille du canvas
@@ -477,66 +524,114 @@ export function drawSkinPreview(ctx, skinId, size = 100) {
     // Effacer le canvas
     ctx.clearRect(0, 0, size, size);
 
-    // Taille d'un segment
-    const segmentSize = size / 4;
+    // Taille d'un segment - plus petit pour un look plus élégant
+    const segmentSize = size / 8;
+    const centerX = size / 2;
     const centerY = size / 2;
 
-    // Dessiner 3 segments horizontaux centrés
-    const segments = [
-        { x: size * 0.7, isHead: true },   // Tête (droite)
-        { x: size * 0.45, isHead: false }, // Corps
-        { x: size * 0.2, isHead: false }   // Queue
+    // Forme en S avec 7 segments - plus joli et dynamique
+    const snakeShape = [
+        { x: 0.72, y: 0.35 },  // Tête
+        { x: 0.58, y: 0.38 },
+        { x: 0.45, y: 0.45 },
+        { x: 0.38, y: 0.55 },
+        { x: 0.42, y: 0.65 },
+        { x: 0.55, y: 0.68 },
+        { x: 0.68, y: 0.65 },  // Queue
     ];
 
-    segments.forEach((seg, index) => {
-        const ratio = index / segments.length;
+    // Dessiner le glow d'abord (arrière-plan)
+    ctx.shadowColor = skin.colors.glow;
+    ctx.shadowBlur = 8;
 
-        if (seg.isHead) {
-            // Tête avec dégradé
-            const gradient = ctx.createRadialGradient(
-                seg.x, centerY, 0,
-                seg.x, centerY, segmentSize / 2
-            );
+    // Dessiner les segments de la queue vers la tête
+    for (let i = snakeShape.length - 1; i >= 0; i--) {
+        const pos = snakeShape[i];
+        const x = pos.x * size;
+        const y = pos.y * size;
+        const ratio = i / (snakeShape.length - 1);
+
+        // Taille décroissante vers la queue
+        let radius = segmentSize * (0.6 + 0.4 * (1 - ratio));
+
+        if (i === 0) {
+            // TÊTE - légèrement plus grosse
+            radius = segmentSize * 1.1;
+
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
             gradient.addColorStop(0, skin.colors.head.light);
             gradient.addColorStop(1, skin.colors.head.dark);
 
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.arc(seg.x, centerY, segmentSize / 2, 0, Math.PI * 2);
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Contour
+            // Contour tête
+            ctx.shadowBlur = 0;
             ctx.strokeStyle = skin.colors.outline;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Yeux
+            // Yeux - direction vers la droite-haut
+            const eyeOffset = radius * 0.35;
+            const eyeSize = radius * 0.22;
+            const pupilSize = radius * 0.12;
+
+            // Oeil gauche (haut)
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(seg.x + segmentSize * 0.15, centerY - segmentSize * 0.15, segmentSize * 0.1, 0, Math.PI * 2);
-            ctx.arc(seg.x + segmentSize * 0.15, centerY + segmentSize * 0.15, segmentSize * 0.1, 0, Math.PI * 2);
+            ctx.arc(x + eyeOffset * 0.7, y - eyeOffset, eyeSize, 0, Math.PI * 2);
             ctx.fill();
-
             ctx.fillStyle = 'black';
             ctx.beginPath();
-            ctx.arc(seg.x + segmentSize * 0.15, centerY - segmentSize * 0.15, segmentSize * 0.05, 0, Math.PI * 2);
-            ctx.arc(seg.x + segmentSize * 0.15, centerY + segmentSize * 0.15, segmentSize * 0.05, 0, Math.PI * 2);
+            ctx.arc(x + eyeOffset * 0.9, y - eyeOffset, pupilSize, 0, Math.PI * 2);
             ctx.fill();
+
+            // Oeil droit (bas)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x + eyeOffset, y + eyeOffset * 0.3, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(x + eyeOffset * 1.1, y + eyeOffset * 0.3, pupilSize, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else if (i === snakeShape.length - 1) {
+            // QUEUE - plus petite et pointue
+            radius = segmentSize * 0.4;
+            const color = skin.colors.tail.color;
+
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
         } else {
-            // Corps/Queue avec dégradé progressif
+            // CORPS - dégradé progressif
             const color = interpolateColorSimple(skin.colors.body.from, skin.colors.body.to, ratio);
-            const radius = index === segments.length - 1 ? segmentSize / 3 : segmentSize / 2 * 0.9;
 
             ctx.fillStyle = color;
             ctx.beginPath();
-            ctx.arc(seg.x, centerY, radius, 0, Math.PI * 2);
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
 
+            // Contour léger
+            ctx.shadowBlur = 0;
             ctx.strokeStyle = skin.colors.outline;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.5;
+            ctx.globalAlpha = 0.5;
             ctx.stroke();
+            ctx.globalAlpha = 1;
         }
-    });
+
+        ctx.shadowBlur = 4; // Réactiver pour le segment suivant
+    }
+
+    ctx.shadowBlur = 0;
 }
 
 /**
@@ -549,6 +644,124 @@ function interpolateColorSimple(color1, color2, ratio) {
     const g = Math.round(c1.g + (c2.g - c1.g) * ratio);
     const b = Math.round(c1.b + (c2.b - c1.b) * ratio);
     return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Applique l'effet Glitch (décalage de couleurs RGB)
+ */
+function applyGlitchEffect(colors) {
+    const offset = animationState.glitchOffset * 20;
+    const hue = (animationState.chameleonHue + offset) % 360;
+
+    // Alterner entre cyan et magenta de façon glitchée
+    const glitchColor1 = hslToHex(hue, 100, 50);
+    const glitchColor2 = hslToHex((hue + 180) % 360, 100, 50);
+
+    return {
+        head: { light: glitchColor1, dark: glitchColor2 },
+        body: { from: glitchColor1, to: glitchColor2 },
+        tail: { color: glitchColor2 },
+        outline: '#000000',
+        glow: '#FFFFFF'
+    };
+}
+
+/**
+ * Applique l'effet Pulse (pulsation verte toxique)
+ */
+function applyPulseIntensity(color, intensity) {
+    const rgb = hexToRgb(color);
+    const factor = 0.5 + 0.5 * intensity;
+    return `rgb(${Math.round(rgb.r * factor)}, ${Math.round(rgb.g * factor)}, ${Math.round(rgb.b * factor)})`;
+}
+
+/**
+ * Dessine l'aura void (effet sombre autour du serpent)
+ */
+function drawVoidAura(ctx, centerX, centerY, radius, intensity) {
+    const gradient = ctx.createRadialGradient(
+        centerX, centerY, radius * 0.8,
+        centerX, centerY, radius * 2
+    );
+    gradient.addColorStop(0, `rgba(75, 0, 130, ${0.5 * intensity})`);
+    gradient.addColorStop(0.5, `rgba(139, 0, 255, ${0.3 * intensity})`);
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+/**
+ * Dessine des particules sparkle (effet doré)
+ */
+function drawSparkles(ctx, centerX, centerY, radius, count = 3) {
+    const phase = animationState.sparklePhase;
+
+    for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + phase * Math.PI * 2;
+        const distance = radius * (0.8 + 0.4 * Math.sin(phase * Math.PI * 4 + i));
+        const sparkleX = centerX + Math.cos(angle) * distance;
+        const sparkleY = centerY + Math.sin(angle) * distance;
+        const sparkleSize = 2 + Math.sin(phase * Math.PI * 6 + i) * 1.5;
+
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + 0.5 * Math.sin(phase * Math.PI * 4 + i)})`;
+        ctx.beginPath();
+        ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/**
+ * Dessine l'effet flamme
+ */
+function drawFlameEffect(ctx, centerX, centerY, radius) {
+    const phase = animationState.flamePhase;
+
+    // Dessiner plusieurs "flammes" autour du segment
+    for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2;
+        const flameHeight = radius * 0.5 * (0.7 + 0.3 * Math.sin(phase + i));
+        const flameX = centerX + Math.cos(angle) * radius;
+        const flameY = centerY + Math.sin(angle) * radius;
+
+        const gradient = ctx.createRadialGradient(
+            flameX, flameY, 0,
+            flameX, flameY - flameHeight, flameHeight
+        );
+        gradient.addColorStop(0, 'rgba(255, 69, 0, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(255, 140, 0, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(flameX, flameY - flameHeight / 2, radius * 0.3, flameHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/**
+ * Dessine l'effet circuit (lignes tech)
+ */
+function drawCircuitEffect(ctx, snake, gridSize) {
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+
+    ctx.beginPath();
+    snake.forEach((segment, index) => {
+        const x = segment.x * gridSize + gridSize / 2;
+        const y = segment.y * gridSize + gridSize / 2;
+
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
 }
 
 logger.log('✅ SkinsRenderer chargé');

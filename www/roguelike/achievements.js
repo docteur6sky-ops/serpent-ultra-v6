@@ -877,6 +877,11 @@ class AchievementManager {
         // Afficher la notification
         this.showNotification(achievement);
 
+        // Vérifier si des skins sont liés à cet achievement
+        if (window.boxManager && window.boxManager.checkAchievementUnlocks) {
+            window.boxManager.checkAchievementUnlocks(achievement.id);
+        }
+
         this.save();
     }
 

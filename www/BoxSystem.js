@@ -11,6 +11,7 @@
 import { logger } from './services/logger.js';
 import { ITEMS, getAllItems, getItemById, getItemsByType, RARITY } from './data/items.js';
 import { drawSkinPreview } from './SkinsRenderer.js';
+import { achievementManager } from './roguelike/achievements.js';
 
 // ============================================
 // CLASSE BOXMANAGER - LOGIQUE MÉTIER
@@ -162,7 +163,7 @@ class BoxManager {
         return this.unlockedItems.includes(itemId);
     }
 
-    unlockItem(itemId, reason = 'unknown') {
+    unlockItem(itemId, reason = 'unknown', showAnimation = true) {
         if (this.isUnlocked(itemId)) {
             logger.warn(`⚠️ [BoxManager] Item ${itemId} déjà débloqué`);
             return false;
@@ -179,7 +180,12 @@ class BoxManager {
 
         logger.log(`🎁 [BoxManager] Item ${itemId} débloqué (${reason})`);
 
-        if (window.NotificationManager && window.NotificationManager.show) {
+        // Animation de déblocage pour les skins (épique et légendaire)
+        if (showAnimation && item.type === 'skin' && (item.rarity === 'epic' || item.rarity === 'legendary')) {
+            if (window.showSkinUnlockNotification) {
+                window.showSkinUnlockNotification(item);
+            }
+        } else if (window.NotificationManager && window.NotificationManager.show) {
             window.NotificationManager.show(`${item.emoji} ${item.name} débloqué !`, 'success', 3000);
         }
 
@@ -292,16 +298,110 @@ class BoxManager {
         });
     }
 
-    checkAchievementUnlocks(trophyKey) {
+    checkAchievementUnlocks(achievementId = null) {
         const allItems = getAllItems();
 
         allItems.forEach(item => {
-            if (item.unlockType === 'achievement' && item.unlockTrophy === trophyKey) {
-                if (!this.isUnlocked(item.id)) {
-                    this.unlockItem(item.id, `trophée ${trophyKey}`);
+            if (item.unlockType === 'achievement' && item.unlockAchievement) {
+                // Vérifier si l'achievement spécifique est débloqué
+                const isAchievementUnlocked = achievementManager &&
+                    achievementManager.isUnlocked(item.unlockAchievement);
+
+                if (isAchievementUnlocked && !this.isUnlocked(item.id)) {
+                    this.unlockItem(item.id, `achievement ${item.unlockAchievement}`);
                 }
             }
         });
+    }
+
+    // Vérification globale de tous les achievements pour déblocage
+    syncWithAchievements() {
+        if (!achievementManager) {
+            logger.warn('⚠️ [BoxManager] AchievementManager non disponible');
+            return;
+        }
+
+        const allItems = getAllItems();
+        let newUnlocks = 0;
+
+        allItems.forEach(item => {
+            if (item.unlockType === 'achievement' && item.unlockAchievement) {
+                const isAchievementUnlocked = achievementManager.isUnlocked(item.unlockAchievement);
+
+                if (isAchievementUnlocked && !this.isUnlocked(item.id)) {
+                    this.unlockItem(item.id, `sync achievement ${item.unlockAchievement}`);
+                    newUnlocks++;
+                }
+            }
+        });
+
+        if (newUnlocks > 0) {
+            logger.log(`🔓 [BoxManager] ${newUnlocks} skin(s) débloqué(s) via achievements`);
+        }
+
+        return newUnlocks;
+    }
+
+    // Vérifie si un achievement est débloqué (pour l'UI)
+    isAchievementUnlocked(achievementId) {
+        if (!achievementManager) return false;
+        return achievementManager.isUnlocked(achievementId);
+    }
+
+    // Récupère la progression d'un achievement
+    getAchievementProgress(achievementId) {
+        if (!achievementManager) return null;
+
+        const stats = achievementManager.getStats();
+        const achievement = achievementManager.getAll().find(a => a.id === achievementId);
+
+        if (!achievement) return null;
+
+        const condition = achievement.condition;
+        let current = 0;
+        let target = condition.value;
+
+        switch (condition.type) {
+            case 'total_runs':
+                current = stats.totalRuns;
+                break;
+            case 'level_complete':
+                current = stats.maxLevelReached;
+                break;
+            case 'boss_killed':
+                current = stats.bossesKilled;
+                break;
+            case 'boss_flawless':
+                current = stats.bossFlawlessKills;
+                break;
+            case 'boss_speedrun':
+                current = stats.bossSpeedrunKills;
+                break;
+            case 'total_apples':
+                current = stats.totalApples;
+                break;
+            case 'score_run':
+                current = stats.bestScore;
+                break;
+            case 'walls_ghosted':
+                current = stats.wallsGhosted;
+                break;
+            case 'specific_boss':
+                current = stats.bossesKilledByName[condition.value] ? 1 : 0;
+                target = 1;
+                break;
+            case 'all_bosses':
+                current = Object.keys(stats.bossesKilledByName).length;
+                break;
+            default:
+                return null;
+        }
+
+        return {
+            current: Math.min(current, target),
+            target: target,
+            percent: Math.min(100, Math.round((current / target) * 100))
+        };
     }
 
     // ============================================
@@ -450,6 +550,11 @@ let currentFilter = 'all';
 function openBox() {
     if (window.audio) window.audio.buttonClick();
 
+    // Synchroniser les achievements avant d'afficher
+    if (window.boxManager.syncWithAchievements) {
+        window.boxManager.syncWithAchievements();
+    }
+
     window.screenManager.show('box-screen');
     refreshBoxUI();
 
@@ -570,6 +675,11 @@ function createItemCard(item) {
     const card = document.createElement('div');
     card.className = 'box-item';
 
+    // Ajouter classe de rareté
+    if (item.rarity) {
+        card.classList.add(`rarity-${item.rarity}`);
+    }
+
     if (isUnlocked) {
         card.classList.add('unlocked');
     } else {
@@ -583,6 +693,16 @@ function createItemCard(item) {
         card.classList.add('equipped');
     }
 
+    // Badge de rareté
+    const rarityNames = {
+        common: 'Commun',
+        rare: 'Rare',
+        epic: 'Épique',
+        legendary: 'Légendaire'
+    };
+    const rarityBadge = item.rarity ?
+        `<div class="rarity-badge rarity-${item.rarity}">${rarityNames[item.rarity] || item.rarity}</div>` : '';
+
     // Preview
     let previewHTML = '';
     const centerBadge = isEquipped
@@ -593,6 +713,7 @@ function createItemCard(item) {
         const canvasId = `skin-preview-${item.id}`;
         previewHTML = `
             <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                ${rarityBadge}
                 <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
                 ${centerBadge}
             </div>
@@ -600,6 +721,7 @@ function createItemCard(item) {
     } else if (item.type === 'banner' && item.image) {
         previewHTML = `
             <div class="box-item-preview banner-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                ${rarityBadge}
                 <img src="${item.image}" alt="${item.name}" class="banner-preview-image ${!isUnlocked ? 'locked-banner' : ''}">
                 ${centerBadge}
             </div>
@@ -607,6 +729,7 @@ function createItemCard(item) {
     } else if (item.type === 'background' && item.image) {
         previewHTML = `
             <div class="box-item-preview background-preview ${!isUnlocked ? 'locked-preview' : ''}">
+                ${rarityBadge}
                 <img src="${item.image}" alt="${item.name}" class="background-preview-image ${!isUnlocked ? 'locked-background' : ''}">
                 ${centerBadge}
             </div>
@@ -614,6 +737,7 @@ function createItemCard(item) {
     } else {
         previewHTML = `
             <div class="box-item-preview default-preview">
+                ${rarityBadge}
                 ${centerBadge}
             </div>
         `;
@@ -625,13 +749,15 @@ function createItemCard(item) {
     // Info
     const infoHTML = `
         <div class="box-item-info">
-            <h4 class="box-item-name">${item.name}</h4>
+            <h4 class="box-item-name">${item.emoji} ${item.name}</h4>
             <p class="box-item-type">${typeLabels[item.type] || item.type}</p>
         </div>
     `;
 
-    // Status badge
+    // Status badge avec progression achievement
     let statusHTML = '';
+    let progressHTML = '';
+
     if (isEquipped) {
         statusHTML = '<span class="status-badge equipped">⭐ Équipé</span>';
     } else if (isUnlocked) {
@@ -640,13 +766,30 @@ function createItemCard(item) {
         if (item.unlockType === 'coins' && item.price > 0) {
             statusHTML = `<span class="status-badge price">💰 ${item.price}</span>`;
         } else if (item.unlockType === 'level') {
-            statusHTML = `<span class="status-badge locked">Niveau ${item.unlockLevel}</span>`;
+            statusHTML = `<span class="status-badge level">🎮 Niveau ${item.unlockLevel}</span>`;
         } else if (item.unlockType === 'achievement') {
-            statusHTML = '<span class="status-badge locked">Trophée</span>';
+            // Afficher la condition d'achievement
+            const label = item.unlockLabel || '🏆 Achievement';
+            statusHTML = `<span class="status-badge achievement">${label}</span>`;
+
+            // Barre de progression
+            if (item.unlockAchievement && window.boxManager.getAchievementProgress) {
+                const progress = window.boxManager.getAchievementProgress(item.unlockAchievement);
+                if (progress) {
+                    progressHTML = `
+                        <div class="achievement-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress.percent}%"></div>
+                            </div>
+                            <span class="progress-text">${progress.current}/${progress.target}</span>
+                        </div>
+                    `;
+                }
+            }
         } else if (item.unlockType === 'chest') {
-            statusHTML = '<span class="status-badge locked">Coffre</span>';
+            statusHTML = '<span class="status-badge chest">🎁 Coffre</span>';
         } else {
-            statusHTML = '<span class="status-badge locked">Verrouillé</span>';
+            statusHTML = '<span class="status-badge locked">🔒 Verrouillé</span>';
         }
     }
 
@@ -657,13 +800,14 @@ function createItemCard(item) {
     } else if (isUnlocked) {
         buttonHTML = `<button class="btn-equip" onclick="equipBoxItem('${item.id}')">Équiper</button>`;
     } else if (item.unlockType === 'coins' && item.price > 0) {
-        buttonHTML = `<button class="btn-buy" onclick="buyBoxItem('${item.id}')">Acheter</button>`;
+        const canAfford = window.boxManager.getCoins() >= item.price;
+        buttonHTML = `<button class="btn-buy ${!canAfford ? 'cant-afford' : ''}" onclick="buyBoxItem('${item.id}')" ${!canAfford ? 'title="Pas assez de coins"' : ''}>Acheter</button>`;
     } else {
         buttonHTML = '<button class="btn-locked" disabled>Verrouillé</button>';
     }
 
     // Footer
-    const footerHTML = `<div class="box-item-footer">${statusHTML}${buttonHTML}</div>`;
+    const footerHTML = `<div class="box-item-footer">${statusHTML}${progressHTML}${buttonHTML}</div>`;
 
     card.innerHTML = previewHTML + infoHTML + footerHTML;
 
@@ -716,6 +860,132 @@ window.filterBoxItems = filterBoxItems;
 window.buyBoxItem = buyBoxItem;
 window.equipBoxItem = equipBoxItem;
 window.refreshBoxUI = refreshBoxUI;
+
+// ============================================
+// ANIMATION DE DÉBLOCAGE
+// ============================================
+
+function showSkinUnlockNotification(item) {
+    // Créer l'overlay de fond
+    const overlay = document.createElement('div');
+    overlay.className = 'skin-unlock-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 9998;
+    `;
+
+    // Créer la notification
+    const notification = document.createElement('div');
+    notification.className = 'skin-unlock-notification';
+    notification.innerHTML = `
+        <div class="unlock-icon">${item.emoji}</div>
+        <div class="unlock-title">🎉 Nouveau Skin Débloqué !</div>
+        <div class="unlock-name">${item.name}</div>
+        <div class="unlock-rarity" style="color: ${getRarityColor(item.rarity)}; margin-bottom: 1rem;">
+            ${getRarityName(item.rarity)}
+        </div>
+        <button class="unlock-close" onclick="closeSkinUnlockNotification()">Super !</button>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(notification);
+
+    // Jouer un son si disponible
+    if (window.audio && window.audio.chestOpen) {
+        window.audio.chestOpen();
+    }
+
+    // Créer des confettis
+    createConfetti();
+}
+
+function closeSkinUnlockNotification() {
+    const notification = document.querySelector('.skin-unlock-notification');
+    const overlay = document.querySelector('.skin-unlock-overlay');
+    const confetti = document.querySelector('.confetti-overlay');
+
+    if (notification) notification.remove();
+    if (overlay) overlay.remove();
+    if (confetti) confetti.remove();
+
+    if (window.audio) window.audio.buttonClick();
+}
+
+function getRarityColor(rarity) {
+    const colors = {
+        common: '#CCCCCC',
+        rare: '#00D9FF',
+        epic: '#DA70D6',
+        legendary: '#FFD700'
+    };
+    return colors[rarity] || '#FFFFFF';
+}
+
+function getRarityName(rarity) {
+    const names = {
+        common: 'Commun',
+        rare: 'Rare',
+        epic: 'Épique',
+        legendary: 'Légendaire'
+    };
+    return names[rarity] || rarity;
+}
+
+function createConfetti() {
+    const overlay = document.createElement('div');
+    overlay.className = 'confetti-overlay';
+
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.cssText = `
+            position: absolute;
+            width: ${Math.random() * 10 + 5}px;
+            height: ${Math.random() * 10 + 5}px;
+            background: ${colors[Math.floor(Math.random() * colors.length)]};
+            left: ${Math.random() * 100}%;
+            top: -20px;
+            opacity: ${Math.random() * 0.5 + 0.5};
+            border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+            animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
+            animation-delay: ${Math.random() * 0.5}s;
+        `;
+        overlay.appendChild(confetti);
+    }
+
+    // Ajouter l'animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+
+    // Supprimer après l'animation
+    setTimeout(() => {
+        overlay.remove();
+        style.remove();
+    }, 4000);
+}
+
+// Exports pour l'animation
+window.showSkinUnlockNotification = showSkinUnlockNotification;
+window.closeSkinUnlockNotification = closeSkinUnlockNotification;
 
 logger.log('✅ BoxSystem chargé (Manager + UI)');
 
