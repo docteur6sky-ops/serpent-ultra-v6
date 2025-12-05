@@ -73,6 +73,73 @@ class RoguelikeManager {
     }
 
     /**
+     * Démarre une run Daily Challenge
+     */
+    startDailyRun(challenge) {
+        logger.log('[RoguelikeManager] Démarrage Daily Challenge:', challenge.name);
+
+        // Calculer les vies selon le modificateur spécial
+        let lives = 1 + this.getMetaBonus('starting_lives');
+        if (challenge.modifiers.special.effect === 'one_life') {
+            lives = 1;
+        }
+
+        this.currentRun = {
+            // Progression
+            level: 1,
+            world: 1,
+
+            // Stats de la run
+            score: 0,
+            applesEaten: 0,
+            powerupsCollected: 0,
+            timePlayed: 0,
+            startTime: Date.now(),
+
+            // Upgrades collectés cette run
+            upgrades: [],
+
+            // État du joueur
+            lives: lives,
+            bonusSegments: 0,
+
+            // Modificateurs calculés (avec ceux du daily)
+            modifiers: {
+                ...calculateRunModifiers([]),
+                speedMultiplier: challenge.modifiers.speed.value,
+                appleSpawnRate: challenge.modifiers.apples.value,
+                obstacleLevel: challenge.modifiers.obstacles.value,
+                specialEffect: challenge.modifiers.special.effect
+            },
+
+            // État du niveau actuel
+            currentLevelData: null,
+            levelStartTime: null,
+            objectiveProgress: 0,
+
+            // Marquer comme Daily Challenge
+            isDaily: true,
+            dailyChallenge: challenge,
+            dailySeed: challenge.seed,
+            dailyTargetLevel: challenge.targetLevel
+        };
+
+        logger.log('[RoguelikeManager] Daily Run configurée:', {
+            speed: challenge.modifiers.speed.name,
+            apples: challenge.modifiers.apples.name,
+            obstacles: challenge.modifiers.obstacles.name,
+            special: challenge.modifiers.special.name,
+            targetLevel: challenge.targetLevel
+        });
+
+        // Achievement tracking
+        achievementManager.startNewRun();
+
+        this.startLevel(1);
+        return this.currentRun;
+    }
+
+    /**
      * Démarre un niveau spécifique
      */
     startLevel(levelNum) {
@@ -392,6 +459,13 @@ class RoguelikeManager {
         // Achievement tracking
         achievementManager.endRun(reason === 'victory');
 
+        // Soumettre le score au leaderboard approprié (asynchrone)
+        if (this.currentRun.isDaily) {
+            this.submitDailyScore(finalStats);
+        } else {
+            this.submitScoreToLeaderboard(finalStats);
+        }
+
         // Notifier
         if (this.onRunEnd) {
             this.onRunEnd(finalStats, this.metaProgression);
@@ -400,6 +474,109 @@ class RoguelikeManager {
         this.currentRun = null;
 
         return finalStats;
+    }
+
+    /**
+     * Soumet le score au leaderboard en ligne
+     */
+    async submitScoreToLeaderboard(stats) {
+        try {
+            const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+
+            const response = await fetch('/api/roguelike/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pseudo: pseudo,
+                    score: stats.score,
+                    level: stats.level,
+                    apples: stats.applesEaten,
+                    time: Math.floor(stats.timePlayed),
+                    upgrades: stats.upgradesCollected
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                logger.log('[RoguelikeManager] Score soumis au leaderboard:', result);
+
+                // Stocker le dernier rang pour affichage
+                this.lastLeaderboardRank = result.entry?.rank || null;
+                this.lastLeaderboardMessage = result.message;
+
+                // Émettre un événement pour l'UI
+                if (window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('leaderboard-score-submitted', {
+                        detail: result
+                    }));
+                }
+            } else {
+                logger.warn('[RoguelikeManager] Échec soumission leaderboard:', result.error);
+            }
+        } catch (error) {
+            logger.error('[RoguelikeManager] Erreur soumission leaderboard:', error);
+        }
+    }
+
+    /**
+     * Soumet le score au Daily Challenge
+     */
+    async submitDailyScore(stats) {
+        if (!this.currentRun?.isDaily || !this.currentRun?.dailySeed) {
+            logger.warn('[RoguelikeManager] Pas de daily challenge actif');
+            return;
+        }
+
+        try {
+            const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+
+            const response = await fetch('/api/roguelike/daily/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pseudo: pseudo,
+                    score: stats.score,
+                    level: stats.level,
+                    time: Math.floor(stats.timePlayed),
+                    seed: this.currentRun.dailySeed
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                logger.log('[RoguelikeManager] Score Daily soumis:', result);
+
+                // Stocker pour affichage
+                this.lastDailyRank = result.entry?.rank || null;
+                this.lastDailyMessage = result.message;
+                this.lastDailyTargetReached = result.targetReached;
+                this.lastDailyBonusXP = result.bonusXP;
+
+                // Ajouter le bonus XP si objectif atteint
+                if (result.bonusXP > 0) {
+                    this.metaProgression.totalXP += result.bonusXP;
+                    this.saveMetaProgression();
+                    logger.log(`[RoguelikeManager] +${result.bonusXP} XP bonus daily !`);
+                }
+
+                // Émettre un événement pour l'UI
+                if (window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('daily-score-submitted', {
+                        detail: result
+                    }));
+                }
+            } else {
+                logger.warn('[RoguelikeManager] Échec soumission daily:', result.error);
+            }
+        } catch (error) {
+            logger.error('[RoguelikeManager] Erreur soumission daily:', error);
+        }
     }
 
     // ========== MÉTA-PROGRESSION ==========

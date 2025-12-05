@@ -1515,3 +1515,95 @@
         font-size: 24px;
     }
 }
+
+/* ============================================
+   DAILY CHALLENGE STYLES
+   ============================================ */
+
+/* Bouton Daily dans l'écran de fin */
+.rl-btn-daily {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
+    border: 2px solid #e94560;
+    color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+}
+
+.rl-btn-daily:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+}
+
+/* Résultat Daily Challenge */
+.rl-daily-result {
+    margin: 16px 0;
+}
+
+.daily-result-card {
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(15, 52, 96, 0.2));
+    border: 2px solid rgba(233, 69, 96, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+
+.daily-result-card.success {
+    border-color: #4ade80;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(15, 52, 96, 0.2));
+}
+
+.daily-rank {
+    margin-bottom: 12px;
+}
+
+.daily-rank .rank-label {
+    display: block;
+    color: #888;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.daily-rank .rank-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #e94560;
+    text-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+}
+
+.daily-result-card.success .daily-rank .rank-value {
+    color: #4ade80;
+    text-shadow: 0 0 15px rgba(74, 222, 128, 0.5);
+}
+
+.daily-bonus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(74, 222, 128, 0.2);
+    border-radius: 8px;
+    color: #4ade80;
+    font-weight: bold;
+}
+
+.daily-bonus .bonus-icon {
+    font-size: 24px;
+}
+
+.daily-miss {
+    padding: 8px;
+    color: #888;
+    font-size: 14px;
+}

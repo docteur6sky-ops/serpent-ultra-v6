@@ -164,9 +164,16 @@ class RoguelikeUI {
                 <div class="rl-xp-label">XP GAGNÉ</div>
             </div>
 
+            <div class="rl-daily-result" id="rl-daily-result" style="display: none;">
+                <!-- Résultat daily affiché dynamiquement -->
+            </div>
+
             <div class="rl-run-end-actions">
                 <button class="rl-btn-retry" id="rl-btn-retry">
                     🔄 NOUVELLE RUN
+                </button>
+                <button class="rl-btn-daily" id="rl-btn-daily">
+                    🎯 DÉFI DU JOUR
                 </button>
                 <button class="rl-btn-achievements" id="rl-btn-achievements">
                     🏆 Achievements
@@ -189,6 +196,13 @@ class RoguelikeUI {
             achievementsUI.show();
         });
 
+        document.getElementById('rl-btn-daily').addEventListener('click', () => {
+            this.hideRunEnd();
+            if (window.dailyChallenge) {
+                window.dailyChallenge.show();
+            }
+        });
+
         document.getElementById('rl-btn-menu').addEventListener('click', () => {
             this.hideRunEnd();
             if (window.screenManager) {
@@ -202,7 +216,14 @@ class RoguelikeUI {
         const title = document.getElementById('rl-run-end-title');
         const subtitle = document.getElementById('rl-run-end-subtitle');
 
-        if (stats.reason === 'victory') {
+        // Vérifier si c'est un Daily Challenge
+        const isDaily = roguelikeManager.lastDailyRank !== undefined && roguelikeManager.lastDailyRank !== null;
+
+        if (isDaily) {
+            title.textContent = '🎯 DÉFI DU JOUR';
+            title.classList.remove('victory');
+            subtitle.textContent = `Tu as atteint le stage ${stats.level}`;
+        } else if (stats.reason === 'victory') {
             title.textContent = 'VICTOIRE !';
             title.classList.add('victory');
             subtitle.textContent = 'Tu as conquis le Néant !';
@@ -210,6 +231,41 @@ class RoguelikeUI {
             title.textContent = 'RUN TERMINÉE';
             title.classList.remove('victory');
             subtitle.textContent = `Tu as atteint le stage ${stats.level}`;
+        }
+
+        // Afficher résultat Daily si applicable
+        const dailyResult = document.getElementById('rl-daily-result');
+        if (isDaily) {
+            const rank = roguelikeManager.lastDailyRank;
+            const targetReached = roguelikeManager.lastDailyTargetReached;
+            const bonusXP = roguelikeManager.lastDailyBonusXP || 0;
+
+            dailyResult.innerHTML = `
+                <div class="daily-result-card ${targetReached ? 'success' : ''}">
+                    <div class="daily-rank">
+                        <span class="rank-label">Classement du jour</span>
+                        <span class="rank-value">#${rank}</span>
+                    </div>
+                    ${targetReached ? `
+                        <div class="daily-bonus">
+                            <span class="bonus-icon">🎯</span>
+                            <span class="bonus-text">Objectif atteint ! +${bonusXP} XP</span>
+                        </div>
+                    ` : `
+                        <div class="daily-miss">
+                            <span class="miss-text">Objectif non atteint</span>
+                        </div>
+                    `}
+                </div>
+            `;
+            dailyResult.style.display = 'block';
+
+            // Reset les valeurs
+            roguelikeManager.lastDailyRank = null;
+            roguelikeManager.lastDailyTargetReached = null;
+            roguelikeManager.lastDailyBonusXP = null;
+        } else {
+            dailyResult.style.display = 'none';
         }
 
         // Stats

@@ -7,6 +7,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const Snake = require('./SnakeServer.js');
 const Logger = require('./Logger.js');
 const SecurityValidator = require('./SecurityValidator.js');
@@ -97,8 +98,17 @@ class PowerUp {
 // ============================================
 
 class Room {
-    constructor(id) {
+    constructor(id, options = {}) {
         this.id = id;
+
+        // ✅ LOBBY PRINCIPAL - Propriétés salons personnalisés
+        this.name = options.name || `Salle ${id.split('_')[1]}`;
+        this.isPublic = options.isPublic !== false; // Public par défaut
+        this.code = options.code || null; // Code privé optionnel
+        this.createdBy = options.createdBy || null;
+        this.createdAt = Date.now();
+        this.maxPlayers = options.maxPlayers || CONFIG.MAX_PLAYERS_PER_ROOM;
+
         this.players = new Map();
         this.gameState = {
             food: null,
@@ -733,8 +743,13 @@ class Room {
         }
 
         const scores = {};
+        const players = {}; // ✅ FIX: Ajouter les infos des joueurs (pseudo, number)
         for (let player of this.players.values()) {
             scores[player.id] = player.snake.length;
+            players[player.id] = {
+                pseudo: player.pseudo || `Joueur ${player.number}`,
+                number: player.number
+            };
         }
 
         this.notifyPlayers({
@@ -743,7 +758,8 @@ class Room {
             winner: longestPlayer ? longestPlayer.id : null,
             winnerNumber: longestPlayer ? longestPlayer.number : null,
             scores: scores,
-            message: longestPlayer 
+            players: players, // ✅ FIX: Envoyer les pseudos
+            message: longestPlayer
                 ? `🏆 Joueur ${longestPlayer.number} gagne avec ${maxLength} segments !`
                 : `⚔️ Match nul ! ${maxLength} segments chacun.`
         });
@@ -782,9 +798,31 @@ class Room {
             logger.info('GAME', `📊 Stats de la partie - Salle ${this.id}`, stats);
         }
 
+        // ✅ FIX BUG REJOUER: Réinitialiser le statut ready des joueurs
+        for (let player of this.players.values()) {
+            player.ready = false;
+        }
+
+        // Broadcaster le lobby update pour que les clients sachent
+        this.broadcastLobbyUpdate();
+
         this.gameState.gameStarted = false;
         this.gameState.matchStartTime = null;
         this.gameState.matchTimeRemaining = CONFIG.MATCH_DURATION;
+    }
+
+    // ✅ LOBBY PRINCIPAL - Infos publiques pour la liste
+    getPublicInfo() {
+        return {
+            id: this.id,
+            name: this.name,
+            isPublic: this.isPublic,
+            hasPassword: !!this.code,
+            playerCount: this.players.size,
+            maxPlayers: this.maxPlayers,
+            isGameStarted: this.gameState.gameStarted,
+            createdAt: this.createdAt
+        };
     }
 
     cleanup() {
@@ -864,15 +902,21 @@ class Room {
         
         if (alivePlayers.length === 0) {
             const scores = {};
+            const players = {}; // ✅ FIX: Ajouter les infos des joueurs
             for (let player of this.players.values()) {
                 scores[player.id] = player.snake.length;
+                players[player.id] = {
+                    pseudo: player.pseudo || `Joueur ${player.number}`,
+                    number: player.number
+                };
             }
-            
+
             this.notifyPlayers({
                 type: 'game_over',
                 reason: 'both_dead',
                 winner: null,
                 scores: scores,
+                players: players, // ✅ FIX: Envoyer les pseudos
                 message: '💀 Les deux joueurs sont morts !'
             });
             this.stopGame();
@@ -882,16 +926,22 @@ class Room {
         if (alivePlayers.length === 1) {
             const winner = alivePlayers[0];
             const scores = {};
+            const players = {}; // ✅ FIX: Ajouter les infos des joueurs
             for (let player of this.players.values()) {
                 scores[player.id] = player.snake.length;
+                players[player.id] = {
+                    pseudo: player.pseudo || `Joueur ${player.number}`,
+                    number: player.number
+                };
             }
-            
+
             this.notifyPlayers({
                 type: 'game_over',
                 reason: 'opponent_died',
                 winner: winner.id,
                 winnerNumber: winner.number,
                 scores: scores,
+                players: players, // ✅ FIX: Envoyer les pseudos
                 message: `🏆 Joueur ${winner.number} gagne !`
             });
             this.stopGame();
@@ -1218,6 +1268,7 @@ class RoomManager {
         this.playerToRoom = new Map();
     }
 
+    // ✅ ANCIENNE MÉTHODE - Conservée pour compatibilité (matchmaking auto)
     findOrCreateRoom() {
         for (let room of this.rooms.values()) {
             if (room.players.size < CONFIG.MAX_PLAYERS_PER_ROOM) {
@@ -1230,6 +1281,77 @@ class RoomManager {
         this.rooms.set(roomId, room);
         logger.info('MANAGER', `🏠 Nouvelle salle créée`, { roomId });
         return room;
+    }
+
+    // ✅ LOBBY PRINCIPAL - Créer salon personnalisé
+    createCustomRoom(creatorId, name, isPublic = true, code = null) {
+        const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+        const room = new Room(roomId, {
+            name: name,
+            isPublic: isPublic,
+            code: code,
+            createdBy: creatorId,
+            maxPlayers: 2 // Fixé à 2 pour le moment
+        });
+
+        this.rooms.set(roomId, room);
+        logger.info('MANAGER', `🏠 Salon personnalisé créé`, {
+            roomId,
+            name,
+            isPublic,
+            hasPassword: !!code,
+            createdBy: creatorId
+        });
+
+        return room;
+    }
+
+    // ✅ LOBBY PRINCIPAL - Rejoindre salon par ID
+    joinRoomById(playerId, ws, roomId, code = null) {
+        const room = this.rooms.get(roomId);
+
+        if (!room) {
+            return { success: false, error: 'Salon introuvable' };
+        }
+
+        if (room.players.size >= room.maxPlayers) {
+            return { success: false, error: 'Salon complet' };
+        }
+
+        if (room.code && room.code !== code) {
+            return { success: false, error: 'Code incorrect' };
+        }
+
+        if (room.addPlayer(playerId, ws)) {
+            this.playerToRoom.set(playerId, room.id);
+            return {
+                success: true,
+                room: room,
+                playerNumber: room.players.get(playerId).number,
+                playersInRoom: room.players.size
+            };
+        }
+
+        return { success: false, error: 'Erreur lors de l\'ajout au salon' };
+    }
+
+    // ✅ LOBBY PRINCIPAL - Liste des salons publics
+    listPublicRooms() {
+        const publicRooms = [];
+
+        for (let room of this.rooms.values()) {
+            // Afficher seulement les salons publics non démarrés et non pleins
+            if (room.isPublic && !room.gameState.gameStarted && room.players.size < room.maxPlayers) {
+                publicRooms.push(room.getPublicInfo());
+            }
+        }
+
+        // Trier par date de création (plus récents en premier)
+        publicRooms.sort((a, b) => b.createdAt - a.createdAt);
+
+        // Limiter à 20 salons max pour éviter surcharge
+        return publicRooms.slice(0, 20);
     }
 
     addPlayerToRoom(playerId, ws) {
@@ -1322,22 +1444,149 @@ wss.on('connection', (ws, req) => {
         playerId: playerId
     }));
 
-    const result = roomManager.addPlayerToRoom(playerId, ws);
-    if (result.success) {
-        ws.send(JSON.stringify({
-            type: 'room_joined',
-            roomId: result.room.id,
-            playerNumber: result.playerNumber,
-            playersInRoom: result.playersInRoom
-        }));
-    }
+    // ✅ LOBBY PRINCIPAL - Ne plus auto-assigner à une room
+    // Le joueur reste dans le lobby principal jusqu'à créer/rejoindre un salon
+    ws.send(JSON.stringify({
+        type: 'lobby_ready'
+    }));
 
     ws.on('message', (data) => {
         try {
             const message = JSON.parse(data);
+
+            // ✅ LOBBY PRINCIPAL - Nouveaux messages qui ne nécessitent pas de room
+            switch (message.type) {
+                case 'list_rooms':
+                    // Envoyer la liste des salons publics
+                    const rooms = roomManager.listPublicRooms();
+                    ws.send(JSON.stringify({
+                        type: 'room_list',
+                        rooms: rooms
+                    }));
+                    logger.info('LOBBY', `📋 Liste envoyée à ${playerId}`, { count: rooms.length });
+                    return;
+
+                case 'create_room':
+                    // Créer un nouveau salon personnalisé
+                    const newRoom = roomManager.createCustomRoom(
+                        playerId,
+                        message.name,
+                        message.isPublic !== false,
+                        message.code || null
+                    );
+
+                    // Ajouter le créateur au salon
+                    if (newRoom.addPlayer(playerId, ws)) {
+                        roomManager.playerToRoom.set(playerId, newRoom.id);
+                        ws.send(JSON.stringify({
+                            type: 'room_created',
+                            roomId: newRoom.id,
+                            playerNumber: newRoom.players.get(playerId).number,
+                            playersInRoom: newRoom.players.size
+                        }));
+                        logger.info('LOBBY', `🏠 Salon créé et rejoint par ${playerId}`, { roomId: newRoom.id });
+                    }
+                    return;
+
+                case 'join_room':
+                    // Rejoindre un salon existant par ID
+                    const joinResult = roomManager.joinRoomById(
+                        playerId,
+                        ws,
+                        message.roomId,
+                        message.code
+                    );
+
+                    if (joinResult.success) {
+                        ws.send(JSON.stringify({
+                            type: 'room_joined',
+                            roomId: joinResult.room.id,
+                            playerNumber: joinResult.playerNumber,
+                            playersInRoom: joinResult.playersInRoom
+                        }));
+                        logger.info('LOBBY', `✅ ${playerId} a rejoint ${message.roomId}`);
+                    } else {
+                        ws.send(JSON.stringify({
+                            type: 'join_error',
+                            error: joinResult.error
+                        }));
+                        logger.warn('LOBBY', `❌ ${playerId} échec rejoindre ${message.roomId}`, { error: joinResult.error });
+                    }
+                    return;
+
+                case 'quick_play':
+                    // ⚡ QUICK PLAY - Rejoindre automatiquement un salon ou en créer un
+                    logger.info('LOBBY', `⚡ Quick Play demandé par ${playerId}`);
+
+                    // 1. Chercher un salon public disponible
+                    let availableRoom = null;
+
+                    // Debug: afficher tous les salons
+                    logger.info('LOBBY', `⚡ Recherche de salons disponibles (total: ${roomManager.rooms.size})`);
+
+                    for (let room of roomManager.rooms.values()) {
+                        logger.debug('LOBBY', `⚡ Salon ${room.id}:`, {
+                            isPublic: room.isPublic,
+                            hasCode: !!room.code,
+                            gameStarted: room.gameState.gameStarted,
+                            players: room.players.size,
+                            maxPlayers: room.maxPlayers
+                        });
+
+                        // Conditions: Public, sans code (ou code null/vide), partie pas commencée, places disponibles
+                        if (room.isPublic &&
+                            (!room.code || room.code === null || room.code === '') &&
+                            !room.gameState.gameStarted &&
+                            room.players.size < room.maxPlayers) {
+                            availableRoom = room;
+                            logger.info('LOBBY', `⚡ Salon trouvé: ${room.id}`);
+                            break;
+                        }
+                    }
+
+                    // 2. Si salon trouvé, rejoindre
+                    if (availableRoom) {
+                        if (availableRoom.addPlayer(playerId, ws)) {
+                            roomManager.playerToRoom.set(playerId, availableRoom.id);
+                            ws.send(JSON.stringify({
+                                type: 'room_joined',
+                                roomId: availableRoom.id,
+                                playerNumber: availableRoom.players.get(playerId).number,
+                                playersInRoom: availableRoom.players.size
+                            }));
+                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} rejoint ${availableRoom.id}`);
+                        }
+                    } else {
+                        // 3. Sinon, créer un nouveau salon
+                        logger.info('LOBBY', `⚡ Aucun salon disponible, création d'un nouveau salon`);
+                        const quickRoom = roomManager.createCustomRoom(
+                            playerId,
+                            'Quick Play',
+                            true,
+                            null
+                        );
+
+                        if (quickRoom.addPlayer(playerId, ws)) {
+                            roomManager.playerToRoom.set(playerId, quickRoom.id);
+                            ws.send(JSON.stringify({
+                                type: 'room_created',
+                                roomId: quickRoom.id,
+                                playerNumber: quickRoom.players.get(playerId).number,
+                                playersInRoom: quickRoom.players.size
+                            }));
+                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} crée ${quickRoom.id}`);
+                        }
+                    }
+                    return;
+            }
+
+            // ✅ Messages qui nécessitent d'être dans une room
             const room = roomManager.getPlayerRoom(playerId);
-            
-            if (!room) return;
+
+            if (!room) {
+                logger.warn('NETWORK', `${playerId} pas dans une room pour ${message.type}`);
+                return;
+            }
 
             switch (message.type) {
                 case 'set_pseudo':
@@ -1373,6 +1622,35 @@ wss.on('connection', (ws, req) => {
 
                 case 'player_ready':
                     room.setPlayerReady(playerId);
+                    break;
+
+                case 'player_abandon':
+                    // 🏳️ Un joueur abandonne la partie
+                    logger.info('GAME', `🏳️ ${playerId} abandonne la partie`, { roomId: room.id });
+
+                    // Arrêter la partie
+                    room.stopGame();
+
+                    // Notifier l'adversaire qu'il gagne par abandon
+                    for (let [otherPlayerId, otherPlayer] of room.players) {
+                        if (otherPlayerId !== playerId && otherPlayer.ws.readyState === 1) {
+                            otherPlayer.ws.send(JSON.stringify({
+                                type: 'opponent_abandoned',
+                                message: 'Votre adversaire a abandonné',
+                                winner: true,
+                                reason: 'abandon'
+                            }));
+                            logger.info('GAME', `✅ ${otherPlayerId} gagne par abandon`);
+                        }
+                    }
+
+                    // Confirmer l'abandon au joueur qui abandonne
+                    if (ws.readyState === 1) {
+                        ws.send(JSON.stringify({
+                            type: 'abandon_confirmed',
+                            message: 'Vous avez abandonné la partie'
+                        }));
+                    }
                     break;
 
                 case 'input':
@@ -1456,12 +1734,539 @@ wss.on('connection', (ws, req) => {
 // EXPRESS
 // ============================================
 
-app.use(express.static(path.join(__dirname, 'www')));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index.html'));  
+// 🚫 NO-CACHE pour le développement (évite les problèmes de cache navigateur)
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    next();
 });
 
+app.use(express.static(path.join(__dirname, 'www'), {
+    etag: false,
+    lastModified: false
+}));
+
+// Parser JSON pour les requêtes API
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'www', 'index.html'));
+});
+
+// ============================================
+// 🏆 API LEADERBOARD ROGUELIKE
+// ============================================
+
+const LEADERBOARD_FILE = path.join(__dirname, 'data', 'roguelike-leaderboard.json');
+const MAX_LEADERBOARD_SIZE = 100;
+
+/**
+ * Charge le leaderboard depuis le fichier
+ */
+function loadLeaderboard() {
+    try {
+        // Créer le dossier data s'il n'existe pas
+        const dataDir = path.dirname(LEADERBOARD_FILE);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        if (fs.existsSync(LEADERBOARD_FILE)) {
+            const data = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        logger.error('LEADERBOARD', 'Erreur chargement leaderboard', error);
+    }
+    return [];
+}
+
+/**
+ * Sauvegarde le leaderboard dans le fichier
+ */
+function saveLeaderboard(leaderboard) {
+    try {
+        const dataDir = path.dirname(LEADERBOARD_FILE);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(leaderboard, null, 2), 'utf8');
+        logger.info('LEADERBOARD', `💾 Leaderboard sauvegardé (${leaderboard.length} entrées)`);
+    } catch (error) {
+        logger.error('LEADERBOARD', 'Erreur sauvegarde leaderboard', error);
+    }
+}
+
+/**
+ * Valide un pseudo (anti-spam, caractères valides)
+ */
+function validatePseudo(pseudo) {
+    if (!pseudo || typeof pseudo !== 'string') return false;
+    const trimmed = pseudo.trim();
+    if (trimmed.length < 2 || trimmed.length > 16) return false;
+    // Autoriser lettres, chiffres, espaces, tirets, underscores
+    if (!/^[a-zA-Z0-9\s_-]+$/.test(trimmed)) return false;
+    return trimmed;
+}
+
+/**
+ * Valide un score (anti-triche basique)
+ */
+function validateScore(data) {
+    // Vérifications de base
+    if (!data || typeof data !== 'object') return { valid: false, reason: 'invalid_data' };
+    if (typeof data.score !== 'number' || data.score < 0) return { valid: false, reason: 'invalid_score' };
+    if (typeof data.level !== 'number' || data.level < 1) return { valid: false, reason: 'invalid_level' };
+
+    // Limites raisonnables (anti-triche)
+    if (data.score > 999999) return { valid: false, reason: 'score_too_high' };
+    if (data.level > 50) return { valid: false, reason: 'level_too_high' };
+
+    // Vérifier la cohérence score/level (heuristique simple)
+    const maxScorePerLevel = 5000;
+    if (data.score > data.level * maxScorePerLevel) {
+        return { valid: false, reason: 'score_level_mismatch' };
+    }
+
+    return { valid: true };
+}
+
+// GET /api/roguelike/leaderboard - Récupérer le classement
+app.get('/api/roguelike/leaderboard', (req, res) => {
+    try {
+        const leaderboard = loadLeaderboard();
+        const limit = Math.min(parseInt(req.query.limit) || 50, MAX_LEADERBOARD_SIZE);
+        const offset = parseInt(req.query.offset) || 0;
+
+        // Trier par score décroissant
+        const sorted = leaderboard.sort((a, b) => b.score - a.score);
+
+        // Paginer
+        const paginated = sorted.slice(offset, offset + limit);
+
+        // Ajouter le rang
+        const ranked = paginated.map((entry, idx) => ({
+            ...entry,
+            rank: offset + idx + 1
+        }));
+
+        res.json({
+            success: true,
+            total: leaderboard.length,
+            offset,
+            limit,
+            data: ranked
+        });
+
+        logger.info('LEADERBOARD', `📊 Leaderboard envoyé (${ranked.length} entrées)`);
+    } catch (error) {
+        logger.error('LEADERBOARD', 'Erreur GET leaderboard', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+// POST /api/roguelike/scores - Soumettre un score
+app.post('/api/roguelike/scores', (req, res) => {
+    try {
+        const { pseudo, score, level, apples, time, upgrades, date } = req.body;
+
+        // Valider le pseudo
+        const cleanPseudo = validatePseudo(pseudo);
+        if (!cleanPseudo) {
+            return res.status(400).json({ success: false, error: 'invalid_pseudo' });
+        }
+
+        // Valider le score
+        const scoreValidation = validateScore({ score, level });
+        if (!scoreValidation.valid) {
+            logger.warn('LEADERBOARD', `⚠️ Score rejeté: ${scoreValidation.reason}`, { pseudo: cleanPseudo, score, level });
+            return res.status(400).json({ success: false, error: scoreValidation.reason });
+        }
+
+        // Charger le leaderboard
+        const leaderboard = loadLeaderboard();
+
+        // Créer l'entrée
+        const entry = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+            pseudo: cleanPseudo,
+            score: Math.floor(score),
+            level: Math.floor(level),
+            apples: Math.floor(apples) || 0,
+            time: Math.floor(time) || 0,
+            upgrades: Math.floor(upgrades) || 0,
+            date: new Date().toISOString()
+        };
+
+        // Ajouter l'entrée
+        leaderboard.push(entry);
+
+        // Trier et limiter
+        leaderboard.sort((a, b) => b.score - a.score);
+        const trimmed = leaderboard.slice(0, MAX_LEADERBOARD_SIZE);
+
+        // Sauvegarder
+        saveLeaderboard(trimmed);
+
+        // Calculer le rang
+        const rank = trimmed.findIndex(e => e.id === entry.id) + 1;
+        const isInTop = rank > 0 && rank <= MAX_LEADERBOARD_SIZE;
+
+        logger.info('LEADERBOARD', `✅ Score soumis: ${cleanPseudo} - ${score} pts (Niveau ${level})`, { rank: isInTop ? rank : 'hors top' });
+
+        res.json({
+            success: true,
+            entry: { ...entry, rank: isInTop ? rank : null },
+            isInTop,
+            message: isInTop ? `🏆 Top ${rank} !` : 'Score enregistré'
+        });
+    } catch (error) {
+        logger.error('LEADERBOARD', 'Erreur POST score', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+// GET /api/roguelike/rank/:pseudo - Obtenir le rang d'un joueur
+app.get('/api/roguelike/rank/:pseudo', (req, res) => {
+    try {
+        const pseudo = validatePseudo(req.params.pseudo);
+        if (!pseudo) {
+            return res.status(400).json({ success: false, error: 'invalid_pseudo' });
+        }
+
+        const leaderboard = loadLeaderboard();
+        const sorted = leaderboard.sort((a, b) => b.score - a.score);
+
+        // Trouver toutes les entrées du joueur
+        const playerEntries = sorted
+            .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+            .filter(entry => entry.pseudo.toLowerCase() === pseudo.toLowerCase());
+
+        if (playerEntries.length === 0) {
+            return res.json({
+                success: true,
+                found: false,
+                message: 'Aucun score trouvé'
+            });
+        }
+
+        // Meilleur score du joueur
+        const best = playerEntries[0];
+
+        res.json({
+            success: true,
+            found: true,
+            best,
+            totalEntries: playerEntries.length
+        });
+    } catch (error) {
+        logger.error('LEADERBOARD', 'Erreur GET rank', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+logger.info('SERVER', '🏆 API Leaderboard Roguelike activée');
+
+// ============================================
+// 🎯 API DAILY CHALLENGE ROGUELIKE
+// ============================================
+
+const DAILY_FILE = path.join(__dirname, 'data', 'roguelike-daily.json');
+const MAX_DAILY_ATTEMPTS = 3;
+
+// Modificateurs possibles pour les défis
+const DAILY_MODIFIERS = {
+    speed: [
+        { id: 'slow', name: 'Escargot', description: 'Vitesse réduite de 20%', value: 0.8 },
+        { id: 'normal', name: 'Normal', description: 'Vitesse normale', value: 1.0 },
+        { id: 'fast', name: 'Turbo', description: 'Vitesse +30%', value: 1.3 },
+        { id: 'insane', name: 'Démoniaque', description: 'Vitesse +50%', value: 1.5 }
+    ],
+    apples: [
+        { id: 'scarce', name: 'Famine', description: 'Pommes rares', value: 0.5 },
+        { id: 'normal', name: 'Normal', description: 'Spawn normal', value: 1.0 },
+        { id: 'abundant', name: 'Abondance', description: 'Pommes fréquentes', value: 1.5 }
+    ],
+    obstacles: [
+        { id: 'none', name: 'Vide', description: 'Aucun obstacle', value: 0 },
+        { id: 'few', name: 'Parsemé', description: 'Quelques murs', value: 1 },
+        { id: 'many', name: 'Labyrinthique', description: 'Beaucoup de murs', value: 2 },
+        { id: 'chaos', name: 'Chaos', description: 'Murs + crânes', value: 3 }
+    ],
+    special: [
+        { id: 'none', name: 'Aucun', description: 'Pas de règle spéciale', effect: null },
+        { id: 'no_powerups', name: 'Purist', description: 'Pas de power-ups', effect: 'no_powerups' },
+        { id: 'one_life', name: 'Hardcore', description: 'Une seule vie', effect: 'one_life' },
+        { id: 'reverse', name: 'Miroir', description: 'Contrôles inversés', effect: 'reverse' },
+        { id: 'growing', name: 'Croissance', description: '+1 segment/3 sec', effect: 'auto_grow' },
+        { id: 'shrinking', name: 'Déclin', description: '-1 segment/5 sec', effect: 'auto_shrink' }
+    ]
+};
+
+/**
+ * Générateur pseudo-aléatoire avec seed (Mulberry32)
+ */
+function seededRandom(seed) {
+    return function() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Génère la seed du jour (basée sur la date UTC)
+ */
+function getDailySeed() {
+    const now = new Date();
+    const dateStr = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+    // Convertir en nombre pour la seed
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+        const char = dateStr.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+}
+
+/**
+ * Génère le défi du jour
+ */
+function generateDailyChallenge() {
+    const seed = getDailySeed();
+    const rng = seededRandom(seed);
+
+    // Sélectionner les modificateurs avec la seed
+    const challenge = {
+        seed: seed,
+        date: new Date().toISOString().split('T')[0],
+        name: generateChallengeName(rng),
+        modifiers: {
+            speed: DAILY_MODIFIERS.speed[Math.floor(rng() * DAILY_MODIFIERS.speed.length)],
+            apples: DAILY_MODIFIERS.apples[Math.floor(rng() * DAILY_MODIFIERS.apples.length)],
+            obstacles: DAILY_MODIFIERS.obstacles[Math.floor(rng() * DAILY_MODIFIERS.obstacles.length)],
+            special: DAILY_MODIFIERS.special[Math.floor(rng() * DAILY_MODIFIERS.special.length)]
+        },
+        targetLevel: 5 + Math.floor(rng() * 6), // Niveau cible: 5-10
+        bonusXP: 100 + Math.floor(rng() * 200)  // Bonus XP: 100-300
+    };
+
+    return challenge;
+}
+
+/**
+ * Génère un nom de défi aléatoire
+ */
+function generateChallengeName(rng) {
+    const adjectives = ['Dangereux', 'Mystique', 'Infernal', 'Glacial', 'Toxique', 'Royal', 'Maudit', 'Légendaire'];
+    const nouns = ['Serpent', 'Labyrinthe', 'Piège', 'Défi', 'Épreuve', 'Parcours', 'Test', 'Combat'];
+    return `${adjectives[Math.floor(rng() * adjectives.length)]} ${nouns[Math.floor(rng() * nouns.length)]}`;
+}
+
+/**
+ * Charge les données du daily
+ */
+function loadDailyData() {
+    try {
+        if (fs.existsSync(DAILY_FILE)) {
+            const data = fs.readFileSync(DAILY_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        logger.error('DAILY', 'Erreur chargement daily', error);
+    }
+    return { date: null, leaderboard: [], attempts: {} };
+}
+
+/**
+ * Sauvegarde les données du daily
+ */
+function saveDailyData(data) {
+    try {
+        fs.writeFileSync(DAILY_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        logger.error('DAILY', 'Erreur sauvegarde daily', error);
+    }
+}
+
+/**
+ * Réinitialise le daily si la date a changé
+ */
+function checkAndResetDaily(data) {
+    const today = new Date().toISOString().split('T')[0];
+    if (data.date !== today) {
+        logger.info('DAILY', `🔄 Reset du Daily Challenge (${data.date} → ${today})`);
+        return { date: today, leaderboard: [], attempts: {} };
+    }
+    return data;
+}
+
+// GET /api/roguelike/daily - Récupérer le défi du jour
+app.get('/api/roguelike/daily', (req, res) => {
+    try {
+        const challenge = generateDailyChallenge();
+        const pseudo = req.query.pseudo;
+
+        let dailyData = loadDailyData();
+        dailyData = checkAndResetDaily(dailyData);
+        saveDailyData(dailyData);
+
+        // Vérifier les tentatives restantes pour ce joueur
+        let attemptsLeft = MAX_DAILY_ATTEMPTS;
+        if (pseudo && dailyData.attempts[pseudo]) {
+            attemptsLeft = Math.max(0, MAX_DAILY_ATTEMPTS - dailyData.attempts[pseudo]);
+        }
+
+        // Calculer le temps restant avant reset (minuit UTC)
+        const now = new Date();
+        const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+        const timeRemaining = tomorrow - now;
+
+        res.json({
+            success: true,
+            challenge,
+            attemptsLeft,
+            maxAttempts: MAX_DAILY_ATTEMPTS,
+            timeRemaining,
+            resetAt: tomorrow.toISOString()
+        });
+
+        logger.info('DAILY', `📅 Défi du jour envoyé: "${challenge.name}"`);
+    } catch (error) {
+        logger.error('DAILY', 'Erreur GET daily', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+// POST /api/roguelike/daily/scores - Soumettre un score daily
+app.post('/api/roguelike/daily/scores', (req, res) => {
+    try {
+        const { pseudo, score, level, time, seed } = req.body;
+
+        // Valider le pseudo
+        const cleanPseudo = validatePseudo(pseudo);
+        if (!cleanPseudo) {
+            return res.status(400).json({ success: false, error: 'invalid_pseudo' });
+        }
+
+        // Vérifier que la seed correspond au défi du jour
+        const todayChallenge = generateDailyChallenge();
+        if (seed !== todayChallenge.seed) {
+            logger.warn('DAILY', `⚠️ Seed invalide: ${seed} vs ${todayChallenge.seed}`);
+            return res.status(400).json({ success: false, error: 'invalid_seed' });
+        }
+
+        // Charger et vérifier les données
+        let dailyData = loadDailyData();
+        dailyData = checkAndResetDaily(dailyData);
+
+        // Vérifier les tentatives
+        const currentAttempts = dailyData.attempts[cleanPseudo] || 0;
+        if (currentAttempts >= MAX_DAILY_ATTEMPTS) {
+            return res.status(400).json({
+                success: false,
+                error: 'no_attempts_left',
+                message: 'Plus de tentatives pour aujourd\'hui'
+            });
+        }
+
+        // Incrémenter les tentatives
+        dailyData.attempts[cleanPseudo] = currentAttempts + 1;
+
+        // Créer l'entrée
+        const entry = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+            pseudo: cleanPseudo,
+            score: Math.floor(score),
+            level: Math.floor(level),
+            time: Math.floor(time) || 0,
+            attempt: currentAttempts + 1,
+            date: new Date().toISOString()
+        };
+
+        // Ajouter au leaderboard
+        dailyData.leaderboard.push(entry);
+
+        // Trier par score décroissant
+        dailyData.leaderboard.sort((a, b) => b.score - a.score);
+
+        // Garder seulement le meilleur score par joueur
+        const bestByPlayer = {};
+        dailyData.leaderboard = dailyData.leaderboard.filter(e => {
+            const key = e.pseudo.toLowerCase();
+            if (!bestByPlayer[key]) {
+                bestByPlayer[key] = true;
+                return true;
+            }
+            return false;
+        });
+
+        // Limiter à 100 entrées
+        dailyData.leaderboard = dailyData.leaderboard.slice(0, 100);
+
+        // Sauvegarder
+        saveDailyData(dailyData);
+
+        // Calculer le rang
+        const rank = dailyData.leaderboard.findIndex(e => e.pseudo.toLowerCase() === cleanPseudo.toLowerCase()) + 1;
+
+        // Bonus si objectif atteint
+        const targetReached = level >= todayChallenge.targetLevel;
+        const bonusXP = targetReached ? todayChallenge.bonusXP : 0;
+
+        logger.info('DAILY', `✅ Score daily: ${cleanPseudo} - ${score} pts (Niveau ${level}, Rang #${rank})`);
+
+        res.json({
+            success: true,
+            entry: { ...entry, rank },
+            attemptsLeft: MAX_DAILY_ATTEMPTS - (currentAttempts + 1),
+            targetReached,
+            bonusXP,
+            message: targetReached
+                ? `🎯 Objectif atteint ! +${bonusXP} XP bonus`
+                : `Score enregistré (Rang #${rank})`
+        });
+    } catch (error) {
+        logger.error('DAILY', 'Erreur POST daily score', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+// GET /api/roguelike/daily/leaderboard - Classement du jour
+app.get('/api/roguelike/daily/leaderboard', (req, res) => {
+    try {
+        let dailyData = loadDailyData();
+        dailyData = checkAndResetDaily(dailyData);
+
+        const challenge = generateDailyChallenge();
+
+        // Ajouter le rang
+        const ranked = dailyData.leaderboard.map((entry, idx) => ({
+            ...entry,
+            rank: idx + 1
+        }));
+
+        res.json({
+            success: true,
+            challenge: {
+                name: challenge.name,
+                targetLevel: challenge.targetLevel,
+                bonusXP: challenge.bonusXP
+            },
+            total: ranked.length,
+            data: ranked.slice(0, 50)
+        });
+    } catch (error) {
+        logger.error('DAILY', 'Erreur GET daily leaderboard', error);
+        res.status(500).json({ success: false, error: 'server_error' });
+    }
+});
+
+logger.info('SERVER', '🎯 API Daily Challenge activée');
 
 app.get('/health', (req, res) => {
     res.json({
@@ -1527,7 +2332,8 @@ server.listen(CONFIG.PORT, () => {
 // ============================================
 
 // Logger l'état de sécurité toutes les minutes (seulement si violations)
-setInterval(() => {
+// ✅ FIX: Assigné à une variable pour cleanup dans gracefulShutdown
+let securityLogInterval = setInterval(() => {
     const summary = securityValidator.getSecuritySummary();
     if (summary.totalViolations > 0 || summary.playersWithViolations > 0) {
         logger.info('SECURITY', '📊 État de sécurité périodique', summary);
@@ -1542,6 +2348,13 @@ logger.info('SECURITY', '⏰ Logs périodiques activés (1 min)');
 
 function gracefulShutdown(signal) {
     logger.info('SERVER', `🛑 Signal ${signal} reçu - Arrêt du serveur...`);
+
+    // ✅ FIX: Nettoyer l'interval de sécurité
+    if (securityLogInterval) {
+        clearInterval(securityLogInterval);
+        securityLogInterval = null;
+        logger.info('SERVER', '🧹 Interval sécurité nettoyé');
+    }
 
     // Nettoyer toutes les salles
     logger.info('SERVER', '🧹 Nettoyage des salles en cours...');

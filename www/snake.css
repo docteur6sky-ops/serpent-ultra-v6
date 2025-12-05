@@ -7331,6 +7331,97 @@ body.dark-mode .hub-level-number {
     margin-bottom: 0;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   DAILY CHALLENGE BUTTON - Bouton Défi du Jour
+   ══════════════════════════════════════════════════════════════════════ */
+
+.hub-daily-container {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+    padding: 0 16px;
+}
+
+.hub-daily-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    padding: 18px 28px;
+    background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
+    border: 3px solid #e94560;
+    border-radius: 20px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 25px rgba(233, 69, 96, 0.5);
+    overflow: hidden;
+}
+
+.hub-daily-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: daily-shine 3s infinite;
+}
+
+@keyframes daily-shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    50%, 100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.hub-daily-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(233, 69, 96, 0.5);
+}
+
+.hub-daily-btn:active {
+    transform: translateY(-1px);
+}
+
+.hub-daily-icon {
+    font-size: 1.6rem;
+}
+
+.hub-daily-text {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+.hub-daily-badge {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(255, 215, 0, 0.6);
+    animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
 /* SPACER - Prend tout l'espace disponible */
 .hub-spacer {
     flex: 1;

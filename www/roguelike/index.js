@@ -17,6 +17,9 @@ export { default as roguelikeUI } from './RoguelikeUI.js';
 export { achievementsUI } from './AchievementsUI.js';
 export { achievementManager } from './achievements.js';
 
+// Daily Challenge
+export { default as dailyChallenge } from './DailyChallenge.js';
+
 // Initialisation
 export function initRoguelike() {
     // Les singletons sont créés automatiquement à l'import
@@ -30,5 +33,10 @@ export function initRoguelike() {
     // Exposer la fonction achievements
     window.showRoguelikeAchievements = () => {
         window.achievementsUI?.show();
+    };
+
+    // Exposer la fonction Daily Challenge
+    window.showDailyChallenge = () => {
+        window.dailyChallenge?.show();
     };
 }

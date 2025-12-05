@@ -218,6 +218,10 @@ class StatsManager {
         // Update UI: Button text
         document.getElementById('stats-ranking-btn').textContent = 'Classement';
         document.getElementById('stats-ranking-btn').style.display = '';
+
+        // Cacher le bouton Daily (visible uniquement en Roguelike)
+        const dailyBtn = document.getElementById('stats-daily-btn');
+        if (dailyBtn) dailyBtn.style.display = 'none';
     }
 
     /**
@@ -339,6 +343,10 @@ class StatsManager {
         // Button text
         document.getElementById('stats-ranking-btn').textContent = 'Classement Online';
         document.getElementById('stats-ranking-btn').style.display = '';
+
+        // Cacher le bouton Daily
+        const dailyBtn = document.getElementById('stats-daily-btn');
+        if (dailyBtn) dailyBtn.style.display = 'none';
     }
 
     /**
@@ -439,6 +447,10 @@ class StatsManager {
         // Button text (pas de classement pour IA)
         document.getElementById('stats-ranking-btn').textContent = 'Classement';
         document.getElementById('stats-ranking-btn').style.display = 'none';
+
+        // Cacher le bouton Daily
+        const dailyBtn = document.getElementById('stats-daily-btn');
+        if (dailyBtn) dailyBtn.style.display = 'none';
     }
 
     /**
@@ -535,6 +547,12 @@ class StatsManager {
             window.audio?.buttonClick();
             this.showRoguelikeLeaderboard();
         };
+
+        // Afficher le bouton Daily Challenge
+        const dailyBtn = document.getElementById('stats-daily-btn');
+        if (dailyBtn) {
+            dailyBtn.style.display = '';
+        }
     }
 
     /**
@@ -568,10 +586,421 @@ class StatsManager {
     /**
      * Affiche le leaderboard roguelike
      */
-    showRoguelikeLeaderboard() {
+    async showRoguelikeLeaderboard() {
         logger.log('[StatsManager] Affichage leaderboard roguelike');
-        // TODO: Implémenter le leaderboard en ligne
-        alert('🏆 Leaderboard Roguelike\n\nFonctionnalité à venir !');
+
+        // Créer le modal s'il n'existe pas
+        let modal = document.getElementById('leaderboard-modal');
+        if (!modal) {
+            modal = this.createLeaderboardModal();
+            document.body.appendChild(modal);
+        }
+
+        // Afficher le modal avec loading
+        modal.style.display = 'flex';
+        const content = modal.querySelector('.leaderboard-content');
+        content.innerHTML = `
+            <div class="leaderboard-loading">
+                <div class="loading-spinner"></div>
+                <p>Chargement du classement...</p>
+            </div>
+        `;
+
+        try {
+            // Récupérer les données
+            const response = await fetch('/api/roguelike/leaderboard?limit=50');
+            const data = await response.json();
+
+            if (data.success) {
+                this.renderLeaderboard(content, data.data, data.total);
+            } else {
+                content.innerHTML = `
+                    <div class="leaderboard-error">
+                        <span class="error-icon">⚠️</span>
+                        <p>Erreur lors du chargement</p>
+                        <button class="btn-retry" onclick="window.statsManager.showRoguelikeLeaderboard()">Réessayer</button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            logger.error('[StatsManager] Erreur fetch leaderboard:', error);
+            content.innerHTML = `
+                <div class="leaderboard-error">
+                    <span class="error-icon">🔌</span>
+                    <p>Impossible de se connecter au serveur</p>
+                    <button class="btn-retry" onclick="window.statsManager.showRoguelikeLeaderboard()">Réessayer</button>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Crée le modal du leaderboard
+     */
+    createLeaderboardModal() {
+        const modal = document.createElement('div');
+        modal.id = 'leaderboard-modal';
+        modal.className = 'leaderboard-modal';
+        modal.innerHTML = `
+            <div class="leaderboard-backdrop" onclick="window.statsManager.closeLeaderboard()"></div>
+            <div class="leaderboard-container">
+                <div class="leaderboard-header">
+                    <h2>🏆 Leaderboard Roguelike</h2>
+                    <button class="leaderboard-close" onclick="window.statsManager.closeLeaderboard()">✕</button>
+                </div>
+                <div class="leaderboard-content">
+                    <!-- Contenu dynamique -->
+                </div>
+            </div>
+        `;
+
+        // Ajouter les styles
+        this.injectLeaderboardStyles();
+
+        return modal;
+    }
+
+    /**
+     * Ferme le modal leaderboard
+     */
+    closeLeaderboard() {
+        const modal = document.getElementById('leaderboard-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Affiche les données du leaderboard
+     */
+    renderLeaderboard(container, entries, total) {
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || '';
+
+        // Trouver le rang du joueur actuel
+        const playerEntry = entries.find(e => e.pseudo.toLowerCase() === pseudo.toLowerCase());
+
+        let html = `
+            <div class="leaderboard-stats">
+                <span>Total: ${total} joueurs</span>
+                ${playerEntry ? `<span class="player-rank">Ton rang: #${playerEntry.rank}</span>` : ''}
+            </div>
+            <div class="leaderboard-table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th class="col-pseudo">Joueur</th>
+                            <th class="col-score">Score</th>
+                            <th class="col-level">Niveau</th>
+                            <th class="col-date">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        if (entries.length === 0) {
+            html += `
+                <tr class="empty-row">
+                    <td colspan="5">
+                        <div class="empty-message">
+                            <span>🎲</span>
+                            <p>Aucun score enregistré</p>
+                            <p class="sub">Sois le premier à jouer !</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            entries.forEach(entry => {
+                const isCurrentPlayer = pseudo && entry.pseudo.toLowerCase() === pseudo.toLowerCase();
+                const rankIcon = this.getRankIcon(entry.rank);
+                const dateStr = this.formatLeaderboardDate(entry.date);
+
+                html += `
+                    <tr class="${isCurrentPlayer ? 'current-player' : ''} ${entry.rank <= 3 ? 'top-' + entry.rank : ''}">
+                        <td class="col-rank">
+                            ${rankIcon ? `<span class="rank-icon">${rankIcon}</span>` : entry.rank}
+                        </td>
+                        <td class="col-pseudo">${this.escapeHtml(entry.pseudo)}</td>
+                        <td class="col-score">${this.formatNumber(entry.score)}</td>
+                        <td class="col-level">${entry.level}</td>
+                        <td class="col-date">${dateStr}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    /**
+     * Retourne l'icône pour les top 3
+     */
+    getRankIcon(rank) {
+        switch (rank) {
+            case 1: return '🥇';
+            case 2: return '🥈';
+            case 3: return '🥉';
+            default: return null;
+        }
+    }
+
+    /**
+     * Formate la date pour le leaderboard
+     */
+    formatLeaderboardDate(isoDate) {
+        if (!isoDate) return '-';
+        const date = new Date(isoDate);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return "Aujourd'hui";
+        if (diffDays === 1) return 'Hier';
+        if (diffDays < 7) return `Il y a ${diffDays}j`;
+
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+
+    /**
+     * Échappe les caractères HTML
+     */
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    /**
+     * Injecte les styles du leaderboard
+     */
+    injectLeaderboardStyles() {
+        if (document.getElementById('leaderboard-styles')) return;
+
+        const styles = document.createElement('style');
+        styles.id = 'leaderboard-styles';
+        styles.textContent = `
+            .leaderboard-modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 9999;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .leaderboard-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(4px);
+            }
+
+            .leaderboard-container {
+                position: relative;
+                width: 90%;
+                max-width: 500px;
+                max-height: 80vh;
+                background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%);
+                border-radius: 16px;
+                border: 2px solid #9c27b0;
+                box-shadow: 0 0 40px rgba(156, 39, 176, 0.4);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .leaderboard-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px 20px;
+                background: linear-gradient(90deg, #9c27b0 0%, #7b1fa2 100%);
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .leaderboard-header h2 {
+                margin: 0;
+                font-size: 1.2rem;
+                color: white;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+
+            .leaderboard-close {
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                font-size: 1.2rem;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .leaderboard-close:hover {
+                background: rgba(255,255,255,0.3);
+                transform: scale(1.1);
+            }
+
+            .leaderboard-content {
+                flex: 1;
+                overflow-y: auto;
+                padding: 0;
+            }
+
+            .leaderboard-loading,
+            .leaderboard-error {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 60px 20px;
+                color: #ccc;
+            }
+
+            .loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid rgba(156, 39, 176, 0.3);
+                border-top-color: #9c27b0;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 16px;
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            .error-icon {
+                font-size: 3rem;
+                margin-bottom: 12px;
+            }
+
+            .btn-retry {
+                margin-top: 16px;
+                padding: 10px 24px;
+                background: #9c27b0;
+                border: none;
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+
+            .btn-retry:hover {
+                background: #7b1fa2;
+            }
+
+            .leaderboard-stats {
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: rgba(0,0,0,0.2);
+                color: #aaa;
+                font-size: 0.85rem;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .player-rank {
+                color: #9c27b0;
+                font-weight: bold;
+            }
+
+            .leaderboard-table-wrapper {
+                overflow-x: auto;
+            }
+
+            .leaderboard-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+            }
+
+            .leaderboard-table thead {
+                background: rgba(0,0,0,0.3);
+                position: sticky;
+                top: 0;
+            }
+
+            .leaderboard-table th {
+                padding: 12px 8px;
+                text-align: left;
+                color: #9c27b0;
+                font-weight: 600;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .leaderboard-table td {
+                padding: 12px 8px;
+                color: #ddd;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .leaderboard-table tr:hover {
+                background: rgba(156, 39, 176, 0.1);
+            }
+
+            .leaderboard-table .current-player {
+                background: rgba(156, 39, 176, 0.2) !important;
+            }
+
+            .leaderboard-table .current-player td {
+                color: white;
+                font-weight: bold;
+            }
+
+            .leaderboard-table .top-1 td { color: #ffd700; }
+            .leaderboard-table .top-2 td { color: #c0c0c0; }
+            .leaderboard-table .top-3 td { color: #cd7f32; }
+
+            .col-rank { width: 50px; text-align: center; }
+            .col-pseudo { min-width: 100px; }
+            .col-score { width: 80px; text-align: right; font-family: monospace; }
+            .col-level { width: 60px; text-align: center; }
+            .col-date { width: 80px; text-align: right; font-size: 0.8rem; color: #888; }
+
+            .rank-icon {
+                font-size: 1.2rem;
+            }
+
+            .empty-row td {
+                padding: 40px;
+            }
+
+            .empty-message {
+                text-align: center;
+                color: #888;
+            }
+
+            .empty-message span {
+                font-size: 3rem;
+                display: block;
+                margin-bottom: 12px;
+            }
+
+            .empty-message .sub {
+                font-size: 0.85rem;
+                color: #666;
+                margin-top: 8px;
+            }
+        `;
+        document.head.appendChild(styles);
     }
 
     /**
