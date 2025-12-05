@@ -3,6 +3,8 @@
 // ============================================
 
 import { logger } from './services/logger.js';
+import { achievementManager } from './roguelike/achievements.js';
+import roguelikeManager from './roguelike/RoguelikeManager.js';
 
 class StatsManager {
     constructor() {
@@ -84,7 +86,9 @@ class StatsManager {
      * Met à jour l'affichage selon le mode
      */
     updateStatsDisplay() {
-        if (this.currentMode === 'solo') {
+        if (this.currentMode === 'roguelike') {
+            this.displayRoguelikeStats();
+        } else if (this.currentMode === 'solo') {
             this.displaySoloStats();
         } else if (this.currentMode === 'ia') {
             this.displayIAStats();
@@ -359,7 +363,7 @@ class StatsManager {
         badgeEl.style.background = 'linear-gradient(135deg, rgba(100,100,100,0.3), rgba(50,50,50,0.5))';
         badgeEl.style.boxShadow = 'none';
 
-        document.getElementById('stats-rank-icon').innerHTML = '<img src="assets/hub_pictures/snake_ia.png" alt="IA" class="stats-ia-icon">';
+        document.getElementById('stats-rank-icon').innerHTML = '<img src="assets/hub_pictures/snake_ia.webp" alt="IA" class="stats-ia-icon">';
         document.getElementById('stats-player-name').textContent = pseudo;
 
         // Update UI: Rank name avec conteneur gris (mode IA)
@@ -435,6 +439,139 @@ class StatsManager {
         // Button text (pas de classement pour IA)
         document.getElementById('stats-ranking-btn').textContent = 'Classement';
         document.getElementById('stats-ranking-btn').style.display = 'none';
+    }
+
+    /**
+     * Affiche les stats ROGUELIKE
+     */
+    displayRoguelikeStats() {
+        logger.log('[StatsManager] Affichage stats Roguelike');
+
+        // Récupérer les données roguelike
+        const meta = roguelikeManager.metaProgression || {
+            totalXP: 0,
+            totalRuns: 0,
+            bestLevel: 0,
+            bestScore: 0
+        };
+        const stats = achievementManager.getStats();
+        const progress = achievementManager.getProgress();
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
+
+        // Update UI: Badge - Style violet roguelike
+        const badgeEl = document.getElementById('stats-rank-badge');
+        badgeEl.className = 'rank-badge roguelike-mode';
+        badgeEl.style.borderColor = '#9c27b0';
+        badgeEl.style.background = 'linear-gradient(135deg, #1a0a2e 0%, #4a2c7a 100%)';
+        badgeEl.style.boxShadow = '0 0 20px rgba(156, 39, 176, 0.4)';
+
+        document.getElementById('stats-rank-icon').textContent = '🎲';
+        document.getElementById('stats-player-name').textContent = pseudo;
+
+        // Update UI: Rank name avec conteneur violet
+        const rankNameEl = document.getElementById('stats-rank-name');
+        const gradeContainer = document.getElementById('stats-grade-container');
+
+        // Calculer le rang roguelike basé sur le niveau max atteint
+        const roguelikeRank = this.getRoguelikeRank(meta.bestLevel);
+        rankNameEl.textContent = roguelikeRank.label;
+
+        if (gradeContainer) {
+            gradeContainer.style.borderColor = roguelikeRank.color;
+            gradeContainer.style.background = `linear-gradient(135deg, ${roguelikeRank.color}66 0%, ${roguelikeRank.color}33 100%)`;
+        }
+
+        // Progression vers le prochain rang
+        const progressPercent = this.calculateRoguelikeProgress(meta.bestLevel);
+        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
+
+        // Card Stats Roguelike (4 stats principales)
+        const cardStatsHTML = `
+            <div class="rank-stat">
+                <div class="rank-stat-label">Meilleur Stage</div>
+                <div class="rank-stat-value">${meta.bestLevel || 0}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">Meilleur Score</div>
+                <div class="rank-stat-value">${this.formatNumber(meta.bestScore || 0)}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">Runs Totales</div>
+                <div class="rank-stat-value">${meta.totalRuns || 0}</div>
+            </div>
+            <div class="rank-stat">
+                <div class="rank-stat-label">XP Total</div>
+                <div class="rank-stat-value">${this.formatNumber(meta.totalXP || 0)}</div>
+            </div>
+        `;
+        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
+
+        // Overview Stats Roguelike
+        const overviewHTML = `
+            <div class="overview-stat">
+                <div class="overview-stat-label">Boss Vaincus</div>
+                <div class="overview-stat-value">${stats.bossesKilled || 0}</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Pommes Totales</div>
+                <div class="overview-stat-value">${stats.totalApples || 0}</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Combo Max</div>
+                <div class="overview-stat-value">${stats.maxComboEver || 0}</div>
+            </div>
+            <div class="overview-stat">
+                <div class="overview-stat-label">Achievements</div>
+                <div class="overview-stat-value">${progress.unlocked}/${progress.total}</div>
+            </div>
+        `;
+        document.getElementById('stats-overview').innerHTML = overviewHTML;
+
+        // Button text - Leaderboard Roguelike
+        const rankingBtn = document.getElementById('stats-ranking-btn');
+        rankingBtn.textContent = '🏆 Leaderboard Roguelike';
+        rankingBtn.style.display = '';
+        rankingBtn.onclick = () => {
+            window.audio?.buttonClick();
+            this.showRoguelikeLeaderboard();
+        };
+    }
+
+    /**
+     * Retourne le rang roguelike basé sur le niveau max
+     */
+    getRoguelikeRank(bestLevel) {
+        if (bestLevel >= 20) return { label: 'LÉGENDE', color: '#ff5722', emoji: '🔥' };
+        if (bestLevel >= 15) return { label: 'MAÎTRE', color: '#9c27b0', emoji: '👑' };
+        if (bestLevel >= 10) return { label: 'EXPERT', color: '#2196f3', emoji: '💎' };
+        if (bestLevel >= 5) return { label: 'AVENTURIER', color: '#4caf50', emoji: '⚔️' };
+        return { label: 'DÉBUTANT', color: '#9e9e9e', emoji: '🌱' };
+    }
+
+    /**
+     * Calcule la progression vers le prochain rang roguelike
+     */
+    calculateRoguelikeProgress(bestLevel) {
+        const thresholds = [0, 5, 10, 15, 20];
+
+        for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (bestLevel >= thresholds[i]) {
+                if (i === thresholds.length - 1) return 100; // Max rang
+                const current = thresholds[i];
+                const next = thresholds[i + 1];
+                return Math.round(((bestLevel - current) / (next - current)) * 100);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Affiche le leaderboard roguelike
+     */
+    showRoguelikeLeaderboard() {
+        logger.log('[StatsManager] Affichage leaderboard roguelike');
+        // TODO: Implémenter le leaderboard en ligne
+        alert('🏆 Leaderboard Roguelike\n\nFonctionnalité à venir !');
     }
 
     /**

@@ -658,7 +658,14 @@
         <!-- ============================================ -->
         <div class="screen hidden" id="stats-screen">
             <div class="stats-container-new">
-                <!-- Mode Selector -->
+                <!-- Mode Selector Roguelike (en haut, plus grand) -->
+                <div class="mode-selector-roguelike">
+                    <button class="mode-btn mode-btn-roguelike" data-mode="roguelike" onclick="window.audio.buttonClick();window.switchStatsMode('roguelike')">
+                        🎲 Roguelike
+                    </button>
+                </div>
+
+                <!-- Mode Selector Classique -->
                 <div class="mode-selector">
                     <button class="mode-btn active" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
                     <button class="mode-btn" data-mode="ia" onclick="window.audio.buttonClick();window.switchStatsMode('ia')">IA</button>

@@ -673,6 +673,71 @@
     z-index: 1 !important;
 }
 
+/* ===== STATS - Onglet Roguelike ===== */
+.mode-selector-roguelike {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    padding: 0 15px;
+}
+
+.mode-btn-roguelike {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #4a2c7a 100%) !important;
+    border: 2px solid #9c27b0 !important;
+    color: #fff !important;
+    padding: 14px 30px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    border-radius: 12px !important;
+    width: 100%;
+    max-width: 300px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-btn-roguelike::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(156, 39, 176, 0.2) 60deg,
+        transparent 120deg
+    );
+    animation: roguelikeStatsShine 4s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes roguelikeStatsShine {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.mode-btn-roguelike:hover {
+    background: linear-gradient(135deg, #2d1b4e 0%, #4a2c7a 50%, #6a3c9a 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+}
+
+.mode-btn-roguelike.active {
+    border-color: #ba68c8 !important;
+    box-shadow: 0 0 25px rgba(156, 39, 176, 0.5);
+}
+
+/* Badge violet pour le mode roguelike dans stats */
+.rank-badge.roguelike-mode {
+    border: 3px solid #9c27b0 !important;
+    background: linear-gradient(135deg, #1a0a2e 0%, #4a2c7a 100%) !important;
+    box-shadow: 0 0 20px rgba(156, 39, 176, 0.4) !important;
+}
+
 /* Badge HOT rouge sur hero roguelike */
 .hub-hero-roguelike .hub-hero-badge {
     position: absolute !important;
