@@ -6,6 +6,7 @@
 import { ROGUELIKE_LEVELS, WORLDS } from './levels.js';
 import { RUN_UPGRADES, PERMANENT_UPGRADES, RARITIES, selectRandomUpgrades, applyUpgrade, calculateRunModifiers } from './upgrades.js';
 import { logger } from '../services/logger.js';
+import { achievementManager } from './achievements.js';
 
 class RoguelikeManager {
     constructor() {
@@ -64,6 +65,9 @@ class RoguelikeManager {
 
         logger.log('[RoguelikeManager] Nouvelle run démarrée', this.currentRun);
 
+        // Achievement tracking
+        achievementManager.startNewRun();
+
         this.startLevel(1);
         return this.currentRun;
     }
@@ -80,9 +84,11 @@ class RoguelikeManager {
         // Récupérer les données du niveau
         let levelData = ROGUELIKE_LEVELS.find(l => l.level === levelNum);
 
-        // Si niveau > 10, générer un niveau endless
-        if (!levelData && levelNum > 10) {
-            levelData = this.generateEndlessLevel(levelNum);
+        // Si niveau > 20, le jeu est terminé (victoire au boss final)
+        if (!levelData && levelNum > 20) {
+            logger.log('[RoguelikeManager] Victoire finale! Tous les boss vaincus.');
+            this.endRun('victory');
+            return;
         }
 
         if (!levelData) {
@@ -229,6 +235,9 @@ class RoguelikeManager {
         const levelTime = (Date.now() - this.currentRun.levelStartTime) / 1000;
         this.currentRun.timePlayed += levelTime;
 
+        // Achievement tracking
+        achievementManager.onLevelComplete(this.currentRun.level, levelData.isBoss, levelTime);
+
         // Notifier
         if (this.onLevelComplete) {
             this.onLevelComplete(levelData, this.currentRun);
@@ -241,6 +250,20 @@ class RoguelikeManager {
         }
 
         // Afficher le choix d'upgrade
+        this.showUpgradeChoice();
+    }
+
+    /**
+     * Affiche la victoire contre le boss puis les upgrades
+     */
+    showBossVictory() {
+        logger.log('[RoguelikeManager] Boss vaincu! Affichage des upgrades...');
+
+        // Bonus XP pour avoir vaincu le boss
+        const bossXP = 200;
+        this.currentRun.score += bossXP;
+
+        // Afficher le choix d'upgrade normalement
         this.showUpgradeChoice();
     }
 
@@ -365,6 +388,9 @@ class RoguelikeManager {
         this.saveMetaProgression();
 
         logger.log('[RoguelikeManager] Run terminée:', finalStats);
+
+        // Achievement tracking
+        achievementManager.endRun(reason === 'victory');
 
         // Notifier
         if (this.onRunEnd) {

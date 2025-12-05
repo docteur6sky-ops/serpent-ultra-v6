@@ -356,6 +356,23 @@
     color: #fff;
 }
 
+.rl-btn-achievements {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    border: none;
+    color: #1a1a2e;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rl-btn-achievements:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+}
+
 /* ===== HUD ROGUELIKE IN-GAME ===== */
 .rl-game-hud {
     position: absolute;
@@ -606,6 +623,72 @@
     50% { transform: scale(1.1); }
 }
 
+/* ===== HERO ROGUELIKE (bouton principal violet) ===== */
+.hub-hero-btn.hub-hero-roguelike {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #4a2c7a 100%) !important;
+    border: 2px solid #9c27b0 !important;
+    box-shadow: 0 8px 30px rgba(156, 39, 176, 0.4) !important;
+    position: relative !important;
+    overflow: visible !important;
+}
+
+.hub-hero-btn.hub-hero-roguelike::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -50% !important;
+    left: -50% !important;
+    width: 200% !important;
+    height: 200% !important;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(156, 39, 176, 0.3) 60deg,
+        transparent 120deg
+    ) !important;
+    animation: roguelikeHeroShine 3s linear infinite !important;
+    pointer-events: none !important;
+}
+
+@keyframes roguelikeHeroShine {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.hub-hero-btn.hub-hero-roguelike:hover {
+    background: linear-gradient(135deg, #2d1b4e 0%, #4a2c7a 50%, #6a3c9a 100%) !important;
+    box-shadow: 0 12px 40px rgba(156, 39, 176, 0.6) !important;
+    border-color: #ba68c8 !important;
+}
+
+.hub-hero-roguelike .hub-hero-icon {
+    position: relative !important;
+    z-index: 1 !important;
+    filter: drop-shadow(0 0 10px rgba(186, 104, 200, 0.5)) !important;
+}
+
+.hub-hero-roguelike .hub-hero-text {
+    color: #fff !important;
+    text-shadow: 0 2px 8px rgba(156, 39, 176, 0.8) !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Badge HOT rouge sur hero roguelike */
+.hub-hero-roguelike .hub-hero-badge {
+    position: absolute !important;
+    top: 5px !important;
+    right: 8px !important;
+    background: linear-gradient(135deg, #f44336, #d32f2f) !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    padding: 4px 10px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 3px 10px rgba(244, 67, 54, 0.5) !important;
+    animation: hotPulse 1.5s ease-in-out infinite !important;
+    z-index: 2 !important;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
     .rl-upgrade-choices {
@@ -632,5 +715,738 @@
 
     .rl-level-number {
         font-size: 36px;
+    }
+}
+
+/* ===== BOSS UI ===== */
+.boss-ui {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: linear-gradient(180deg, rgba(60, 0, 0, 0.9) 0%, rgba(30, 0, 0, 0.95) 100%);
+    border-radius: 12px;
+    border: 2px solid #ff4444;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+}
+
+.boss-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff4444;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    animation: bossNamePulse 2s ease-in-out infinite;
+}
+
+@keyframes bossNamePulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+    50% { text-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 100, 100, 0.5); }
+}
+
+.boss-health-bar {
+    width: 200px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    border: 2px solid #ff4444;
+    overflow: hidden;
+    position: relative;
+}
+
+.boss-health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ff6666);
+    border-radius: 8px;
+    transition: width 0.3s ease-out, background-color 0.3s ease;
+}
+
+.boss-health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px #000;
+}
+
+.boss-timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.boss-timer.critical {
+    color: #ff4444;
+    animation: timerCritical 0.5s ease-in-out infinite;
+}
+
+@keyframes timerCritical {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* ===== ÉCRAN INTRO BOSS ===== */
+.boss-intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(30, 0, 0, 0.95) 0%, rgba(60, 0, 0, 0.98) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9500;
+    padding: 20px;
+    box-sizing: border-box;
+    animation: bossIntroFadeIn 0.5s ease-out;
+}
+
+.boss-intro-screen.hidden {
+    display: none !important;
+}
+
+@keyframes bossIntroFadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.boss-intro-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    animation: bossIconPulse 1s ease-in-out infinite;
+}
+
+@keyframes bossIconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.boss-intro-title {
+    font-size: 14px;
+    color: #ff6666;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 5px;
+}
+
+.boss-intro-name {
+    font-size: 42px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.boss-intro-stats {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 25px;
+}
+
+.boss-intro-stat {
+    text-align: center;
+}
+
+.boss-intro-stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.boss-intro-stat-label {
+    font-size: 12px;
+    color: #aaa;
+    text-transform: uppercase;
+}
+
+/* Tutoriel (premier boss) */
+.boss-intro-tutorial {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    max-width: 300px;
+}
+
+.boss-intro-tutorial-title {
+    font-size: 14px;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.boss-intro-tutorial-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+.boss-intro-tutorial-item:last-child {
+    margin-bottom: 0;
+}
+
+.boss-intro-tutorial-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+/* Bouton Combattre */
+.boss-intro-btn {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    border: none;
+    border-radius: 30px;
+    padding: 15px 50px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+    transition: all 0.3s ease;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+
+.boss-intro-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(255, 0, 0, 0.6);
+}
+
+.boss-intro-btn:active {
+    transform: scale(0.98);
+}
+
+@keyframes btnPulse {
+    0%, 100% { box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4); }
+    50% { box-shadow: 0 5px 30px rgba(255, 0, 0, 0.7); }
+}
+
+/* ===== BOSS UI - PHASES ===== */
+.boss-ui {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.boss-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.boss-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff4444;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+    animation: bossNamePulse 2s ease-in-out infinite;
+}
+
+.boss-phase {
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    border: 1px solid currentColor;
+    animation: phasePulse 1.5s ease-in-out infinite;
+}
+
+.boss-phase.phase-active {
+    animation: phaseGlow 1s ease-in-out infinite alternate;
+}
+
+.boss-health-bar {
+    width: 200px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.boss-health-fill {
+    height: 100%;
+    background: #ff4444;
+    transition: width 0.3s ease, background-color 0.5s ease, box-shadow 0.5s ease;
+    border-radius: 8px;
+}
+
+.boss-health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 3px black, 0 0 3px black;
+}
+
+.boss-timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+
+.boss-timer.timer-critical {
+    animation: timerCritical 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes bossNamePulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(255, 68, 68, 0.8); }
+    50% { text-shadow: 0 0 20px rgba(255, 68, 68, 1), 0 0 40px rgba(255, 68, 68, 0.5); }
+}
+
+@keyframes phasePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes phaseGlow {
+    0% { box-shadow: 0 0 5px currentColor; }
+    100% { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+
+@keyframes timerCritical {
+    0% { transform: scale(1); color: #ff4444; }
+    100% { transform: scale(1.1); color: #ff0000; }
+}
+
+/* Animation de transition de phase */
+@keyframes phaseAnnounce {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+}
+
+@keyframes flashFade {
+    0% { opacity: 0.5; }
+    100% { opacity: 0; }
+}
+
+/* Phase Rage (GARDIEN) */
+.boss-phase[style*="ff8800"] {
+    animation: ragePhase 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes ragePhase {
+    0% { transform: translateX(-1px); }
+    100% { transform: translateX(1px); }
+}
+
+/* Phase Poison (VENIN) */
+.boss-phase[style*="00ff00"],
+.boss-phase[style*="44ff00"],
+.boss-phase[style*="88ff00"] {
+    animation: poisonPhase 2s ease-in-out infinite;
+}
+
+@keyframes poisonPhase {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.3) hue-rotate(10deg); }
+}
+
+/* Phase Charge (TITAN) */
+.boss-phase[style*="ff4400"],
+.boss-phase[style*="ff6600"] {
+    animation: chargePhase 0.5s ease-in-out infinite;
+}
+
+@keyframes chargePhase {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Phase Némésis */
+.boss-phase[style*="8800ff"],
+.boss-phase[style*="aa00ff"],
+.boss-phase[style*="ff00ff"] {
+    animation: nemesisPhase 3s ease-in-out infinite;
+}
+
+@keyframes nemesisPhase {
+    0%, 100% { filter: hue-rotate(0deg); }
+    50% { filter: hue-rotate(30deg); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .boss-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .boss-name {
+        font-size: 16px;
+    }
+
+    .boss-phase {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .boss-health-bar {
+        width: 160px;
+        height: 16px;
+    }
+
+    .boss-timer {
+        font-size: 18px;
+    }
+}
+
+/* ===== ACHIEVEMENTS - NOTIFICATIONS ===== */
+.achievement-notification {
+    position: fixed;
+    top: 20px;
+    right: -400px;
+    width: 320px;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 10001;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+    transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.achievement-notification.show {
+    right: 20px;
+}
+
+.achievement-icon {
+    font-size: 48px;
+    min-width: 60px;
+    text-align: center;
+    animation: achievementIconBounce 0.6s ease-out;
+}
+
+@keyframes achievementIconBounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+.achievement-content {
+    flex: 1;
+}
+
+.achievement-title {
+    font-size: 11px;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.achievement-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.achievement-desc {
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+
+.achievement-xp {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+/* Raretés des notifications */
+.achievement-notification.rarity-common {
+    border-color: #9e9e9e;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 10px rgba(158, 158, 158, 0.3);
+}
+
+.achievement-notification.rarity-rare {
+    border-color: #2196f3;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(33, 150, 243, 0.4);
+}
+
+.achievement-notification.rarity-epic {
+    border-color: #9c27b0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 25px rgba(156, 39, 176, 0.5);
+    animation: epicNotificationGlow 2s ease-in-out infinite;
+}
+
+@keyframes epicNotificationGlow {
+    0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 25px rgba(156, 39, 176, 0.5); }
+    50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(156, 39, 176, 0.8); }
+}
+
+.achievement-notification.rarity-legendary {
+    border-color: #ff9800;
+    background: linear-gradient(135deg, rgba(50, 30, 10, 0.95), rgba(40, 20, 5, 0.98));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 152, 0, 0.6);
+    animation: legendaryNotificationGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes legendaryNotificationGlow {
+    0%, 100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 152, 0, 0.6);
+        border-color: #ff9800;
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 50px rgba(255, 215, 0, 1);
+        border-color: #ffd700;
+    }
+}
+
+/* ===== ACHIEVEMENTS - PAGE ===== */
+.achievements-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+    z-index: 9000;
+    overflow-y: auto;
+    padding: 20px;
+    display: none;
+}
+
+.achievements-page.visible {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.achievements-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.achievements-title {
+    font-size: 32px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
+
+.achievements-progress {
+    font-size: 16px;
+    color: #888;
+}
+
+.achievements-progress-bar {
+    width: 200px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin: 10px auto;
+    overflow: hidden;
+}
+
+.achievements-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ff8c00);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.achievements-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 32px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.achievements-close:hover {
+    color: #fff;
+}
+
+/* Catégories */
+.achievements-category {
+    margin-bottom: 30px;
+}
+
+.category-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.category-icon {
+    font-size: 24px;
+}
+
+/* Grille d'achievements */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+/* Carte achievement */
+.achievement-card {
+    background: rgba(30, 30, 50, 0.8);
+    border: 1px solid rgba(100, 100, 150, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.achievement-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+    filter: grayscale(0.8);
+}
+
+.achievement-card.locked .achievement-card-icon {
+    filter: brightness(0.3);
+}
+
+.achievement-card-icon {
+    font-size: 36px;
+    min-width: 50px;
+    text-align: center;
+}
+
+.achievement-card-info {
+    flex: 1;
+}
+
+.achievement-card-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 3px;
+}
+
+.achievement-card-desc {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.achievement-card-reward {
+    font-size: 11px;
+    color: #4caf50;
+    font-weight: bold;
+}
+
+.achievement-card-date {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Raretés des cartes */
+.achievement-card.rarity-common {
+    border-left: 3px solid #9e9e9e;
+}
+
+.achievement-card.rarity-rare {
+    border-left: 3px solid #2196f3;
+}
+
+.achievement-card.rarity-epic {
+    border-left: 3px solid #9c27b0;
+    background: rgba(156, 39, 176, 0.1);
+}
+
+.achievement-card.rarity-legendary {
+    border-left: 3px solid #ff9800;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(30, 30, 50, 0.8));
+    animation: legendaryCardGlow 3s ease-in-out infinite;
+}
+
+@keyframes legendaryCardGlow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 152, 0, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(255, 152, 0, 0.4); }
+}
+
+/* Achievement caché */
+.achievement-card.hidden-achievement .achievement-card-icon {
+    font-size: 24px;
+}
+
+.achievement-card.hidden-achievement .achievement-card-name {
+    color: #666;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .achievement-notification {
+        width: calc(100% - 40px);
+        right: -100%;
+    }
+
+    .achievement-notification.show {
+        right: 20px;
+    }
+
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .achievements-title {
+        font-size: 24px;
     }
 }

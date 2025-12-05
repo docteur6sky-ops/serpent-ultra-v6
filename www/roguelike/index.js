@@ -13,6 +13,10 @@ export { default as roguelikeManager } from './RoguelikeManager.js';
 // UI
 export { default as roguelikeUI } from './RoguelikeUI.js';
 
+// Achievements
+export { achievementsUI } from './AchievementsUI.js';
+export { achievementManager } from './achievements.js';
+
 // Initialisation
 export function initRoguelike() {
     // Les singletons sont créés automatiquement à l'import
@@ -21,5 +25,10 @@ export function initRoguelike() {
     // Exposer la fonction de démarrage
     window.startRoguelikeRun = () => {
         window.roguelikeManager.startNewRun();
+    };
+
+    // Exposer la fonction achievements
+    window.showRoguelikeAchievements = () => {
+        window.achievementsUI?.show();
     };
 }

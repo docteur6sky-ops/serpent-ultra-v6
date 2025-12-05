@@ -251,22 +251,21 @@
             <!-- SPACER - Espace vide aéré -->
             <div class="hub-spacer"></div>
 
-            <!-- Hero CTA (Bouton Principal Compact) -->
+            <!-- Hero CTA (Bouton Principal - ROGUELIKE) -->
             <div class="hub-hero-container">
-                <!-- Bouton principal Solo compact -->
-                <button class="hub-hero-btn hub-hero-btn-compact" id="hub-hero-btn" onclick="window.audio.buttonClick();showDifficultySelection()">
-                    <div class="hub-hero-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="mode-icon-img"></div>
-                    <div class="hub-hero-text">Solo</div>
+                <button class="hub-hero-btn hub-hero-btn-compact hub-hero-roguelike" id="hub-hero-btn" onclick="window.audio.buttonClick();window.startRoguelikeRun()">
+                    <div class="hub-hero-icon">🎲</div>
+                    <div class="hub-hero-text">Roguelike</div>
+                    <div class="hub-hero-badge">HOT</div>
                 </button>
             </div>
 
             <!-- Modes Secondaires (3 cartes) -->
             <div class="hub-modes hub-modes-three">
-                <!-- NOUVEAU: Mode Roguelike -->
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal hub-mode-roguelike" onclick="window.audio.buttonClick();window.startRoguelikeRun()">
-                    <div class="hub-mode-icon">🎲</div>
-                    <div class="hub-mode-text">Roguelike</div>
-                    <div class="hub-mode-badge hub-mode-badge-hot">HOT</div>
+                <!-- Mode Solo (descendu) -->
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();showDifficultySelection()">
+                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="mode-icon-img"></div>
+                    <div class="hub-mode-text">Solo</div>
                 </div>
                 <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();window.showMultiplayer()">
                     <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Multi" class="mode-icon-img"></div>
@@ -877,7 +876,7 @@
                                     <div class="score-value" id="solo-sc" aria-live="polite">0</div>
                                 </td>
                                 <td>
-                                    <div class="score-label">Niveau</div>
+                                    <div class="score-label">Stage</div>
                                     <div class="score-value" id="solo-lv" aria-live="polite">1</div>
                                 </td>
                                 <td>
@@ -898,7 +897,7 @@
                         <!-- ✅ OBJECTIF ROGUELIKE (caché en mode classique) -->
                         <div id="roguelike-objective" class="roguelike-objective hidden">
                             <span class="rl-obj-icon">🎯</span>
-                            <span class="rl-obj-text">Niveau <span id="rl-obj-level">1</span></span>
+                            <span class="rl-obj-text">Stage <span id="rl-obj-level">1</span></span>
                             <span class="rl-obj-progress"><span id="rl-obj-current">0</span>/<span id="rl-obj-target">8</span> 🍎</span>
                         </div>
                     </div>

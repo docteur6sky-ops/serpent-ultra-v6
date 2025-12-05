@@ -7,6 +7,7 @@ import { RARITIES } from './upgrades.js';
 import { WORLDS } from './levels.js';
 import roguelikeManager from './RoguelikeManager.js';
 import { logger } from '../services/logger.js';
+import { achievementsUI } from './AchievementsUI.js';
 
 class RoguelikeUI {
     constructor() {
@@ -38,7 +39,7 @@ class RoguelikeUI {
         this.upgradeScreen.className = 'roguelike-upgrade-screen hidden';
         this.upgradeScreen.innerHTML = `
             <div class="rl-upgrade-header">
-                <div class="rl-level-complete">NIVEAU COMPLÉTÉ</div>
+                <div class="rl-level-complete">STAGE COMPLÉTÉ</div>
                 <div class="rl-level-number" id="rl-completed-level">1</div>
                 <div class="rl-choose-text">Choisis ton amélioration</div>
             </div>
@@ -152,7 +153,7 @@ class RoguelikeUI {
         this.runEndScreen.className = 'roguelike-run-end hidden';
         this.runEndScreen.innerHTML = `
             <div class="rl-run-end-title" id="rl-run-end-title">RUN TERMINÉE</div>
-            <div class="rl-run-end-subtitle" id="rl-run-end-subtitle">Tu as atteint le niveau 5</div>
+            <div class="rl-run-end-subtitle" id="rl-run-end-subtitle">Tu as atteint le stage 5</div>
 
             <div class="rl-run-stats" id="rl-run-stats">
                 <!-- Stats générées dynamiquement -->
@@ -167,6 +168,9 @@ class RoguelikeUI {
                 <button class="rl-btn-retry" id="rl-btn-retry">
                     🔄 NOUVELLE RUN
                 </button>
+                <button class="rl-btn-achievements" id="rl-btn-achievements">
+                    🏆 Achievements
+                </button>
                 <button class="rl-btn-menu" id="rl-btn-menu">
                     🏠 Menu Principal
                 </button>
@@ -179,6 +183,10 @@ class RoguelikeUI {
         document.getElementById('rl-btn-retry').addEventListener('click', () => {
             this.hideRunEnd();
             roguelikeManager.startNewRun();
+        });
+
+        document.getElementById('rl-btn-achievements').addEventListener('click', () => {
+            achievementsUI.show();
         });
 
         document.getElementById('rl-btn-menu').addEventListener('click', () => {
@@ -201,7 +209,7 @@ class RoguelikeUI {
         } else {
             title.textContent = 'RUN TERMINÉE';
             title.classList.remove('victory');
-            subtitle.textContent = `Tu as atteint le niveau ${stats.level}`;
+            subtitle.textContent = `Tu as atteint le stage ${stats.level}`;
         }
 
         // Stats
@@ -209,7 +217,7 @@ class RoguelikeUI {
         statsContainer.innerHTML = `
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${stats.level}</div>
-                <div class="rl-stat-label">Niveau</div>
+                <div class="rl-stat-label">Stage</div>
             </div>
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${stats.score}</div>
