@@ -675,11 +675,6 @@ function createItemCard(item) {
     const card = document.createElement('div');
     card.className = 'box-item';
 
-    // Ajouter classe de rareté
-    if (item.rarity) {
-        card.classList.add(`rarity-${item.rarity}`);
-    }
-
     if (isUnlocked) {
         card.classList.add('unlocked');
     } else {
@@ -693,15 +688,8 @@ function createItemCard(item) {
         card.classList.add('equipped');
     }
 
-    // Badge de rareté
-    const rarityNames = {
-        common: 'Commun',
-        rare: 'Rare',
-        epic: 'Épique',
-        legendary: 'Légendaire'
-    };
-    const rarityBadge = item.rarity ?
-        `<div class="rarity-badge rarity-${item.rarity}">${rarityNames[item.rarity] || item.rarity}</div>` : '';
+    // Badge de rareté - DÉSACTIVÉ (plus besoin)
+    const rarityBadge = '';
 
     // Preview
     let previewHTML = '';

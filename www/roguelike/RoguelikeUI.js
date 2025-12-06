@@ -207,6 +207,11 @@ class RoguelikeUI {
             this.hideRunEnd();
             if (window.screenManager) {
                 window.screenManager.show('hub');
+                // ✅ Rafraîchir le hub pour afficher le nouveau niveau/XP
+                setTimeout(() => {
+                    if (window.initHub) window.initHub();
+                    if (window.updatePlayerInfo) window.updatePlayerInfo();
+                }, 100);
             }
         });
     }
@@ -276,16 +281,16 @@ class RoguelikeUI {
                 <div class="rl-stat-label">Stage</div>
             </div>
             <div class="rl-stat-card">
-                <div class="rl-stat-value">${stats.score}</div>
-                <div class="rl-stat-label">Score</div>
+                <div class="rl-stat-value">+${stats.earnedXP}</div>
+                <div class="rl-stat-label">XP</div>
             </div>
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${stats.applesEaten}</div>
                 <div class="rl-stat-label">Pommes</div>
             </div>
             <div class="rl-stat-card">
-                <div class="rl-stat-value">${stats.upgradesCollected}</div>
-                <div class="rl-stat-label">Upgrades</div>
+                <div class="rl-stat-value">${stats.maxCombo || 1}</div>
+                <div class="rl-stat-label">Combo Max</div>
             </div>
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${this.formatTime(stats.timePlayed)}</div>

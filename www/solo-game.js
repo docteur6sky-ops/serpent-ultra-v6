@@ -106,6 +106,8 @@ class SoloSnakeGame extends BaseSnakeGame {
         const isNewRun = !this.isRoguelikeMode || levelData.level === 1;
         const previousSnakeLength = isNewRun ? 0 : this.snake.length;
         const previousScore = isNewRun ? 0 : this.score;
+        const previousCombo = isNewRun ? 1 : this.combo;
+        const previousMaxCombo = isNewRun ? 1 : this.maxCombo;
 
         this.isRoguelikeMode = true;
         this.roguelikeLevelData = levelData;
@@ -128,6 +130,13 @@ class SoloSnakeGame extends BaseSnakeGame {
         if (previousScore > 0) {
             this.score = previousScore;
             logger.log(`[SoloGame] Score restauré: ${this.score}`);
+        }
+
+        // Restaurer le combo (persiste entre les stages)
+        this.combo = previousCombo;
+        this.maxCombo = previousMaxCombo;
+        if (previousCombo > 1) {
+            logger.log(`[SoloGame] Combo restauré: ${this.combo} (max: ${this.maxCombo})`);
         }
 
         // Restaurer la longueur du serpent (conserver les segments gagnés)
@@ -2770,9 +2779,19 @@ class SoloSnakeGame extends BaseSnakeGame {
     // ============================================
 
     updateUI() {
-        // Score
+        // XP estimé en temps réel (en mode roguelike) ou Score (mode classique)
         const sc = document.getElementById('solo-sc');
-        if (sc) sc.textContent = this.score;
+        if (sc) {
+            if (this.isRoguelikeMode && window.roguelikeManager?.currentRun) {
+                const run = window.roguelikeManager.currentRun;
+                const xpMultiplier = run.modifiers?.xpMultiplier || 1;
+                const baseXP = this.score + (run.level * 50) + (run.applesEaten * 2);
+                const estimatedXP = Math.floor(baseXP * xpMultiplier);
+                sc.textContent = estimatedXP;
+            } else {
+                sc.textContent = this.score;
+            }
+        }
 
         // Niveau / Stage (roguelike)
         const lv = document.getElementById('solo-lv');
@@ -2782,9 +2801,15 @@ class SoloSnakeGame extends BaseSnakeGame {
                 : this.level;
         }
 
-        // Segments gagnés (longueur - 3 car on commence avec tête, corps, queue)
+        // Combo (en mode roguelike) ou Segments (mode classique)
         const seg = document.getElementById('solo-seg');
-        if (seg) seg.textContent = Math.max(0, this.snake.length - 3);
+        if (seg) {
+            if (this.isRoguelikeMode) {
+                seg.textContent = this.combo;
+            } else {
+                seg.textContent = Math.max(0, this.snake.length - 3);
+            }
+        }
 
         // Power-up status
         const powerupStatus = document.getElementById('solo-powerup-status');

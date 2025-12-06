@@ -432,7 +432,8 @@ class RoguelikeManager {
             applesEaten: this.currentRun.applesEaten,
             powerupsCollected: this.currentRun.powerupsCollected,
             timePlayed: this.currentRun.timePlayed + (Date.now() - this.currentRun.levelStartTime) / 1000,
-            upgradesCollected: this.currentRun.upgrades.length
+            upgradesCollected: this.currentRun.upgrades.length,
+            maxCombo: window.soloGame?.maxCombo || 1
         };
 
         // Calculer XP gagné
@@ -453,6 +454,31 @@ class RoguelikeManager {
         }
 
         this.saveMetaProgression();
+
+        // ✅ Synchroniser avec window.career pour le niveau du hub
+        if (window.career) {
+            let careerXP = window.career.xp + earnedXP;
+            let careerLevel = window.career.level;
+            let careerXPNext = window.career.xpNext || (100 + careerLevel * 100);
+
+            // Gérer les level up
+            while (careerXP >= careerXPNext && careerLevel < 100) {
+                careerXP -= careerXPNext;
+                careerLevel++;
+                careerXPNext = 100 + (careerLevel * 100);
+                logger.log(`[RoguelikeManager] Level UP! Niveau ${careerLevel}`);
+            }
+
+            window.career.xp = careerXP;
+            window.career.level = careerLevel;
+            window.career.xpNext = careerXPNext;
+
+            // Sauvegarder career
+            if (window.save) {
+                window.save('career', window.career);
+            }
+            logger.log(`[RoguelikeManager] Career synced: +${earnedXP} XP → Level ${careerLevel}, XP ${careerXP}/${careerXPNext}`);
+        }
 
         logger.log('[RoguelikeManager] Run terminée:', finalStats);
 
