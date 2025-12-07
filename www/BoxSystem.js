@@ -12,6 +12,7 @@ import { logger } from './services/logger.js';
 import { ITEMS, getAllItems, getItemById, getItemsByType, RARITY } from './data/items.js';
 import { drawSkinPreview } from './SkinsRenderer.js';
 import { achievementManager } from './roguelike/achievements.js';
+import { SnakeUltra } from './SnakeUltra.js';
 
 // ============================================
 // CLASSE BOXMANAGER - LOGIQUE MÉTIER
@@ -550,6 +551,16 @@ let currentFilter = 'all';
 function openBox() {
     if (window.audio) window.audio.buttonClick();
 
+    // ✅ Nettoyer tout modal résiduel qui pourrait bloquer les interactions
+    const chestModal = document.getElementById('chest-modal');
+    const skinOverlay = document.querySelector('.skin-unlock-overlay');
+    const skinNotification = document.querySelector('.skin-unlock-notification');
+    const confetti = document.querySelector('.confetti-overlay');
+    if (chestModal) chestModal.remove();
+    if (skinOverlay) skinOverlay.remove();
+    if (skinNotification) skinNotification.remove();
+    if (confetti) confetti.remove();
+
     // Synchroniser les achievements avant d'afficher
     if (window.boxManager.syncWithAchievements) {
         window.boxManager.syncWithAchievements();
@@ -841,6 +852,9 @@ function equipBoxItem(itemId) {
 const boxManager = new BoxManager();
 window.boxManager = boxManager;
 
+// Enregistrer dans SnakeUltra
+SnakeUltra.registerManager('box', boxManager);
+
 // Exports globaux UI
 window.openBox = openBox;
 window.closeBox = closeBox;
@@ -854,6 +868,12 @@ window.refreshBoxUI = refreshBoxUI;
 // ============================================
 
 function showSkinUnlockNotification(item) {
+    // Supprimer tout overlay résiduel avant d'en créer un nouveau
+    const existingOverlay = document.querySelector('.skin-unlock-overlay');
+    const existingNotification = document.querySelector('.skin-unlock-notification');
+    if (existingOverlay) existingOverlay.remove();
+    if (existingNotification) existingNotification.remove();
+
     // Créer l'overlay de fond
     const overlay = document.createElement('div');
     overlay.className = 'skin-unlock-overlay';
@@ -866,6 +886,8 @@ function showSkinUnlockNotification(item) {
         background: rgba(0, 0, 0, 0.8);
         z-index: 9998;
     `;
+    // Cliquer sur l'overlay ferme la notification
+    overlay.onclick = () => closeSkinUnlockNotification();
 
     // Créer la notification
     const notification = document.createElement('div');

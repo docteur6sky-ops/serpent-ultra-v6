@@ -14,10 +14,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 9000;
+    z-index: 10000;
     padding: 20px;
     box-sizing: border-box;
     animation: fadeIn 0.3s ease-out;
+}
+
+.roguelike-upgrade-screen.hidden {
+    display: none !important;
 }
 
 /* Header */
@@ -240,6 +244,10 @@
     box-sizing: border-box;
 }
 
+.roguelike-run-end.hidden {
+    display: none !important;
+}
+
 .rl-run-end-title {
     font-size: 32px;
     font-weight: bold;
@@ -289,6 +297,18 @@
     color: #888;
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+/* 💰 Gold stat (Fortune) */
+.rl-stat-card.gold-stat {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1));
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.rl-stat-card.gold-stat .rl-stat-value {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 /* XP gagné */
@@ -1606,4 +1626,184 @@
     padding: 8px;
     color: #888;
     font-size: 14px;
+}
+
+/* ===== HUD POWER-UPS IN-GAME ===== */
+.rl-powerups-hud {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, rgba(20, 10, 40, 0.9), rgba(40, 20, 60, 0.9));
+    border: 1px solid rgba(156, 39, 176, 0.4);
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+
+.rl-powerups-hud.hidden {
+    display: none !important;
+}
+
+/* Conteneur prioritaires */
+.rl-hud-priority {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Item de HUD (prioritaire = grand) */
+.rl-hud-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 6px 10px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.rl-hud-item.hidden {
+    display: none !important;
+}
+
+.rl-hud-icon {
+    font-size: 20px;
+}
+
+.rl-hud-count {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    min-width: 16px;
+    text-align: center;
+}
+
+/* Styles spécifiques */
+.rl-hud-lives {
+    border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.rl-hud-lives .rl-hud-count {
+    color: #f44336;
+}
+
+.rl-hud-shields {
+    border: 1px solid rgba(33, 150, 243, 0.5);
+}
+
+.rl-hud-shields .rl-hud-count {
+    color: #2196f3;
+}
+
+.rl-hud-sprint {
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 4px 8px;
+}
+
+/* Cooldown ring pour Sprint */
+.rl-hud-cooldown {
+    width: 28px;
+    height: 28px;
+    position: relative;
+}
+
+.rl-cd-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.rl-cd-bg {
+    stroke: rgba(255, 255, 255, 0.2);
+}
+
+.rl-cd-progress {
+    stroke: #00ffff;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Sprint ready = glow */
+.rl-hud-sprint.ready {
+    animation: sprintReady 1s ease-in-out infinite;
+    border-color: #00ffff;
+}
+
+@keyframes sprintReady {
+    0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.8); }
+}
+
+/* Sprint actif = très bright */
+.rl-hud-sprint.active {
+    background: rgba(0, 255, 255, 0.3);
+    border-color: #00ffff;
+    animation: sprintActive 0.2s ease-in-out infinite;
+}
+
+@keyframes sprintActive {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Sprint en cooldown = grisé */
+.rl-hud-sprint.cooldown {
+    opacity: 0.7;
+}
+
+.rl-hud-sprint.cooldown .rl-hud-icon {
+    filter: grayscale(0.5);
+}
+
+/* Passifs (petits) */
+.rl-hud-passives {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.rl-hud-passive {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.rl-hud-passive .rl-passive-icon {
+    font-size: 14px;
+}
+
+.rl-hud-passive .rl-passive-count {
+    font-size: 11px;
+    color: #aaa;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+    .rl-powerups-hud {
+        gap: 4px;
+        padding: 4px 8px;
+    }
+
+    .rl-hud-icon {
+        font-size: 16px;
+    }
+
+    .rl-hud-count {
+        font-size: 14px;
+    }
+
+    .rl-hud-passive {
+        padding: 2px 4px;
+    }
+
+    .rl-hud-passive .rl-passive-icon {
+        font-size: 12px;
+    }
 }

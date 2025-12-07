@@ -33,13 +33,14 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.maxCombo = 1;
 
         // Power-ups actifs (spécifique solo)
-        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false, lightning: false };
         this.powerupTime = 0;
         this.activePowerup = null;  // Type actif : 'ice', 'fire', ou 'rock'
         this.slowCount = 0;
         this.doubleCount = 0;
         this.invincibleCount = 0;
         this.ghostCount = 0;
+        this.lightningCount = 0;
 
         // Contrôle du jeu (spécifique solo)
         this.locked = false;
@@ -79,6 +80,10 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.skullsEaten = 0;
         this.maxSnakeLength = 1;
 
+        // 💰 SYSTÈME DE GOLD (Fortune)
+        this.goldItems = [];        // [{x, y}] positions du gold sur le terrain
+        this.goldCollected = 0;     // Gold collecté cette run
+
         // Note: canvas, ctx, GRID_SIZE, CELL_SIZE, running, paused, difficulty,
         // raf, lastTime, level, particles, audio, COLORS, POWERUP_DURATION
         // sont maintenant dans BaseSnakeGame
@@ -106,8 +111,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         const isNewRun = !this.isRoguelikeMode || levelData.level === 1;
         const previousSnakeLength = isNewRun ? 0 : this.snake.length;
         const previousScore = isNewRun ? 0 : this.score;
-        const previousCombo = isNewRun ? 1 : this.combo;
         const previousMaxCombo = isNewRun ? 1 : this.maxCombo;
+
+        // 💰 Reset gold collecté au début d'une nouvelle run
+        if (isNewRun) {
+            this.goldCollected = 0;
+        }
 
         this.isRoguelikeMode = true;
         this.roguelikeLevelData = levelData;
@@ -132,12 +141,8 @@ class SoloSnakeGame extends BaseSnakeGame {
             logger.log(`[SoloGame] Score restauré: ${this.score}`);
         }
 
-        // Restaurer le combo (persiste entre les stages)
-        this.combo = previousCombo;
+        // Restaurer le max combo (pour les stats)
         this.maxCombo = previousMaxCombo;
-        if (previousCombo > 1) {
-            logger.log(`[SoloGame] Combo restauré: ${this.combo} (max: ${this.maxCombo})`);
-        }
 
         // Restaurer la longueur du serpent (conserver les segments gagnés)
         if (previousSnakeLength > 3) {
@@ -148,11 +153,14 @@ class SoloSnakeGame extends BaseSnakeGame {
             logger.log(`[SoloGame] Serpent restauré: ${this.snake.length} segments`);
         }
 
-        // Mettre à jour l'UI avec les valeurs restaurées
-        this.updateUI();
+        // Synchroniser combo avec la longueur du serpent (combo = segments - 2)
+        this.syncCombo();
 
-        // Appliquer les modificateurs roguelike
+        // Appliquer les modificateurs roguelike (Ciseaux, Combo Master, etc.)
         this.applyRoguelikeModifiers();
+
+        // Mettre à jour l'UI APRÈS les modificateurs
+        this.updateUI();
 
         // Générer les obstacles du niveau
         this.generateRoguelikeObstacles();
@@ -174,50 +182,101 @@ class SoloSnakeGame extends BaseSnakeGame {
     applyRoguelikeModifiers() {
         if (!this.roguelikeModifiers) return;
 
-        // Appliquer les segments bonus
-        const bonusSegments = this.roguelikeModifiers.bonusSegments || 0;
-        for (let i = 0; i < bonusSegments; i++) {
-            this.snake.push({ ...this.snake[this.snake.length - 1] });
-        }
+        // ✂️ CISEAUX : Diviser la longueur par 2, combo inchangé
+        this.applyScissors();
+
+        // 🔥 COMBO MASTER : Doubler le combo au début du stage
+        this.applyComboMaster();
 
         // Démarrer la régénération si upgrade présent
         this.startRegeneration();
 
-        // Démarrer le Combo Master (score x2 pendant 30s) si présent
-        this.startScoreBoost();
-
         logger.log('[SoloGame] Modificateurs roguelike appliqués:', this.roguelikeModifiers);
     }
 
-    startScoreBoost() {
-        // Nettoyer ancien timer
-        if (this.scoreBoostTimer) {
-            clearTimeout(this.scoreBoostTimer);
-            this.scoreBoostTimer = null;
+    applyScissors() {
+        if (!this.roguelikeModifiers?.passives) {
+            logger.log('[SoloGame] applyScissors: pas de passives');
+            return;
         }
-        this.scoreBoostActive = false;
-        this.scoreBoostMultiplier = 1;
 
-        if (!this.roguelikeModifiers?.passives) return;
+        // Debug: afficher les passives
+        logger.log('[SoloGame] applyScissors: passives =', JSON.stringify(this.roguelikeModifiers.passives));
+        logger.log('[SoloGame] applyScissors: snake.length =', this.snake.length);
 
-        // Chercher l'upgrade score_boost (Combo Master)
-        const boostUpgrade = this.roguelikeModifiers.passives.find(p => p.type === 'score_boost');
-        if (!boostUpgrade) return;
+        // Chercher l'upgrade scissors
+        const scissorsUpgrade = this.roguelikeModifiers.passives.find(p => p.type === 'scissors');
+        if (!scissorsUpgrade) {
+            logger.log('[SoloGame] applyScissors: scissors non trouvé');
+            return;
+        }
 
-        logger.log(`[SoloGame] Combo Master activé! x${boostUpgrade.multiplier} pendant ${boostUpgrade.duration}s`);
+        // Minimum 3 segments pour appliquer
+        if (this.snake.length <= 3) {
+            logger.log('[SoloGame] applyScissors: snake trop court (<=3), pas de coupe');
+            return;
+        }
 
-        this.scoreBoostActive = true;
-        this.scoreBoostMultiplier = boostUpgrade.multiplier;
+        // Sauvegarder le combo actuel
+        const savedCombo = this.combo;
+
+        // Diviser la longueur par 2 (minimum 3 segments)
+        const targetLength = Math.max(3, Math.floor(this.snake.length / 2));
+        const segmentsToRemove = this.snake.length - targetLength;
+
+        for (let i = 0; i < segmentsToRemove; i++) {
+            this.snake.pop();
+        }
+
+        // Restaurer le combo (ne pas synchroniser avec la nouvelle longueur)
+        this.combo = savedCombo;
+
+        logger.log(`[SoloGame] ✂️ Ciseaux! Longueur: ${this.snake.length + segmentsToRemove} → ${this.snake.length}, Combo préservé: ${this.combo}`);
+    }
+
+    applyComboMaster() {
+        if (!this.roguelikeModifiers?.passives) {
+            logger.log('[SoloGame] applyComboMaster: pas de passives');
+            return;
+        }
+        if (!window.roguelikeManager?.currentRun) {
+            logger.log('[SoloGame] applyComboMaster: pas de currentRun');
+            return;
+        }
+
+        // Debug: afficher tous les passives
+        logger.log('[SoloGame] applyComboMaster: passives =', JSON.stringify(this.roguelikeModifiers.passives));
+
+        // Chercher l'upgrade combo_double_next_stage (Combo Master)
+        const comboMaster = this.roguelikeModifiers.passives.find(p => p.type === 'combo_double_next_stage');
+        if (!comboMaster) {
+            logger.log('[SoloGame] applyComboMaster: combo_double_next_stage non trouvé');
+            return;
+        }
+
+        // Doubler les segments (combo = segments - 2)
+        const currentSegments = this.snake.length;
+        const segmentsToAdd = currentSegments; // Doubler = ajouter autant qu'on en a
+
+        logger.log(`[SoloGame] 🔥 Combo Master! Doublement: ${currentSegments} → ${currentSegments * 2} segments`);
+
+        for (let i = 0; i < segmentsToAdd; i++) {
+            this.snake.push({ ...this.snake[this.snake.length - 1] });
+        }
+
+        // Synchroniser le combo
+        this.syncCombo();
 
         // Effet visuel
-        this.createParticles(this.snake[0].x, this.snake[0].y, '#ff4444', 10);
+        this.createParticles(this.snake[0].x, this.snake[0].y, '#ff4444', 15);
 
-        // Désactiver après la durée
-        this.scoreBoostTimer = setTimeout(() => {
-            this.scoreBoostActive = false;
-            this.scoreBoostMultiplier = 1;
-            logger.log('[SoloGame] Combo Master terminé!');
-        }, boostUpgrade.duration * 1000);
+        // Retirer l'upgrade de la run (consommé)
+        const run = window.roguelikeManager.currentRun;
+        const upgradeIndex = run.upgrades.indexOf('combo_master');
+        if (upgradeIndex !== -1) {
+            run.upgrades.splice(upgradeIndex, 1);
+            logger.log('[SoloGame] Combo Master consommé et retiré de la liste');
+        }
     }
 
     startRegeneration() {
@@ -247,8 +306,12 @@ class SoloSnakeGame extends BaseSnakeGame {
             for (let i = 0; i < totalAmount; i++) {
                 this.snake.push({ ...this.snake[this.snake.length - 1] });
             }
+
+            // Synchroniser combo avec nouvelle longueur
+            this.syncCombo();
+
             this.createParticles(this.snake[0].x, this.snake[0].y, '#00ff00', 3);
-            logger.log(`[SoloGame] Régénération: +${totalAmount} segment(s)`);
+            logger.log(`[SoloGame] Régénération: +${totalAmount} segment(s) (combo: ${this.combo})`);
         }, interval);
     }
 
@@ -256,6 +319,27 @@ class SoloSnakeGame extends BaseSnakeGame {
         if (this.regenInterval) {
             clearInterval(this.regenInterval);
             this.regenInterval = null;
+        }
+    }
+
+    /**
+     * Synchronise le combo avec la longueur du serpent
+     * combo = segments - 2 (minimum 1)
+     * Appelé après chaque changement de longueur du serpent
+     */
+    syncCombo() {
+        const oldCombo = this.combo;
+        this.combo = Math.max(1, this.snake.length - 2);
+
+        // Tracker le max combo
+        if (this.combo > this.maxCombo) {
+            this.maxCombo = this.combo;
+            // Achievement tracking combo
+            achievementManager.onComboUpdate(this.combo);
+        }
+
+        if (oldCombo !== this.combo) {
+            logger.log(`[SoloGame] Combo sync: ${oldCombo} → ${this.combo} (${this.snake.length} segments)`);
         }
     }
 
@@ -1262,6 +1346,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Perte de 1 segment
         if (this.snake.length > 3) {
             this.snake.pop();
+            this.syncCombo();
         }
 
         // Effet visuel
@@ -1295,6 +1380,7 @@ class SoloSnakeGame extends BaseSnakeGame {
                     // Le clone fait perdre 1 segment
                     if (this.snake.length > 3) {
                         this.snake.pop();
+                        this.syncCombo();
                         this.triggerScreenShake(5);
                         this.createParticles(playerHead.x, playerHead.y, '#aa00ff', 5);
                     }
@@ -1361,6 +1447,9 @@ class SoloSnakeGame extends BaseSnakeGame {
             if (this.boss.snake.length > 0) this.boss.snake.pop();
         }
 
+        // Synchroniser combo avec nouvelle longueur
+        if (playerLoss > 0) this.syncCombo();
+
         // Effet visuel
         this.triggerScreenShake(10);
 
@@ -1386,6 +1475,9 @@ class SoloSnakeGame extends BaseSnakeGame {
         for (let i = 0; i < segmentsLost; i++) {
             if (this.snake.length > 3) this.snake.pop();
         }
+
+        // Synchroniser combo avec nouvelle longueur
+        if (segmentsLost > 0) this.syncCombo();
 
         // Achievement tracking
         if (segmentsLost > 0) {
@@ -1418,6 +1510,9 @@ class SoloSnakeGame extends BaseSnakeGame {
                 this.snake.push({ ...this.snake[this.snake.length - 1] });
             }
         }
+
+        // Synchroniser combo avec nouvelle longueur
+        if (actualStolen > 0) this.syncCombo();
 
         // Achievement tracking
         achievementManager.onSegmentsStolen(actualStolen);
@@ -1453,6 +1548,9 @@ class SoloSnakeGame extends BaseSnakeGame {
                 this.boss.snake.push({ ...this.boss.snake[this.boss.snake.length - 1] });
             }
         }
+
+        // Synchroniser combo avec nouvelle longueur
+        if (segmentsLost > 0) this.syncCombo();
 
         // Achievement tracking
         if (segmentsLost > 0) {
@@ -1973,6 +2071,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Réinitialiser éléments
         this.obstacles = [];
         this.powerup = null;
+        this.goldItems = [];  // Reset gold du stage (mais pas goldCollected)
 
         // Réinitialiser stats
         this.wallsDestroyed = 0;
@@ -1982,9 +2081,10 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.doubleCount = 0;
         this.invincibleCount = 0;
         this.ghostCount = 0;
+        this.lightningCount = 0;
 
         // Réinitialiser power-ups
-        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false, lightning: false };
         this.activePowerup = null;
         this.particles = [];
 
@@ -2137,6 +2237,11 @@ class SoloSnakeGame extends BaseSnakeGame {
             return;
         }
 
+        // 💰 Vérifier collision avec gold (Fortune)
+        if (this.goldItems.length > 0) {
+            this.collectGold(head);
+        }
+
         // Déplacement normal
         this.snake.unshift(head);
         this.snake.pop();
@@ -2231,8 +2336,23 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // ========== MODE ROGUELIKE ==========
         if (this.isRoguelikeMode) {
-            this.roguelikeProgress++;
-            roguelikeManager.onAppleEaten(1);
+            // 🍎 GOURMANDISE : 1 pomme = 2 pommes
+            const hasGourmandise = this.roguelikeModifiers?.passives?.some(p => p.type === 'apple_double');
+            const appleMultiplier = hasGourmandise ? 2 : 1;
+
+            this.roguelikeProgress += appleMultiplier;
+            roguelikeManager.onAppleEaten(appleMultiplier);
+
+            // Si Gourmandise, ajouter un segment bonus (total +2 segments)
+            if (hasGourmandise) {
+                this.snake.push({ ...this.snake[this.snake.length - 1] });
+                logger.log('[SoloGame] 🍎 Gourmandise! +2 pommes comptées');
+            }
+
+            // Réduire cooldown Sprint de 5s par pomme (2 pommes = ready)
+            if (this.sprintCooldown > 0) {
+                this.sprintCooldown = Math.max(0, this.sprintCooldown - 5 * appleMultiplier);
+            }
 
             // Vérifier objectif
             if (this.roguelikeObjective?.type === 'apples') {
@@ -2251,17 +2371,11 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.spawnObstacles();
         }
 
-        // Augmenter combo
-        this.combo++;
-        if (this.combo > this.maxCombo) {
-            this.maxCombo = this.combo;
-        }
-
-        // Achievement tracking combo
-        achievementManager.onComboUpdate(this.combo);
-
         // Grandir
         this.snake.unshift(head);
+
+        // Synchroniser combo avec longueur (combo = segments - 2)
+        this.syncCombo();
 
         // Tracker longueur max
         if (this.snake.length > this.maxSnakeLength) {
@@ -2272,6 +2386,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.spawnFood();
         this.spawnBad();
         this.spawnPowerup();
+        this.trySpawnGold();  // 💰 Fortune: chance de spawn gold
 
         this.updateUI();
     }
@@ -2279,14 +2394,25 @@ class SoloSnakeGame extends BaseSnakeGame {
     eatSkull(head) {
         this.skullsEaten++;
 
-        // ✨ NOUVEAU COMPORTEMENT: Combo divisé par 2 (garde tous les segments)
-        // Punition modérée: combo 50 → 25, combo 10 → 5, etc.
-        this.combo = Math.max(1, Math.floor(this.combo / 2));
-
         if (this.audio) this.audio.bad();
 
-        // Déplacer normalement (pas de perte de segments)
+        // Déplacer vers la nouvelle position
         this.snake.unshift(head);
+
+        // ✨ SYNCHRONISATION: Retirer la moitié des segments (minimum 3 segments restants)
+        const oldLength = this.snake.length;
+        const targetLength = Math.max(3, Math.floor(this.snake.length / 2));
+        const segmentsToRemove = this.snake.length - targetLength;
+
+        for (let i = 0; i < segmentsToRemove; i++) {
+            this.snake.pop();
+        }
+
+        // Synchroniser combo avec nouvelle longueur
+        this.syncCombo();
+
+        // Particules rouges pour visualiser la perte
+        this.createParticles(head.x, head.y, '#ff4444', 8);
 
         // Générer nouveau crâne
         this.spawnFood();
@@ -2295,7 +2421,7 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         this.updateUI();
 
-        logger.log(`[SoloGame] 💀 Crâne mangé: combo divisé par 2 → ${this.combo}`);
+        logger.log(`[SoloGame] 💀 Crâne mangé: ${oldLength} → ${this.snake.length} segments (combo: ${this.combo})`);
     }
 
     eatPowerup(head) {
@@ -2318,6 +2444,10 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.ghostCount++;
             this.powerupEffects.ghost = true;  // ✅ Mode fantôme : traverse les murs
             this.activePowerup = 'ghost';
+        } else if (this.powerup.t === 'lightning') {
+            this.lightningCount++;
+            this.powerupEffects.lightning = true;  // ⚡ Contrôles inversés
+            this.activePowerup = 'lightning';
         }
 
         this.powerupTime = performance.now();
@@ -2361,7 +2491,8 @@ class SoloSnakeGame extends BaseSnakeGame {
             ice: '❄️',
             fire: '🔥',
             rock: '🪨',
-            ghost: '👻'
+            ghost: '👻',
+            lightning: '⚡'
         };
 
         // ✅ Ajouter classe 'active' + type
@@ -2407,7 +2538,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         }
 
         // ✅ RÉINITIALISER LES EFFETS (BUG FIX - power-ups duraient infiniment)
-        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false };
+        this.powerupEffects = { slow: false, double: false, invincible: false, ghost: false, lightning: false };
 
         // ✅ Retirer classe 'active' et type
         const container = document.getElementById('powerup-bar-container');
@@ -2513,7 +2644,8 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         if (!this.powerup && Math.random() < powerupChance) {
             let rand = Math.random();
-            let type = rand < 0.25 ? 'ice' : rand < 0.50 ? 'fire' : rand < 0.75 ? 'rock' : 'ghost';  // ✅ 4 types : 25% chacun
+            // ✅ 5 types : 20% chacun (ice, fire, rock, ghost, lightning)
+            let type = rand < 0.20 ? 'ice' : rand < 0.40 ? 'fire' : rand < 0.60 ? 'rock' : rand < 0.80 ? 'ghost' : 'lightning';
 
             let attempts = 0;
             do {
@@ -2564,6 +2696,139 @@ class SoloSnakeGame extends BaseSnakeGame {
     }
 
     // ============================================
+    // 💰 SYSTÈME DE GOLD (Fortune)
+    // ============================================
+
+    trySpawnGold() {
+        // Uniquement en mode roguelike
+        if (!this.isRoguelikeMode) return;
+
+        // Vérifier si le joueur a l'upgrade Fortune
+        const fortuneUpgrade = this.roguelikeModifiers?.passives?.find(p => p.type === 'gold_spawn');
+        if (!fortuneUpgrade) return;
+
+        // Calculer le nombre de stacks de Fortune
+        const fortuneCount = this.roguelikeModifiers.passives.filter(p => p.type === 'gold_spawn').length;
+
+        // Chances selon le nombre de stacks : 10%, 15%, 30%
+        const chances = fortuneUpgrade.chances || [0.10, 0.15, 0.30];
+        const spawnChance = chances[Math.min(fortuneCount - 1, chances.length - 1)];
+
+        // Tenter de spawn le gold
+        if (Math.random() < spawnChance) {
+            let attempts = 0;
+            let goldItem = null;
+
+            do {
+                goldItem = {
+                    x: Math.floor(Math.random() * this.GRID_SIZE),
+                    y: Math.floor(Math.random() * this.GRID_SIZE)
+                };
+                attempts++;
+
+                if (attempts > 50) {
+                    goldItem = null;
+                    break;
+                }
+            } while (goldItem && (
+                this.snake.some(s => s.x === goldItem.x && s.y === goldItem.y) ||
+                this.obstacles.some(o => o.x === goldItem.x && o.y === goldItem.y) ||
+                (goldItem.x === this.food.x && goldItem.y === this.food.y) ||
+                (goldItem.x === this.bad.x && goldItem.y === this.bad.y) ||
+                (this.powerup && goldItem.x === this.powerup.x && goldItem.y === this.powerup.y) ||
+                this.goldItems.some(g => g.x === goldItem.x && g.y === goldItem.y)
+            ));
+
+            if (goldItem) {
+                this.goldItems.push(goldItem);
+                logger.log(`[SoloGame] 💰 Gold spawné! (${this.goldItems.length} sur le terrain)`);
+            }
+        }
+    }
+
+    collectGold(head) {
+        const goldIndex = this.goldItems.findIndex(g => g.x === head.x && g.y === head.y);
+        if (goldIndex === -1) return false;
+
+        // Collecter le gold
+        this.goldItems.splice(goldIndex, 1);
+
+        // Ajouter 25 gold
+        const goldValue = 25;
+        this.goldCollected += goldValue;
+
+        // Effet sonore et particules
+        if (this.audio) this.audio.powerup();
+        this.createParticles(head.x, head.y, '#FFD700', 10);
+
+        logger.log(`[SoloGame] 💰 Gold collecté! Total: ${this.goldCollected}`);
+
+        // Notification visuelle
+        this.showGoldNotification(goldValue);
+
+        return true;
+    }
+
+    showGoldNotification(amount) {
+        // Créer une notification temporaire
+        const notification = document.createElement('div');
+        notification.className = 'gold-notification';
+        notification.textContent = `+${amount} 💰`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFA500;
+            z-index: 1000;
+            pointer-events: none;
+            animation: goldFloat 1s ease-out forwards;
+        `;
+
+        // Ajouter l'animation CSS si pas déjà présente
+        if (!document.getElementById('gold-notification-style')) {
+            const style = document.createElement('style');
+            style.id = 'gold-notification-style';
+            style.textContent = `
+                @keyframes goldFloat {
+                    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    100% { opacity: 0; transform: translate(-50%, -100%) scale(1.5); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 1000);
+    }
+
+    drawGold() {
+        if (this.goldItems.length === 0) return;
+
+        for (const gold of this.goldItems) {
+            const x = gold.x * this.CELL_SIZE;
+            const y = gold.y * this.CELL_SIZE;
+            const size = this.CELL_SIZE;
+
+            // Glow doré
+            this.ctx.shadowColor = '#FFD700';
+            this.ctx.shadowBlur = 10;
+
+            // Dessiner l'emoji 💰
+            this.ctx.font = `${size * 0.8}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('💰', x + size / 2, y + size / 2);
+
+            // Reset shadow
+            this.ctx.shadowBlur = 0;
+        }
+    }
+
+    // ============================================
     // PARTICULES
     // ============================================
 
@@ -2607,6 +2872,74 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
             this.ctx.restore();
         });
+    }
+
+    drawSprintAura() {
+        if (!this.snake || this.snake.length === 0) return;
+
+        this.ctx.save();
+
+        // Aura pulsante autour de tout le serpent
+        const time = Date.now() / 100;
+        const pulseAlpha = 0.3 + Math.sin(time) * 0.15;
+        const pulseSize = 4 + Math.sin(time * 2) * 2;
+
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.shadowBlur = 20 + Math.sin(time) * 10;
+        this.ctx.globalAlpha = pulseAlpha;
+        this.ctx.fillStyle = '#00ffff';
+
+        // Dessiner aura autour de chaque segment
+        this.snake.forEach((segment, index) => {
+            const x = segment.x * this.CELL_SIZE;
+            const y = segment.y * this.CELL_SIZE;
+            const size = this.CELL_SIZE + pulseSize;
+            const offset = (size - this.CELL_SIZE) / 2;
+
+            // Cercle pour la tête, carré arrondi pour le corps
+            if (index === 0) {
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    x + this.CELL_SIZE / 2,
+                    y + this.CELL_SIZE / 2,
+                    size / 2,
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.fill();
+            } else {
+                this.ctx.beginPath();
+                this.ctx.roundRect(x - offset, y - offset, size, size, 4);
+                this.ctx.fill();
+            }
+        });
+
+        // Traînée de vitesse derrière le serpent
+        if (this.snake.length > 1) {
+            const tail = this.snake[this.snake.length - 1];
+            const prevTail = this.snake[this.snake.length - 2];
+
+            // Direction opposée au mouvement
+            const dx = tail.x - prevTail.x;
+            const dy = tail.y - prevTail.y;
+
+            for (let i = 1; i <= 3; i++) {
+                const trailX = (tail.x + dx * i) * this.CELL_SIZE;
+                const trailY = (tail.y + dy * i) * this.CELL_SIZE;
+                const trailAlpha = 0.15 / i;
+                const trailSize = this.CELL_SIZE * (0.8 - i * 0.2);
+
+                this.ctx.globalAlpha = trailAlpha;
+                this.ctx.fillRect(
+                    trailX + (this.CELL_SIZE - trailSize) / 2,
+                    trailY + (this.CELL_SIZE - trailSize) / 2,
+                    trailSize,
+                    trailSize
+                );
+            }
+        }
+
+        this.ctx.restore();
     }
 
     // ============================================
@@ -2655,6 +2988,9 @@ class SoloSnakeGame extends BaseSnakeGame {
                 this.powerup.t
             );
         }
+
+        // 💰 Dessiner gold (Fortune)
+        this.drawGold();
 
         // Dessiner obstacles
         for (let obs of this.obstacles) {
@@ -2709,6 +3045,15 @@ class SoloSnakeGame extends BaseSnakeGame {
                 outline: '#003333',
                 glow: '#00A5A5'
             };
+        } else if (this.powerupEffects.lightning) {
+            // ⚡ Lightning: Jaune électrique / Bleu
+            skinColors = {
+                head: { light: '#FFD700', dark: '#FFA500' },
+                body: { from: '#FFD700', to: '#1E90FF' },
+                tail: { color: '#1E90FF' },
+                outline: '#0000CD',
+                glow: '#FFD700'
+            };
         }
         // Sinon, utiliser le skin équipé (géré dans drawSnakeEnhanced)
 
@@ -2730,6 +3075,11 @@ class SoloSnakeGame extends BaseSnakeGame {
                         glow: '#FF0000'
                     };
                 }
+            }
+
+            // 💨 SPRINT AURA - Dessiner une aura cyan pendant le sprint
+            if (this.sprintActive) {
+                this.drawSprintAura();
             }
 
             // Dessiner le serpent avec le nouveau système AAA
@@ -2819,11 +3169,15 @@ class SoloSnakeGame extends BaseSnakeGame {
             else if (this.powerupEffects.invincible) status = '🛡️ Invincible';
             else if (this.powerupEffects.slow) status = '⏱️ Ralenti';
             else if (this.powerupEffects.double) status = '💰 Double Points';
+            else if (this.powerupEffects.lightning) status = '⚡ Foudre';
             powerupStatus.textContent = status;
         }
 
         // ========== OBJECTIF ROGUELIKE ==========
         this.updateRoguelikeObjective();
+
+        // ========== HUD POWER-UPS ROGUELIKE ==========
+        this.updateRoguelikeHUD();
     }
 
     updateRoguelikeObjective() {
@@ -2863,6 +3217,123 @@ class SoloSnakeGame extends BaseSnakeGame {
         }
     }
 
+    updateRoguelikeHUD() {
+        const hud = document.getElementById('rl-powerups-hud');
+        if (!hud) return;
+
+        // Afficher/cacher le HUD selon le mode
+        if (!this.isRoguelikeMode || !window.roguelikeManager?.currentRun) {
+            hud.classList.add('hidden');
+            return;
+        }
+
+        hud.classList.remove('hidden');
+        const run = window.roguelikeManager.currentRun;
+
+        // === VIES ===
+        // Afficher les vies BONUS (au-dessus de la vie de base qui est 1)
+        const livesEl = document.getElementById('rl-hud-lives');
+        const livesCount = document.getElementById('rl-hud-lives-count');
+        if (livesEl && livesCount) {
+            const bonusLives = run.lives - 1; // Vie de base = 1, on affiche seulement les bonus
+            if (bonusLives > 0) {
+                livesEl.classList.remove('hidden');
+                livesCount.textContent = bonusLives;
+            } else {
+                livesEl.classList.add('hidden');
+            }
+        }
+
+        // === BOUCLIERS ===
+        const shieldsEl = document.getElementById('rl-hud-shields');
+        const shieldsCount = document.getElementById('rl-hud-shields-count');
+        if (shieldsEl && shieldsCount) {
+            // Compter les boucliers dans les upgrades
+            const shieldCount = run.upgrades.filter(u => u === 'shield').length;
+            if (shieldCount > 0) {
+                shieldsEl.classList.remove('hidden');
+                shieldsCount.textContent = shieldCount;
+            } else {
+                shieldsEl.classList.add('hidden');
+            }
+        }
+
+        // === SPRINT ===
+        const sprintEl = document.getElementById('rl-hud-sprint');
+        const sprintCdProgress = document.getElementById('rl-sprint-cd-progress');
+        if (sprintEl) {
+            // Vérifier si le joueur a l'upgrade Sprint
+            const hasSprint = this.roguelikeModifiers?.abilities?.some(a => a.ability === 'sprint');
+            if (hasSprint) {
+                sprintEl.classList.remove('hidden');
+
+                // État du sprint
+                sprintEl.classList.remove('ready', 'active', 'cooldown');
+                if (this.sprintActive) {
+                    sprintEl.classList.add('active');
+                } else if (this.sprintCooldown > 0) {
+                    sprintEl.classList.add('cooldown');
+                    // Mettre à jour la barre de CD (10s = 100%)
+                    const ability = this.roguelikeModifiers.abilities.find(a => a.ability === 'sprint');
+                    const maxCd = ability?.cooldown || 10;
+                    const cdPercent = (this.sprintCooldown / maxCd) * 100;
+                    if (sprintCdProgress) {
+                        sprintCdProgress.style.strokeDashoffset = 100 - cdPercent;
+                    }
+                } else {
+                    sprintEl.classList.add('ready');
+                    if (sprintCdProgress) {
+                        sprintCdProgress.style.strokeDashoffset = 0;
+                    }
+                }
+            } else {
+                sprintEl.classList.add('hidden');
+            }
+        }
+
+        // === PASSIFS ===
+        this.updateRoguelikePassives(run);
+    }
+
+    updateRoguelikePassives(run) {
+        const passivesEl = document.getElementById('rl-hud-passives');
+        if (!passivesEl) return;
+
+        // Grouper les upgrades par ID
+        const upgradeCounts = {};
+        run.upgrades.forEach(upgradeId => {
+            // Ignorer les prioritaires (vies, boucliers, sprint)
+            if (['extra_life', 'shield', 'burst_speed'].includes(upgradeId)) return;
+            upgradeCounts[upgradeId] = (upgradeCounts[upgradeId] || 0) + 1;
+        });
+
+        // Générer le HTML des passifs
+        const { RUN_UPGRADES } = window.roguelikeUpgrades || {};
+        if (!RUN_UPGRADES) {
+            passivesEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (const [upgradeId, count] of Object.entries(upgradeCounts)) {
+            const upgrade = RUN_UPGRADES[upgradeId];
+            if (!upgrade) continue;
+            html += `<div class="rl-hud-passive" title="${upgrade.name}">
+                <span class="rl-passive-icon">${upgrade.icon}</span>
+                ${count > 1 ? `<span class="rl-passive-count">×${count}</span>` : ''}
+            </div>`;
+        }
+
+        // Cacher la section si aucun passif
+        if (html) {
+            passivesEl.innerHTML = html;
+            passivesEl.style.display = 'flex';
+        } else {
+            passivesEl.innerHTML = '';
+            passivesEl.style.display = 'none';
+        }
+    }
+
     // ============================================
     // CONTRÔLES
     // ============================================
@@ -2871,21 +3342,16 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Anti-demi-tour
         if (this.locked) return;
 
-        // Upgrade Miroir : inverser les contrôles
-        if (this.isRoguelikeMode && this.roguelikeModifiers?.passives) {
-            const mirrorUpgrade = this.roguelikeModifiers.passives.find(p => p.type === 'mirror_controls');
-            if (mirrorUpgrade) {
-                newDx = -newDx;
-                newDy = -newDy;
-            }
-        }
-
         if (newDx === -this.dx && newDy === -this.dy) return;
 
         // Sprint (double-tap) - si on tape dans la même direction que la direction actuelle
         if (this.isRoguelikeMode && this.roguelikeModifiers?.abilities) {
             const sprintAbility = this.roguelikeModifiers.abilities.find(a => a.ability === 'sprint');
-            if (sprintAbility && !this.sprintActive && this.sprintCooldown <= 0) {
+            // 🔥 FEU = Boost infini (ignore le cooldown)
+            const fireActive = this.powerupEffects.double;
+            const canSprint = !this.sprintActive && (this.sprintCooldown <= 0 || fireActive);
+
+            if (sprintAbility && canSprint) {
                 // Vérifier si c'est un double-tap (même direction que le mouvement actuel)
                 if (newDx === this.dx && newDy === this.dy) {
                     const now = Date.now();
@@ -2903,6 +3369,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         // 🧘 PATIENCE: Tracker le premier changement de direction
         if (this.firstDirectionChangeTime === null) {
             this.firstDirectionChangeTime = Date.now();
+        }
+
+        // ⚡ LIGHTNING: Inverser les contrôles
+        if (this.powerupEffects.lightning) {
+            newDx = -newDx;
+            newDy = -newDy;
         }
 
         this.ndx = newDx;
@@ -2926,16 +3398,23 @@ class SoloSnakeGame extends BaseSnakeGame {
         setTimeout(() => {
             this.sprintActive = false;
             this.sprintSpeedBoost = 1;
-            this.sprintCooldown = ability.cooldown;
-            logger.log('[SoloGame] Sprint terminé, cooldown: ' + ability.cooldown + 's');
 
-            // Décrémenter le cooldown chaque seconde
-            const cooldownInterval = setInterval(() => {
-                this.sprintCooldown--;
-                if (this.sprintCooldown <= 0) {
-                    clearInterval(cooldownInterval);
-                }
-            }, 1000);
+            // 🔥 FEU = Pas de cooldown (boost infini)
+            if (this.powerupEffects.double) {
+                this.sprintCooldown = 0;
+                logger.log('[SoloGame] Sprint terminé, FEU actif = pas de cooldown!');
+            } else {
+                this.sprintCooldown = ability.cooldown;
+                logger.log('[SoloGame] Sprint terminé, cooldown: ' + ability.cooldown + 's');
+
+                // Décrémenter le cooldown chaque seconde
+                const cooldownInterval = setInterval(() => {
+                    this.sprintCooldown--;
+                    if (this.sprintCooldown <= 0) {
+                        clearInterval(cooldownInterval);
+                    }
+                }, 1000);
+            }
         }, ability.duration * 1000);
     }
 
@@ -2993,32 +3472,60 @@ class SoloSnakeGame extends BaseSnakeGame {
             const result = roguelikeManager.onPlayerDeath();
 
             if (result?.continueRun) {
-                // Le joueur a des vies restantes ou un bouclier
-                logger.log('[SoloGame] Roguelike: Vie/bouclier utilisé, reprise...');
-
-                if (result.shieldUsed) {
-                    // Retirer des segments
-                    for (let i = 0; i < result.segmentsLost && this.snake.length > 1; i++) {
-                        this.snake.pop();
-                    }
-                }
-
-                // Réinitialiser les flags et reprendre
+                // Réinitialiser les flags
                 this.gameOverTriggered = false;
                 this.isExploding = false;
                 this.isFlashing = false;
                 this.running = true;
 
-                // Repositionner le serpent au centre (3 segments: tête, corps, queue)
-                this.snake = [
-                    { x: 15, y: 15 },  // Tête
-                    { x: 14, y: 15 },  // Corps
-                    { x: 13, y: 15 }   // Queue
-                ];
-                this.dx = 1;
-                this.dy = 0;
-                this.ndx = 1;
-                this.ndy = 0;
+                if (result.shieldUsed) {
+                    // BOUCLIER : Perdre 3 segments mais GARDER la position
+                    const segmentsBefore = this.snake.length;
+                    const comboBefore = this.combo;
+
+                    for (let i = 0; i < result.segmentsLost && this.snake.length > 3; i++) {
+                        this.snake.pop();
+                    }
+
+                    logger.log(`[SoloGame] Bouclier utilisé! Segments: ${segmentsBefore} → ${this.snake.length}, Combo: ${comboBefore} → sera sync`);
+
+                    // Effet visuel bouclier
+                    this.createParticles(this.snake[0].x, this.snake[0].y, '#2196f3', 15);
+
+                    // Reculer la tête d'une case pour éviter la collision immédiate
+                    const head = this.snake[0];
+                    head.x = head.x - this.dx;
+                    head.y = head.y - this.dy;
+
+                    // Wrap si nécessaire
+                    if (head.x < 0) head.x = this.GRID_SIZE - 1;
+                    if (head.x >= this.GRID_SIZE) head.x = 0;
+                    if (head.y < 0) head.y = this.GRID_SIZE - 1;
+                    if (head.y >= this.GRID_SIZE) head.y = 0;
+
+                } else {
+                    // VIE SUPPLÉMENTAIRE : Reset complet au centre
+                    logger.log('[SoloGame] Vie utilisée! Reset au centre...');
+
+                    this.snake = [
+                        { x: 15, y: 15 },  // Tête
+                        { x: 14, y: 15 },  // Corps
+                        { x: 13, y: 15 }   // Queue
+                    ];
+                    this.dx = 1;
+                    this.dy = 0;
+                    this.ndx = 1;
+                    this.ndy = 0;
+
+                    // Effet visuel vie
+                    this.createParticles(15, 15, '#f44336', 15);
+                }
+
+                // Synchroniser combo avec nouvelle longueur
+                this.syncCombo();
+
+                // Mettre à jour le HUD immédiatement (bouclier consommé, combo, etc.)
+                this.updateUI();
 
                 this.loop(performance.now());
                 return;

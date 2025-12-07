@@ -7,6 +7,7 @@
  */
 
 import { logger } from './services/logger.js';
+import { drawSkinPreview } from './SkinsRenderer.js';
 
 class ChestOpeningExperience {
     constructor() {
@@ -79,7 +80,7 @@ class ChestOpeningExperience {
         chestZone.className = 'chest-zone';
         chestZone.innerHTML = `
             <div class="chest-box">
-                <img src="assets/hub_pictures/hub_chess.png" alt="Coffre" class="chest-image">
+                <img src="assets/hub_pictures/hub_chess.webp" alt="Coffre" class="chest-image">
             </div>
             <div class="chest-tap-hint">Appuyez pour ouvrir</div>
         `;
@@ -199,7 +200,7 @@ class ChestOpeningExperience {
 
     /**
      * Phase 3: Révélation progressive des récompenses
-     * Ordre : commun → rare → épique → légendaire
+     * Affiche un item à la fois avec bouton Suivant
      */
     async revealRewards() {
         logger.log('[ChestOpening] Phase 3: Révélation');
@@ -216,17 +217,15 @@ class ChestOpeningExperience {
         title.textContent = '✨ RÉCOMPENSES ✨';
         rewardsZone.appendChild(title);
 
-        await this.wait(300);
-
         // Ordre de rareté (commun en premier, légendaire en dernier)
         const rarityOrder = { common: 1, rare: 2, epic: 3, legendary: 4 };
 
         // Collecter toutes les récompenses
-        const allRewards = [];
+        this.allRewards = [];
 
         // XP (toujours common)
         if (this.currentRewards.xp) {
-            allRewards.push({
+            this.allRewards.push({
                 type: 'xp',
                 emoji: '✨',
                 text: `+${this.currentRewards.xp} XP`,
@@ -236,7 +235,7 @@ class ChestOpeningExperience {
 
         // Coins (toujours common)
         if (this.currentRewards.coins) {
-            allRewards.push({
+            this.allRewards.push({
                 type: 'coins',
                 emoji: '💰',
                 text: `+${this.currentRewards.coins} COINS`,
@@ -245,12 +244,30 @@ class ChestOpeningExperience {
             });
         }
 
+        // ⚗️ Booster XP (rare ou epic selon le %)
+        if (this.currentRewards.booster) {
+            const percent = this.currentRewards.booster;
+            const boosters = window.boxManager?.getBoosters() || { boost25: 0, boost50: 0 };
+            const totalBoosters = boosters.boost25 + boosters.boost50;
+            this.allRewards.push({
+                type: 'booster',
+                emoji: '⚗️',
+                boostPercent: percent,
+                text: `Booster +${percent}%`,
+                subtext: `Inventaire: ${totalBoosters} booster${totalBoosters > 1 ? 's' : ''}`,
+                rarity: percent >= 50 ? 'epic' : 'rare'
+            });
+        }
+
         // Item(s) - peut être un seul ou plusieurs
         if (this.currentRewards.item) {
             const item = this.currentRewards.item;
-            allRewards.push({
+            this.allRewards.push({
                 type: 'item',
+                itemType: item.type,
+                itemId: item.id,
                 emoji: item.emoji,
+                image: item.image || null,
                 text: item.name,
                 subtext: item.rarity.toUpperCase(),
                 rarity: item.rarity
@@ -260,9 +277,12 @@ class ChestOpeningExperience {
         // Items multiples (si le système évolue)
         if (this.currentRewards.items && Array.isArray(this.currentRewards.items)) {
             for (const item of this.currentRewards.items) {
-                allRewards.push({
+                this.allRewards.push({
                     type: 'item',
+                    itemType: item.type,
+                    itemId: item.id,
                     emoji: item.emoji,
+                    image: item.image || null,
                     text: item.name,
                     subtext: item.rarity.toUpperCase(),
                     rarity: item.rarity
@@ -271,20 +291,68 @@ class ChestOpeningExperience {
         }
 
         // Trier par rareté (commun → légendaire)
-        allRewards.sort((a, b) => (rarityOrder[a.rarity] || 0) - (rarityOrder[b.rarity] || 0));
+        this.allRewards.sort((a, b) => (rarityOrder[a.rarity] || 0) - (rarityOrder[b.rarity] || 0));
 
-        // Révéler une par une
-        for (const reward of allRewards) {
-            await this.revealReward(reward);
+        // Initialiser l'index
+        this.currentRewardIndex = 0;
+
+        // Afficher la première récompense
+        await this.wait(300);
+        await this.showCurrentReward();
+    }
+
+    /**
+     * Affiche la récompense actuelle
+     */
+    async showCurrentReward() {
+        const rewardsZone = document.querySelector('.chest-rewards-zone');
+        if (!rewardsZone) return;
+
+        const reward = this.allRewards[this.currentRewardIndex];
+        const isLastReward = this.currentRewardIndex === this.allRewards.length - 1;
+
+        // Supprimer l'ancienne carte si présente
+        const oldCard = rewardsZone.querySelector('.chest-reward-card');
+        if (oldCard) {
+            oldCard.classList.add('chest-card-exit');
+            await this.wait(300);
+            oldCard.remove();
         }
 
-        // Afficher bouton collecter
-        await this.wait(500);
-        const collectBtn = document.querySelector('.chest-collect-btn');
-        if (collectBtn) {
-            collectBtn.classList.remove('hidden');
-            collectBtn.classList.add('chest-btn-appear');
+        // Supprimer l'ancien bouton
+        const oldBtn = rewardsZone.querySelector('.chest-next-btn, .chest-collect-btn');
+        if (oldBtn) oldBtn.remove();
+
+        // Supprimer l'ancien indicateur de rareté ou texte externe
+        const oldRarity = rewardsZone.querySelector('.chest-rarity-indicator');
+        if (oldRarity) oldRarity.remove();
+        const oldOutsideText = rewardsZone.querySelector('.chest-outside-text');
+        if (oldOutsideText) oldOutsideText.remove();
+
+        // Afficher la nouvelle récompense
+        await this.revealReward(reward);
+
+        // Ajouter le bouton approprié
+        await this.wait(400);
+        const btn = document.createElement('button');
+
+        if (isLastReward) {
+            btn.className = 'chest-collect-btn chest-btn-appear';
+            btn.textContent = 'COLLECTER';
+            btn.onclick = () => {
+                if (window.audio) window.audio.chestCollect();
+                this.close();
+            };
+        } else {
+            btn.className = 'chest-next-btn chest-btn-appear';
+            btn.textContent = `SUIVANT (${this.currentRewardIndex + 1}/${this.allRewards.length})`;
+            btn.onclick = () => {
+                this.currentRewardIndex++;
+                this.showCurrentReward();
+            };
         }
+
+        rewardsZone.appendChild(btn);
     }
 
     /**
@@ -305,18 +373,130 @@ class ChestOpeningExperience {
             legendary: '🟡'
         };
 
-        card.innerHTML = `
-            <div class="chest-reward-emoji">${reward.emoji}</div>
-            <div class="chest-reward-text">${reward.text}</div>
-            ${reward.subtext ? `<div class="chest-reward-subtext">${reward.subtext}</div>` : ''}
-            <div class="chest-reward-rarity">${rarityEmojis[reward.rarity] || ''}</div>
-        `;
+        // Déterminer l'affichage selon le type
+        let iconHTML = '';
+        const uniqueId = `reward-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Déterminer si c'est une bannière (carte paysage) ou autre (carte portrait)
+        const isBanner = reward.itemType === 'banner';
+        if (isBanner) {
+            card.classList.add('chest-card-landscape');
+        }
+
+        // Flag pour savoir si le texte va en dehors de la carte
+        let textOutside = false;
+        let outsideText = '';
+
+        if (reward.type === 'xp') {
+            // 🍎 XP - Pommes : petit (≤250) ou gros (>250)
+            const xpValue = parseInt(reward.text.replace(/[^\d]/g, '')) || 0;
+            const isSmallXp = xpValue <= 250;
+            const xpImage = isSmallXp
+                ? 'assets/items_chess_pictures/food_apples_small.webp'
+                : 'assets/items_chess_pictures/food_apples2.webp';
+            const xpLabel = isSmallXp ? 'Panier de Pommes' : 'Coffre de Pommes';
+
+            iconHTML = `<img src="${xpImage}" alt="XP" class="chest-reward-icon chest-reward-xp chest-reward-fullcard">`;
+            textOutside = true;
+            outsideText = `<div class="chest-outside-text">
+                <div class="chest-outside-main">${xpLabel}</div>
+                <div class="chest-outside-sub">+${xpValue} XP</div>
+            </div>`;
+            card.classList.add('chest-card-imageonly');
+        } else if (reward.type === 'coins') {
+            // 💰 COINS - Seau (≤100) ou Coffre (>100)
+            const coinsValue = parseInt(reward.text.replace(/[^\d]/g, '')) || 0;
+            const isSmallCoins = coinsValue <= 100;
+            const coinsImage = isSmallCoins
+                ? 'assets/items_chess_pictures/coins_reward_alt2.webp'
+                : 'assets/items_chess_pictures/coins_reward2.webp';
+            const coinsLabel = isSmallCoins ? 'Seau de Gold' : 'Coffre de Gold';
+
+            iconHTML = `<img src="${coinsImage}" alt="Coins" class="chest-reward-icon chest-reward-coins chest-reward-fullcard">`;
+            textOutside = true;
+            outsideText = `<div class="chest-outside-text">
+                <div class="chest-outside-main">${coinsLabel}</div>
+                <div class="chest-outside-sub">+${coinsValue} Gold</div>
+            </div>`;
+            card.classList.add('chest-card-imageonly');
+        } else if (reward.type === 'booster') {
+            // ⚗️ BOOSTER XP - Stocké dans Ma Box (Partie 2)
+            const isEpic = reward.boostPercent >= 50;
+            const boosterImage = isEpic
+                ? 'assets/items_chess_pictures/xp_boost_epic2.webp'
+                : 'assets/items_chess_pictures/xp_boost2.webp';
+
+            iconHTML = `<img src="${boosterImage}" alt="Booster" class="chest-reward-icon chest-reward-booster chest-reward-fullcard">`;
+            textOutside = true;
+            outsideText = `<div class="chest-outside-text">
+                <div class="chest-outside-main">Booster XP</div>
+                <div class="chest-outside-sub">+${reward.boostPercent}% pendant 1h</div>
+            </div>`;
+            card.classList.add('chest-card-imageonly');
+        } else if (reward.itemType === 'skin') {
+            // Skin → Canvas avec drawSkinPreview
+            iconHTML = `<canvas id="${uniqueId}" width="100" height="100" class="chest-reward-canvas"></canvas>`;
+        } else if (reward.image) {
+            // Bannière ou item avec image
+            iconHTML = `<img src="${reward.image}" alt="${reward.text}" class="chest-reward-icon ${isBanner ? 'chest-reward-banner' : ''}">`;
+        } else {
+            // Fallback emoji
+            iconHTML = `<div class="chest-reward-emoji">${reward.emoji}</div>`;
+        }
+
+        // Contenu de la carte
+        if (textOutside) {
+            // Carte image uniquement
+            card.innerHTML = iconHTML;
+        } else {
+            // Carte avec texte à l'intérieur
+            card.innerHTML = `
+                ${iconHTML}
+                <div class="chest-reward-text">${reward.text}</div>
+                ${reward.subtext ? `<div class="chest-reward-subtext">${reward.subtext}</div>` : ''}
+            `;
+        }
+
+        // Stocker le texte externe
+        card._textOutside = textOutside;
+        card._outsideText = outsideText;
+
+        // Si pas de texte externe défini, créer un texte avec le nom de l'item
+        if (!textOutside && reward.text) {
+            card._outsideText = `<div class="chest-outside-text">
+                <div class="chest-outside-main">${reward.text}</div>
+                ${reward.subtext ? `<div class="chest-outside-sub">${reward.subtext}</div>` : ''}
+            </div>`;
+            card._textOutside = true;
+        }
+
+        // Si skin, dessiner après ajout au DOM
+        if (reward.itemType === 'skin') {
+            card._skinId = reward.itemId;
+            card._canvasId = uniqueId;
+        }
 
         rewardsZone.appendChild(card);
+
+        // Ajouter le texte externe (nom de l'item) - PAS d'indicateur de rareté emoji
+        if (card._textOutside && card._outsideText) {
+            const textContainer = document.createElement('div');
+            textContainer.innerHTML = card._outsideText;
+            rewardsZone.appendChild(textContainer.firstElementChild);
+        }
 
         // Animation apparition
         setTimeout(() => {
             card.classList.add('chest-card-reveal');
+
+            // 🐍 Dessiner le skin si c'est un skin
+            if (card._skinId && card._canvasId) {
+                const canvas = document.getElementById(card._canvasId);
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    drawSkinPreview(ctx, card._skinId, 100);
+                }
+            }
 
             // 🔊 SON selon la rareté
             if (window.audio) {
@@ -367,6 +547,9 @@ class ChestOpeningExperience {
 
         const modal = document.getElementById('chest-modal');
         if (modal) {
+            // ✅ FIX: Désactiver immédiatement les interactions pour éviter le blocage
+            modal.style.pointerEvents = 'none';
+
             // Animation de sortie
             modal.classList.add('chest-modal-closing');
 
@@ -374,6 +557,7 @@ class ChestOpeningExperience {
                 modal.remove();
                 this.currentRewards = null;
                 this.particles = []; // Nettoyer les particules
+                logger.log('[ChestOpening] Modal supprimé du DOM');
             }, 300);
         }
     }

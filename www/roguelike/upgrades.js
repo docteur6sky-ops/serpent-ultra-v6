@@ -6,36 +6,6 @@
 // ========== UPGRADES DE RUN (temporaires, perdus à la mort) ==========
 export const RUN_UPGRADES = {
     // ===== CATÉGORIE : VITESSE =====
-    speed_boost: {
-        id: "speed_boost",
-        name: "Vélocité",
-        description: "+15% vitesse de déplacement",
-        icon: "⚡",
-        category: "speed",
-        rarity: "common",
-        weight: 10,  // Probabilité d'apparition
-        effect: {
-            type: "speed_multiplier",
-            value: 1.15
-        },
-        stackable: true,
-        maxStacks: 3
-    },
-    speed_reduction: {
-        id: "speed_reduction",
-        name: "Zen",
-        description: "-10% vitesse (plus de contrôle)",
-        icon: "🐢",
-        category: "speed",
-        rarity: "common",
-        weight: 8,
-        effect: {
-            type: "speed_multiplier",
-            value: 0.9
-        },
-        stackable: true,
-        maxStacks: 2
-    },
     burst_speed: {
         id: "burst_speed",
         name: "Sprint",
@@ -100,20 +70,6 @@ export const RUN_UPGRADES = {
         stackable: true,
         maxStacks: 2
     },
-    smaller_hitbox: {
-        id: "smaller_hitbox",
-        name: "Agilité",
-        description: "Hitbox réduite de 20%",
-        icon: "🎯",
-        category: "survival",
-        rarity: "epic",
-        weight: 3,
-        effect: {
-            type: "hitbox",
-            multiplier: 0.8
-        },
-        stackable: false
-    },
 
     // ===== CATÉGORIE : POWER-UPS =====
     ice_duration: {
@@ -132,17 +88,33 @@ export const RUN_UPGRADES = {
         stackable: true,
         maxStacks: 2
     },
-    fire_power: {
-        id: "fire_power",
-        name: "Inferno",
-        description: "Feu détruit 2 murs au lieu de 1",
+    fire_duration: {
+        id: "fire_duration",
+        name: "Feu Prolongé",
+        description: "Feu dure 2x plus longtemps (boost infini)",
         icon: "🔥",
         category: "powerup",
         rarity: "rare",
         weight: 6,
         effect: {
-            type: "powerup_strength",
+            type: "powerup_duration",
             powerup: "fire",
+            multiplier: 2
+        },
+        stackable: true,
+        maxStacks: 2
+    },
+    rock_duration: {
+        id: "rock_duration",
+        name: "Roche Prolongée",
+        description: "Roche dure 2x plus longtemps (détruit murs)",
+        icon: "🪨",
+        category: "powerup",
+        rarity: "rare",
+        weight: 6,
+        effect: {
+            type: "powerup_duration",
+            powerup: "rock",
             multiplier: 2
         },
         stackable: true,
@@ -151,7 +123,7 @@ export const RUN_UPGRADES = {
     ghost_extended: {
         id: "ghost_extended",
         name: "Spectre",
-        description: "Ghost dure 3x plus longtemps",
+        description: "Ghost dure 2x plus longtemps",
         icon: "👻",
         category: "powerup",
         rarity: "rare",
@@ -159,84 +131,54 @@ export const RUN_UPGRADES = {
         effect: {
             type: "powerup_duration",
             powerup: "ghost",
-            multiplier: 3
+            multiplier: 2
         },
-        stackable: false
-    },
-    powerup_magnet: {
-        id: "powerup_magnet",
-        name: "Magnétisme",
-        description: "Attire les power-ups dans un rayon de 3 cases",
-        icon: "🧲",
-        category: "powerup",
-        rarity: "epic",
-        weight: 3,
-        effect: {
-            type: "magnet",
-            radius: 3,
-            targets: ["powerup"]
-        },
-        stackable: false
-    },
-    double_powerup: {
-        id: "double_powerup",
-        name: "Dualité",
-        description: "Les power-ups ont 50% de chance de spawn en double",
-        icon: "✨",
-        category: "powerup",
-        rarity: "legendary",
-        weight: 1,
-        effect: {
-            type: "double_spawn",
-            chance: 0.5,
-            targets: ["powerup"]
-        },
-        stackable: false
+        stackable: true,
+        maxStacks: 2
     },
 
     // ===== CATÉGORIE : SCORE / XP =====
     xp_boost: {
         id: "xp_boost",
         name: "Sagesse",
-        description: "+25% XP gagné cette run",
+        description: "+25% XP par stack (max x2)",
         icon: "📚",
         category: "score",
         rarity: "common",
         weight: 8,
         effect: {
             type: "xp_multiplier",
-            value: 1.25
+            value: 0.25  // +0.25 par stack (additif)
         },
         stackable: true,
-        maxStacks: 3
+        maxStacks: 4
     },
     apple_value: {
         id: "apple_value",
         name: "Gourmandise",
-        description: "Pommes donnent +2 score au lieu de +1",
+        description: "1 pomme mangée = 2 pommes (objectif x2)",
         icon: "🍎",
-        category: "score",
-        rarity: "common",
-        weight: 8,
-        effect: {
-            type: "apple_score",
-            value: 2
-        },
-        stackable: true,
-        maxStacks: 3
-    },
-    golden_apple_chance: {
-        id: "golden_apple_chance",
-        name: "Fortune",
-        description: "10% chance de pomme dorée (+10 score)",
-        icon: "🌟",
         category: "score",
         rarity: "rare",
         weight: 5,
         effect: {
-            type: "golden_apple",
-            chance: 0.1,
-            value: 10
+            type: "apple_double",
+            multiplier: 2
+        },
+        stackable: false
+    },
+    fortune: {
+        id: "fortune",
+        name: "Fortune",
+        description: "Chance de spawn 💰 (+25 gold)",
+        icon: "💰",
+        category: "score",
+        rarity: "rare",
+        weight: 5,
+        effect: {
+            type: "gold_spawn",
+            chances: [0.10, 0.15, 0.30],  // 10%, 15%, 30% par stack
+            goldValue: 25
         },
         stackable: true,
         maxStacks: 3
@@ -244,47 +186,30 @@ export const RUN_UPGRADES = {
     combo_master: {
         id: "combo_master",
         name: "Combo Master",
-        description: "Score x2 si 5 pommes en 10 secondes",
+        description: "Double le combo au début du prochain stage",
         icon: "🔥",
         category: "score",
         rarity: "epic",
         weight: 3,
         effect: {
-            type: "combo",
-            threshold: 5,
-            window: 10,
-            multiplier: 2
+            type: "combo_double_next_stage"
         },
-        stackable: false
+        stackable: false,
+        consumedOnUse: true  // Disparaît après utilisation
     },
 
     // ===== CATÉGORIE : SEGMENTS =====
-    starting_segments: {
-        id: "starting_segments",
-        name: "Longueur",
-        description: "+2 segments au début de chaque niveau",
-        icon: "🐍",
+    scissors: {
+        id: "scissors",
+        name: "Ciseaux",
+        description: "Longueur ÷2 au début du stage, combo inchangé",
+        icon: "✂️",
         category: "segments",
-        rarity: "common",
-        weight: 7,
+        rarity: "rare",
+        weight: 5,
         effect: {
-            type: "starting_segments",
-            value: 2
-        },
-        stackable: true,
-        maxStacks: 3
-    },
-    segment_armor: {
-        id: "segment_armor",
-        name: "Écailles",
-        description: "Les 3 derniers segments sont invulnérables",
-        icon: "🔰",
-        category: "segments",
-        rarity: "epic",
-        weight: 3,
-        effect: {
-            type: "tail_armor",
-            count: 3
+            type: "scissors",
+            divisor: 2
         },
         stackable: false
     },
@@ -304,26 +229,10 @@ export const RUN_UPGRADES = {
     },
 
     // ===== CATÉGORIE : SPÉCIAL =====
-    time_slow: {
-        id: "time_slow",
-        name: "Ralenti",
-        description: "Tout ralentit pendant 3s quand tu es en danger",
-        icon: "⏰",
-        category: "special",
-        rarity: "epic",
-        weight: 3,
-        effect: {
-            type: "danger_slow",
-            duration: 3,
-            factor: 0.5,
-            cooldown: 30
-        },
-        stackable: false
-    },
     teleport: {
         id: "teleport",
         name: "Téléportation",
-        description: "Traverse les bords de l'écran",
+        description: "Supprime les murs de bordure, traverse l'écran",
         icon: "🌀",
         category: "special",
         rarity: "rare",
@@ -334,19 +243,21 @@ export const RUN_UPGRADES = {
         },
         stackable: false
     },
-    mirror: {
-        id: "mirror",
-        name: "Miroir",
-        description: "Contrôles inversés mais score x1.5",
-        icon: "🪞",
-        category: "special",
-        rarity: "epic",
-        weight: 2,
+    lightning_duration: {
+        id: "lightning_duration",
+        name: "Foudre Prolongée",
+        description: "Foudre dure 2x plus longtemps (contrôles inversés)",
+        icon: "⚡",
+        category: "powerup",
+        rarity: "rare",
+        weight: 5,
         effect: {
-            type: "mirror_controls",
-            score_multiplier: 1.5
+            type: "powerup_duration",
+            powerup: "lightning",
+            multiplier: 2
         },
-        stackable: false
+        stackable: true,
+        maxStacks: 2
     },
     random_upgrade: {
         id: "random_upgrade",
@@ -508,8 +419,32 @@ export function selectRandomUpgrades(count = 3, excludeIds = [], rarityBoost = 0
  * Applique un upgrade à l'état de la run
  */
 export function applyUpgrade(runState, upgradeId) {
-    const upgrade = RUN_UPGRADES[upgradeId];
+    let upgrade = RUN_UPGRADES[upgradeId];
     if (!upgrade) return runState;
+
+    // Upgrade ??? : remplacer par un upgrade aléatoire
+    if (upgrade.effect.type === 'random') {
+        const legendaryChance = upgrade.effect.legendary_chance || 0.1;
+        const availableUpgrades = Object.values(RUN_UPGRADES).filter(u =>
+            u.id !== 'random_upgrade' &&
+            !runState.upgrades.includes(u.id)
+        );
+
+        if (availableUpgrades.length > 0) {
+            // Chance d'obtenir un légendaire
+            let pool = availableUpgrades;
+            if (Math.random() < legendaryChance) {
+                const legendaries = availableUpgrades.filter(u => u.rarity === 'legendary');
+                if (legendaries.length > 0) {
+                    pool = legendaries;
+                }
+            }
+            const randomUpgrade = pool[Math.floor(Math.random() * pool.length)];
+            upgradeId = randomUpgrade.id;
+            upgrade = randomUpgrade;
+            // Note: ??? transformé en upgrade.name
+        }
+    }
 
     // Vérifier le stacking
     const existing = runState.upgrades.filter(u => u === upgradeId).length;
@@ -524,10 +459,7 @@ export function applyUpgrade(runState, upgradeId) {
         case 'lives':
             runState.lives += upgrade.effect.value;
             break;
-        case 'starting_segments':
-            runState.bonusSegments += upgrade.effect.value;
-            break;
-        // Les autres effets sont appliqués pendant le gameplay
+        // Les autres effets sont appliqués pendant le gameplay (scissors, etc.)
     }
 
     return runState;
@@ -556,7 +488,8 @@ export function calculateRunModifiers(upgrades) {
                 modifiers.speedMultiplier *= upgrade.effect.value;
                 break;
             case 'xp_multiplier':
-                modifiers.xpMultiplier *= upgrade.effect.value;
+                // Additif : +0.25 par stack (1 → 1.25 → 1.50 → 1.75 → 2.00)
+                modifiers.xpMultiplier += upgrade.effect.value;
                 break;
             case 'apple_score':
                 modifiers.appleScore += upgrade.effect.value - 1;

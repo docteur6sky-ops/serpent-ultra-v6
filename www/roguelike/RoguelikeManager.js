@@ -8,6 +8,9 @@ import { RUN_UPGRADES, PERMANENT_UPGRADES, RARITIES, selectRandomUpgrades, apply
 import { logger } from '../services/logger.js';
 import { achievementManager } from './achievements.js';
 
+// SecurityManager - accès via window pour éviter dépendance circulaire
+const getSecurityManager = () => window.securityManager;
+
 class RoguelikeManager {
     constructor() {
         // État de la run actuelle
@@ -52,7 +55,6 @@ class RoguelikeManager {
 
             // État du joueur
             lives: 1 + this.getMetaBonus('starting_lives'),
-            bonusSegments: 0,
 
             // Modificateurs calculés
             modifiers: calculateRunModifiers([]),
@@ -101,7 +103,6 @@ class RoguelikeManager {
 
             // État du joueur
             lives: lives,
-            bonusSegments: 0,
 
             // Modificateurs calculés (avec ceux du daily)
             modifiers: {
@@ -172,7 +173,10 @@ class RoguelikeManager {
         // Recalculer les modificateurs avec les upgrades
         this.currentRun.modifiers = calculateRunModifiers(this.currentRun.upgrades);
 
+        // Debug: afficher les upgrades et passives
         logger.log(`[RoguelikeManager] Niveau ${levelNum} démarré:`, levelData.name);
+        logger.log(`[RoguelikeManager] Upgrades actuels:`, this.currentRun.upgrades);
+        logger.log(`[RoguelikeManager] Passives:`, JSON.stringify(this.currentRun.modifiers.passives));
 
         // Notifier le jeu
         if (this.onLevelStart) {
@@ -233,6 +237,16 @@ class RoguelikeManager {
         const modifiedPoints = points * this.currentRun.modifiers.appleScore;
         this.currentRun.applesEaten++;
         this.currentRun.score += modifiedPoints;
+
+        // Tracking anti-triche
+        const sm = getSecurityManager();
+        if (sm) {
+            sm.trackGameEvent('apple', {
+                points: modifiedPoints,
+                total: this.currentRun.score,
+                level: this.currentRun.level
+            });
+        }
 
         // Vérifier objectif
         const obj = this.currentRun.currentLevelData?.objective;
@@ -433,7 +447,8 @@ class RoguelikeManager {
             powerupsCollected: this.currentRun.powerupsCollected,
             timePlayed: this.currentRun.timePlayed + (Date.now() - this.currentRun.levelStartTime) / 1000,
             upgradesCollected: this.currentRun.upgrades.length,
-            maxCombo: window.soloGame?.maxCombo || 1
+            maxCombo: window.soloGame?.maxCombo || 1,
+            goldCollected: window.soloGame?.goldCollected || 0  // 💰 Fortune gold
         };
 
         // Calculer XP gagné
@@ -451,6 +466,12 @@ class RoguelikeManager {
         }
         if (finalStats.score > this.metaProgression.bestScore) {
             this.metaProgression.bestScore = finalStats.score;
+        }
+
+        // 💰 Ajouter le gold collecté
+        if (finalStats.goldCollected > 0) {
+            this.metaProgression.totalGold = (this.metaProgression.totalGold || 0) + finalStats.goldCollected;
+            logger.log(`[RoguelikeManager] +${finalStats.goldCollected} gold → Total: ${this.metaProgression.totalGold}`);
         }
 
         this.saveMetaProgression();
@@ -508,6 +529,19 @@ class RoguelikeManager {
     async submitScoreToLeaderboard(stats) {
         try {
             const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+            const sm = getSecurityManager();
+
+            // Validation anti-triche côté client (si disponible)
+            let validation = { valid: true, trustScore: 100 };
+            let verifyToken = null;
+
+            if (sm) {
+                validation = sm.validateRunStats(stats);
+                if (!validation.valid) {
+                    logger.warn('[RoguelikeManager] Stats suspectes détectées:', validation.issues);
+                }
+                verifyToken = sm.generateVerificationToken(stats);
+            }
 
             const response = await fetch('/api/roguelike/scores', {
                 method: 'POST',
@@ -520,7 +554,11 @@ class RoguelikeManager {
                     level: stats.level,
                     apples: stats.applesEaten,
                     time: Math.floor(stats.timePlayed),
-                    upgrades: stats.upgradesCollected
+                    upgrades: stats.upgradesCollected,
+                    // Données de sécurité
+                    trustScore: validation.trustScore,
+                    verifyToken: verifyToken,
+                    sessionId: sm?.sessionId || null
                 })
             });
 
@@ -558,6 +596,16 @@ class RoguelikeManager {
 
         try {
             const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+            const sm = getSecurityManager();
+
+            // Validation anti-triche (si disponible)
+            let validation = { valid: true, trustScore: 100 };
+            let verifyToken = null;
+
+            if (sm) {
+                validation = sm.validateRunStats(stats);
+                verifyToken = sm.generateVerificationToken(stats);
+            }
 
             const response = await fetch('/api/roguelike/daily/scores', {
                 method: 'POST',
@@ -569,7 +617,11 @@ class RoguelikeManager {
                     score: stats.score,
                     level: stats.level,
                     time: Math.floor(stats.timePlayed),
-                    seed: this.currentRun.dailySeed
+                    seed: this.currentRun.dailySeed,
+                    // Données de sécurité
+                    trustScore: validation.trustScore,
+                    verifyToken: verifyToken,
+                    sessionId: sm?.sessionId || null
                 })
             });
 
@@ -611,24 +663,29 @@ class RoguelikeManager {
      * Charge la méta-progression depuis le localStorage
      */
     loadMetaProgression() {
+        // Valeurs par défaut
+        const defaults = {
+            totalXP: 0,
+            totalRuns: 0,
+            bestLevel: 0,
+            bestScore: 0,
+            totalGold: 0,  // 💰 Gold accumulé (Fortune)
+            unlockedUpgrades: [],
+            purchasedPerks: []
+        };
+
         try {
             const saved = localStorage.getItem('snakeRoguelikeMeta');
             if (saved) {
-                return JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                // Fusionner avec les valeurs par défaut (pour anciennes sauvegardes)
+                return { ...defaults, ...parsed };
             }
         } catch (e) {
             logger.error('[RoguelikeManager] Erreur chargement méta:', e);
         }
 
-        // Valeurs par défaut
-        return {
-            totalXP: 0,
-            totalRuns: 0,
-            bestLevel: 0,
-            bestScore: 0,
-            unlockedUpgrades: [],
-            purchasedPerks: []
-        };
+        return defaults;
     }
 
     /**
@@ -685,7 +742,9 @@ class RoguelikeManager {
     getMetaBonus(type) {
         let bonus = 0;
 
-        this.metaProgression.purchasedPerks.forEach(perkId => {
+        // Sécurité : purchasedPerks peut être undefined sur anciennes sauvegardes
+        const perks = this.metaProgression?.purchasedPerks || [];
+        perks.forEach(perkId => {
             const perk = PERMANENT_UPGRADES[perkId];
             if (perk?.effect?.type === type) {
                 bonus += perk.effect.value;
