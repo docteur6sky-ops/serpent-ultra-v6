@@ -172,12 +172,6 @@ class RoguelikeUI {
                 <button class="rl-btn-retry" id="rl-btn-retry">
                     🔄 NOUVELLE RUN
                 </button>
-                <button class="rl-btn-daily" id="rl-btn-daily">
-                    🎯 DÉFI DU JOUR
-                </button>
-                <button class="rl-btn-achievements" id="rl-btn-achievements">
-                    🏆 Achievements
-                </button>
                 <button class="rl-btn-menu" id="rl-btn-menu">
                     🏠 Menu Principal
                 </button>
@@ -190,17 +184,6 @@ class RoguelikeUI {
         document.getElementById('rl-btn-retry').addEventListener('click', () => {
             this.hideRunEnd();
             roguelikeManager.startNewRun();
-        });
-
-        document.getElementById('rl-btn-achievements').addEventListener('click', () => {
-            achievementsUI.show();
-        });
-
-        document.getElementById('rl-btn-daily').addEventListener('click', () => {
-            this.hideRunEnd();
-            if (window.dailyChallenge) {
-                window.dailyChallenge.show();
-            }
         });
 
         document.getElementById('rl-btn-menu').addEventListener('click', () => {
