@@ -59,9 +59,26 @@ class LeaderboardManager {
      */
     getLeaderboard() {
         try {
-            return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+            const raw = localStorage.getItem(this.storageKey);
+            if (!raw) return [];
+
+            const parsed = JSON.parse(raw);
+
+            // Si c'est un objet avec .data (format sécurisé), extraire les données
+            if (parsed && parsed.data && Array.isArray(parsed.data)) {
+                return parsed.data;
+            }
+
+            // Si c'est directement un tableau, le retourner
+            if (Array.isArray(parsed)) {
+                return parsed;
+            }
+
+            // Sinon, retourner un tableau vide
+            logger.warn('[LeaderboardManager] Format inattendu, reset du leaderboard');
+            return [];
         } catch (e) {
-            logger.warn('[LeaderboardManager] Erreur lecture localStorage');
+            logger.warn('[LeaderboardManager] Erreur lecture localStorage:', e);
             return [];
         }
     }

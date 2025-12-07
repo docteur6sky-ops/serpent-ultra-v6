@@ -156,7 +156,7 @@ class ProgressionManager {
                 if (nextBtn) {
                     nextBtn.disabled = false;
                     const btnText = document.getElementById('progression-btn-text');
-                    if (btnText) btnText.textContent = 'Menu Principal';
+                    if (btnText) btnText.textContent = 'Voir les Stats';
                 }
             }, delay + 800);
             return;
@@ -216,7 +216,7 @@ class ProgressionManager {
                         if (nextBtn) {
                             nextBtn.disabled = false;
                             const btnText = document.getElementById('progression-btn-text');
-                            if (btnText) btnText.textContent = 'Menu Principal';
+                            if (btnText) btnText.textContent = 'Voir les Stats';
                         }
                     }, 800);
                 }
