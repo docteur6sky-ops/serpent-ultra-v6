@@ -81,16 +81,16 @@ export const ROGUELIKE_LEVELS = [
         music: "tense"
     },
 
-    // ========== STAGE 5 : BOSS 1 ==========
+    // ========== STAGE 5 : BOSS 1 - TITAN ==========
     {
         level: 5,
         world: 1,
-        name: "GARDIEN",
-        description: "Vole ses segments !",
+        name: "TITAN",
+        description: "Évite ses murs !",
         objective: {
             type: "boss",
             bossSegments: 15,
-            timeLimit: 120  // 2 minutes
+            timeLimit: 240  // 4 minutes
         },
         obstacles: [
             { type: "wall_static", count: 4, pattern: "arena" }
@@ -107,31 +107,49 @@ export const ROGUELIKE_LEVELS = [
         bossAggression: 0.3,
         bossMoveInterval: 280,
         bossGraceDelay: 2,
-        // PHASES DU GARDIEN (Boss tutoriel - simple)
+        // PHASES DU TITAN (Boss murs - tutoriel)
         bossPhases: [
             {
                 name: "Éveil",
                 threshold: 1.0,    // 100% -> 50% HP
                 aggression: 0.3,
                 speedMultiplier: 1.0,
-                behavior: "normal",
-                color: "#ff0000"
+                behavior: "wall_spawn",
+                color: "#8B4513",
+                special: {
+                    type: "wall_spawn",
+                    wallCount: 1,          // 1 mur par spawn
+                    wallDuration: 8,       // 8 secondes
+                    spawnInterval: 5000    // Toutes les 5 secondes
+                }
             },
             {
-                name: "Alerte",
+                name: "Forteresse",
                 threshold: 0.5,    // 50% -> 25% HP
                 aggression: 0.5,
                 speedMultiplier: 1.2,
-                behavior: "normal",
-                color: "#ff4400"
+                behavior: "wall_spawn",
+                color: "#A0522D",
+                special: {
+                    type: "wall_spawn",
+                    wallCount: 2,          // 2 murs par spawn
+                    wallDuration: 7,
+                    spawnInterval: 4000    // Toutes les 4 secondes
+                }
             },
             {
-                name: "Rage",
+                name: "Citadelle",
                 threshold: 0.25,   // 25% -> 0% HP
-                aggression: 0.8,
-                speedMultiplier: 1.5,
-                behavior: "rage",  // Plus agressif, mouvements erratiques
-                color: "#ff8800"
+                aggression: 0.7,
+                speedMultiplier: 1.4,
+                behavior: "wall_spawn",
+                color: "#CD853F",
+                special: {
+                    type: "wall_spawn",
+                    wallCount: 3,          // 3 murs par spawn
+                    wallDuration: 6,
+                    spawnInterval: 3000    // Toutes les 3 secondes
+                }
             }
         ]
     },
@@ -206,16 +224,16 @@ export const ROGUELIKE_LEVELS = [
         music: "tense"
     },
 
-    // ========== STAGE 10 : BOSS 2 ==========
+    // ========== STAGE 10 : BOSS 2 - ICE ==========
     {
         level: 10,
         world: 2,
-        name: "VENIN",
-        description: "Évite le poison !",
+        name: "CRYO",
+        description: "Évite le gel !",
         objective: {
             type: "boss",
             bossSegments: 20,
-            timeLimit: 90  // 1 min 30
+            timeLimit: 180  // 3 minutes
         },
         obstacles: [
             { type: "wall_static", count: 5, pattern: "arena" }
@@ -232,44 +250,54 @@ export const ROGUELIKE_LEVELS = [
         bossAggression: 0.5,
         bossMoveInterval: 240,
         bossGraceDelay: 2,
-        // PHASES DU VENIN (Boss poison)
+        // PHASES DE CRYO (Boss glace - zones gelées)
         bossPhases: [
             {
-                name: "Toxique",
+                name: "Frimas",
                 threshold: 1.0,
                 aggression: 0.5,
                 speedMultiplier: 1.0,
-                behavior: "poison_trail",  // Laisse des traces de poison
-                color: "#00ff00",
+                behavior: "ice_zone",
+                color: "#00BFFF",
                 special: {
-                    type: "poison_trail",
-                    duration: 5,           // Le poison reste 5 secondes
-                    damage: 1              // Perte 1 segment si touché
+                    type: "ice_zone",
+                    zoneCount: 1,          // 1 zone par spawn
+                    zoneRadius: 2,         // Rayon de 2 cases
+                    zoneDuration: 6,       // 6 secondes
+                    spawnInterval: 5000,   // Toutes les 5 secondes
+                    slowFactor: 0.5        // Ralentit de 50%
                 }
             },
             {
-                name: "Venimeux",
+                name: "Blizzard",
                 threshold: 0.5,
                 aggression: 0.65,
                 speedMultiplier: 1.15,
-                behavior: "poison_spit",   // Crache du poison à distance
-                color: "#44ff00",
+                behavior: "ice_zone",
+                color: "#00CED1",
                 special: {
-                    type: "poison_spit",
-                    interval: 3000,        // Crache toutes les 3 secondes
-                    range: 5               // Portée de 5 cases
+                    type: "ice_zone",
+                    zoneCount: 2,          // 2 zones par spawn
+                    zoneRadius: 2,
+                    zoneDuration: 7,
+                    spawnInterval: 4000,
+                    slowFactor: 0.5
                 }
             },
             {
-                name: "Épidémie",
+                name: "Glaciation",
                 threshold: 0.25,
-                aggression: 0.85,
-                speedMultiplier: 1.4,
-                behavior: "poison_flood",  // Poison partout, très agressif
-                color: "#88ff00",
+                aggression: 0.8,
+                speedMultiplier: 1.3,
+                behavior: "ice_zone",
+                color: "#E0FFFF",
                 special: {
-                    type: "poison_flood",
-                    spawnRate: 2000        // Spawn poison toutes les 2s
+                    type: "ice_zone",
+                    zoneCount: 3,          // 3 zones par spawn
+                    zoneRadius: 3,         // Rayon plus grand
+                    zoneDuration: 8,
+                    spawnInterval: 3000,
+                    slowFactor: 0.4        // Ralentit encore plus
                 }
             }
         ]
@@ -345,16 +373,16 @@ export const ROGUELIKE_LEVELS = [
         music: "tense"
     },
 
-    // ========== STAGE 15 : BOSS 3 ==========
+    // ========== STAGE 15 : BOSS 3 - GHOST ==========
     {
         level: 15,
         world: 3,
-        name: "TITAN",
-        description: "Évite ses charges !",
+        name: "SPECTRE",
+        description: "Attention aux crânes !",
         objective: {
             type: "boss",
             bossSegments: 25,
-            timeLimit: 75  // 1 min 15
+            timeLimit: 150  // 2 min 30
         },
         obstacles: [
             { type: "wall_static", count: 6, pattern: "arena" }
@@ -371,50 +399,53 @@ export const ROGUELIKE_LEVELS = [
         bossAggression: 0.7,
         bossMoveInterval: 200,
         bossGraceDelay: 2,
-        // PHASES DU TITAN (Boss charge)
+        // PHASES DU SPECTRE (Boss fantôme - skulls + invisibilité)
         bossPhases: [
             {
-                name: "Colosse",
+                name: "Ombre",
                 threshold: 1.0,
                 aggression: 0.6,
-                speedMultiplier: 0.8,      // Lent mais...
-                behavior: "charge",        // Charge en ligne droite
-                color: "#ff4400",
+                speedMultiplier: 1.0,
+                behavior: "skull_spawn",
+                color: "#9932CC",
                 special: {
-                    type: "charge",
-                    chargeSpeed: 3.0,      // Très rapide pendant la charge
-                    chargeCooldown: 4000,  // Toutes les 4 secondes
-                    chargeWarning: 1000    // 1 seconde d'avertissement
+                    type: "skull_spawn",
+                    skullCount: 1,         // 1 skull par spawn
+                    skullDuration: 8,      // 8 secondes
+                    spawnInterval: 4000,   // Toutes les 4 secondes
+                    skullDamage: 1         // Perd 1 segment
                 }
             },
             {
-                name: "Fureur",
+                name: "Fantôme",
                 threshold: 0.5,
                 aggression: 0.75,
-                speedMultiplier: 1.0,
-                behavior: "charge_wall",   // Charge + crée des murs temporaires
-                color: "#ff6600",
+                speedMultiplier: 1.1,
+                behavior: "skull_invisible",
+                color: "#BA55D3",
                 special: {
-                    type: "charge_wall",
-                    chargeSpeed: 3.5,
-                    chargeCooldown: 3000,
-                    wallDuration: 5,       // Murs temporaires 5 secondes
-                    wallCount: 2           // Crée 2 murs après chaque charge
+                    type: "skull_invisible",
+                    skullCount: 2,         // 2 skulls par spawn
+                    skullDuration: 7,
+                    spawnInterval: 3500,
+                    invisibleDuration: 3,  // Invisible 3 secondes
+                    invisibleInterval: 6000 // Toutes les 6 secondes
                 }
             },
             {
-                name: "Apocalypse",
+                name: "Néant",
                 threshold: 0.25,
-                aggression: 0.95,
-                speedMultiplier: 1.2,
-                behavior: "charge_frenzy", // Charges en série, invincible pendant
-                color: "#ff8800",
+                aggression: 0.9,
+                speedMultiplier: 1.3,
+                behavior: "skull_invisible",
+                color: "#DDA0DD",
                 special: {
-                    type: "charge_frenzy",
-                    chargeSpeed: 4.0,
-                    chargeCooldown: 2000,
-                    chargeCount: 3,        // 3 charges d'affilée
-                    invincible: true       // Invincible pendant la charge
+                    type: "skull_invisible",
+                    skullCount: 3,         // 3 skulls par spawn
+                    skullDuration: 6,
+                    spawnInterval: 3000,
+                    invisibleDuration: 4,  // Invisible 4 secondes
+                    invisibleInterval: 4000 // Plus souvent invisible
                 }
             }
         ]
@@ -490,22 +521,22 @@ export const ROGUELIKE_LEVELS = [
         music: "tense"
     },
 
-    // ========== STAGE 20 : BOSS FINAL ==========
+    // ========== STAGE 20 : BOSS FINAL - PORTAILS DE TÉLÉPORTATION ==========
     {
         level: 20,
         world: 4,
-        name: "NÉMÉSIS",
-        description: "Face à ton destin !",
+        name: "FOUDRE",
+        description: "Évite les portails !",
         objective: {
             type: "boss",
             bossSegments: 30,
-            timeLimit: 90  // 1 min 30 (boss complexe)
+            timeLimit: 180  // 3 minutes
         },
         obstacles: [
             { type: "wall_static", count: 4, pattern: "arena" }
         ],
         modifiers: {
-            speedMultiplier: 1.6,
+            speedMultiplier: 1.4,      // Réduit de 1.6 à 1.4
             appleSpawnRate: 1.2,
             powerupChance: 0.6
         },
@@ -513,51 +544,52 @@ export const ROGUELIKE_LEVELS = [
         music: "boss_final",
         isBoss: true,
         isFinalBoss: true,
-        bossSpeed: 1.2,
-        bossAggression: 0.9,
-        bossMoveInterval: 160,
-        bossGraceDelay: 3,        // 3 secondes de grâce (boss complexe)
-        // PHASES DE NÉMÉSIS (Boss final - toutes les mécaniques)
+        bossSpeed: 1.0,                // Réduit de 1.2 à 1.0 (moins rapide)
+        bossAggression: 0.8,           // Réduit de 0.9 à 0.8
+        bossMoveInterval: 200,         // Augmenté de 160 à 200 (plus lent)
+        bossGraceDelay: 3,
+        // PHASES DE FOUDRE (Boss final - portails de téléportation)
         bossPhases: [
             {
-                name: "Miroir",
+                name: "Distorsion",
                 threshold: 1.0,
-                aggression: 0.7,
+                aggression: 0.6,
                 speedMultiplier: 1.0,
-                behavior: "mirror",        // Copie les mouvements du joueur
-                color: "#8800ff",
+                behavior: "teleport_zone",
+                color: "#FFD700",
                 special: {
-                    type: "mirror",
-                    delay: 500,            // Copie avec 0.5s de délai
-                    perfectCopy: false     // Pas parfait, petites variations
+                    type: "teleport_zone",
+                    portalCount: 2,        // 2 portails à la fois
+                    portalDuration: 10,    // Durée de vie 10 secondes
+                    spawnInterval: 5000    // Spawn toutes les 5 secondes
                 }
             },
             {
-                name: "Division",
+                name: "Chaos",
                 threshold: 0.5,
-                aggression: 0.8,
+                aggression: 0.7,
                 speedMultiplier: 1.1,
-                behavior: "split",         // Se divise en 2 mini-boss
-                color: "#aa00ff",
+                behavior: "teleport_zone",
+                color: "#FFA500",
                 special: {
-                    type: "split",
-                    cloneCount: 1,         // 1 clone (total 2 boss)
-                    cloneHP: 0.3,          // Le clone a 30% des segments
-                    cloneSpeed: 1.3        // Clone plus rapide
+                    type: "teleport_zone",
+                    portalCount: 3,        // 3 portails à la fois
+                    portalDuration: 8,     // Durée réduite
+                    spawnInterval: 4000    // Plus fréquent
                 }
             },
             {
                 name: "Néant",
                 threshold: 0.25,
-                aggression: 1.0,           // 100% agressif
-                speedMultiplier: 1.4,
-                behavior: "teleport",      // Téléportation + attaque surprise
-                color: "#ff00ff",
+                aggression: 0.9,
+                speedMultiplier: 1.2,
+                behavior: "teleport_zone",
+                color: "#9932CC",
                 special: {
-                    type: "teleport",
-                    teleportCooldown: 2500,// Toutes les 2.5 secondes
-                    teleportWarning: 800,  // 0.8s d'avertissement
-                    attackAfterTeleport: true
+                    type: "teleport_zone",
+                    portalCount: 4,        // 4 portails à la fois
+                    portalDuration: 6,     // Durée courte
+                    spawnInterval: 3000    // Très fréquent
                 }
             }
         ]

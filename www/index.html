@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/snake.min.css"> <!-- CSS optimisé (-48%) -->
     <link rel="stylesheet" href="/game-fixes.css"> <!-- FIX: Corrections layout écran de jeu -->
     <link rel="stylesheet" href="/roguelike/roguelike.css"> <!-- Mode Roguelike -->
+    <link rel="stylesheet" href="/roguelike/tutorial.css"> <!-- Tutoriel Serpent Academy -->
     <link rel="stylesheet" href="/rules.css">
 
     <!-- Point d'entrée Vite - Bundle optimisé -->
@@ -260,10 +261,14 @@
 
             <!-- Hero CTA (Bouton Principal - ROGUELIKE) -->
             <div class="hub-hero-container">
-                <button class="hub-hero-btn hub-hero-btn-compact hub-hero-roguelike" id="hub-hero-btn" onclick="window.audio.buttonClick();window.startRoguelikeRun()">
+                <button class="hub-hero-btn hub-hero-btn-compact hub-hero-roguelike" id="hub-hero-btn">
                     <div class="hub-hero-icon">🎲</div>
                     <div class="hub-hero-text">Roguelike</div>
                     <div class="hub-hero-badge">HOT</div>
+                </button>
+                <!-- Bouton secondaire pour nouvelle run (visible si sauvegarde existe) -->
+                <button class="hub-new-run-btn hidden" id="hub-new-run-btn" onclick="window.audio.buttonClick();if(confirm('Abandonner la run sauvegardee et en commencer une nouvelle?')){window.deleteRoguelikeSavedRun();window.startRoguelikeRun();}">
+                    🔄 Nouvelle Run
                 </button>
             </div>
 
@@ -279,15 +284,16 @@
                     <div class="hub-mode-text">Online</div>
                     <div class="hub-mode-badge">NEW</div>
                 </div>
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();showDifficultyModal('ai')">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="vs IA" class="mode-icon-img"></div>
-                    <div class="hub-mode-text">vs IA</div>
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();startBossRush()">
+                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="Boss Rush" class="mode-icon-img"></div>
+                    <div class="hub-mode-text">Boss Rush</div>
+                    <div class="hub-mode-badge boss-rush">4 BOSS</div>
                 </div>
             </div>
 
             <!-- Navigation Fixe (Bottom Nav) -->
             <div class="hub-bottom-nav">
-                <button class="hub-nav-btn" onclick="window.audio.buttonClick();alert('Boutique - À venir !')">
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();if(window.ModalManager)window.ModalManager.info('Boutique - À venir !',{title:'Boutique'})">
                     <div class="hub-nav-icon">🛒</div>
                     <div class="hub-nav-label">Boutique</div>
                 </button>
@@ -505,9 +511,9 @@
                     <span class="btn-text">CARRIÈRE</span>
                 </button>
 
-                <button class="option-btn-compact" onclick="window.audio.buttonClick();showRules()">
-                    <span class="btn-icon">📖</span>
-                    <span class="btn-text">RÈGLES</span>
+                <button class="option-btn-compact" onclick="window.audio.buttonClick();window.showTutorial()">
+                    <span class="btn-icon">🎓</span>
+                    <span class="btn-text">TUTORIEL</span>
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showSound()">
@@ -915,6 +921,37 @@
                             <span class="rl-obj-text">Stage <span id="rl-obj-level">1</span></span>
                             <span class="rl-obj-progress"><span id="rl-obj-current">0</span>/<span id="rl-obj-target">8</span> 🍎</span>
                         </div>
+
+                        <!-- ✅ HUD POWER-UPS ROGUELIKE -->
+                        <div id="rl-powerups-hud" class="rl-powerups-hud hidden">
+                            <!-- Prioritaires (grand) -->
+                            <div class="rl-hud-priority" id="rl-hud-priority">
+                                <!-- Vies -->
+                                <div class="rl-hud-item rl-hud-lives hidden" id="rl-hud-lives">
+                                    <span class="rl-hud-icon">❤️</span>
+                                    <span class="rl-hud-count" id="rl-hud-lives-count">0</span>
+                                </div>
+                                <!-- Boucliers -->
+                                <div class="rl-hud-item rl-hud-shields hidden" id="rl-hud-shields">
+                                    <span class="rl-hud-icon">🛡️</span>
+                                    <span class="rl-hud-count" id="rl-hud-shields-count">0</span>
+                                </div>
+                                <!-- Sprint -->
+                                <div class="rl-hud-item rl-hud-sprint hidden" id="rl-hud-sprint">
+                                    <span class="rl-hud-icon">💨</span>
+                                    <div class="rl-hud-cooldown" id="rl-hud-sprint-cd">
+                                        <svg class="rl-cd-ring" viewBox="0 0 36 36">
+                                            <circle class="rl-cd-bg" cx="18" cy="18" r="15.9" fill="none" stroke-width="3"/>
+                                            <circle class="rl-cd-progress" id="rl-sprint-cd-progress" cx="18" cy="18" r="15.9" fill="none" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="0"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Passifs (petit) -->
+                            <div class="rl-hud-passives" id="rl-hud-passives">
+                                <!-- Générés dynamiquement -->
+                            </div>
+                        </div>
                     </div>
                     <canvas id="canvas-solo" width="540" height="540" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
                     <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
@@ -1215,6 +1252,143 @@
                             🏠 Menu
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN GAME OVER MODE BOSS RUSH - Avec styles inline -->
+        <!-- ÉCRAN GAME OVER / VICTOIRE BOSS RUSH -->
+        <div class="screen hidden" id="over-boss-rush" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
+            <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 2px solid #ff4400; border-radius: 20px; padding: 30px 35px; box-shadow: 0 0 40px rgba(255,68,0,0.3); max-width: 480px; width: 90%; text-align: center; color: white;">
+
+                <!-- Résultat (victoire ou défaite) - dynamique -->
+                <div style="margin-bottom: 25px;">
+                    <div id="br-result-icon" style="font-size: 70px; margin-bottom: 15px;">💀</div>
+                    <div id="br-result-title" style="font-size: 28px; font-weight: bold; color: #ff4444; text-shadow: 0 0 20px rgba(255,68,68,0.5);">DÉFAITE</div>
+                    <div id="br-result-subtitle" style="color: #aaa; font-size: 16px; margin-top: 10px;">Le Boss Rush t'a vaincu</div>
+                </div>
+
+                <!-- Progression visuelle des boss -->
+                <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 25px;">
+                    <div id="br-boss-1" style="background: rgba(139,69,19,0.1); border: 3px solid #8B4513; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 60px; opacity: 0.4;">
+                        <div style="font-size: 24px; font-weight: bold; color: #8B4513;">1</div>
+                        <div style="font-size: 10px; color: #fff;">TITAN</div>
+                    </div>
+                    <div id="br-boss-2" style="background: rgba(0,191,255,0.1); border: 3px solid #00BFFF; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 60px; opacity: 0.4;">
+                        <div style="font-size: 24px; font-weight: bold; color: #00BFFF;">2</div>
+                        <div style="font-size: 10px; color: #fff;">CRYO</div>
+                    </div>
+                    <div id="br-boss-3" style="background: rgba(153,50,204,0.1); border: 3px solid #9932CC; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 60px; opacity: 0.4;">
+                        <div style="font-size: 24px; font-weight: bold; color: #9932CC;">3</div>
+                        <div style="font-size: 10px; color: #fff;">SPECTRE</div>
+                    </div>
+                    <div id="br-boss-4" style="background: rgba(255,215,0,0.1); border: 3px solid #FFD700; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 60px; opacity: 0.4;">
+                        <div style="font-size: 24px; font-weight: bold; color: #FFD700;">4</div>
+                        <div style="font-size: 10px; color: #fff;">FOUDRE</div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;">
+                        <div style="font-size: 28px;">⚔️</div>
+                        <div id="br-stage-reached" style="font-size: 24px; font-weight: bold; color: #ff4400; margin: 8px 0;">0/4</div>
+                        <div style="font-size: 12px; color: #888;">Boss vaincus</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;">
+                        <div style="font-size: 28px;">⏱️</div>
+                        <div id="br-total-time" style="font-size: 24px; font-weight: bold; color: #4fc3f7; margin: 8px 0;">0:00</div>
+                        <div style="font-size: 12px; color: #888;">Temps total</div>
+                    </div>
+                </div>
+
+                <!-- Récompenses -->
+                <div style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
+                    <div style="font-size: 14px; color: #ffd700; margin-bottom: 10px;">Récompenses obtenues</div>
+                    <div style="display: flex; justify-content: center; gap: 40px; font-weight: bold; font-size: 22px;">
+                        <span id="br-xp-earned" style="color: #fff;">+0 XP</span>
+                        <span style="color: #fff;"><span id="br-coins-earned">+0</span> 💰</span>
+                    </div>
+                </div>
+
+                <!-- Boutons -->
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button onclick="replayBossRush()" style="background: linear-gradient(135deg, #ff4400 0%, #ff6600 100%); border: none; color: white; padding: 16px 30px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 20px rgba(255,68,0,0.4); flex: 1;">
+                        🔄 Rejouer
+                    </button>
+                    <button onclick="returnToHubFromBossRush()" style="background: linear-gradient(135deg, #333 0%, #555 100%); border: none; color: white; padding: 16px 30px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; flex: 1;">
+                        🏠 Menu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN MENU BOSS RUSH -->
+        <div class="screen hidden boss-rush-screen" id="menu-boss-rush" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
+            <div class="game-area boss-rush-game-area" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                <div class="boss-rush-container" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 2px solid #ff4400; border-radius: 20px; padding: 30px 35px; box-shadow: 0 0 40px rgba(255,68,0,0.3); max-width: 480px; width: 90%; text-align: center; color: white; position: relative;">
+                    <!-- Bouton fermer -->
+                    <div style="position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 20px; color: #888;" onclick="window.screenManager.show('hub')">✕</div>
+
+                    <!-- Header -->
+                    <div style="margin-bottom: 25px;">
+                        <div style="font-size: 32px; font-weight: bold; color: #ff4400; text-shadow: 0 0 20px rgba(255,68,0,0.5);">⚔️ BOSS RUSH ⚔️</div>
+                        <div style="color: #aaa; font-size: 18px; margin-top: 10px;">Affronte les 4 boss légendaires</div>
+                    </div>
+
+                    <!-- Boss cards -->
+                    <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 25px; flex-wrap: wrap;">
+                        <div style="background: rgba(139,69,19,0.1); border: 3px solid #8B4513; border-radius: 12px; padding: 15px 20px; text-align: center; min-width: 80px;">
+                            <div style="font-size: 28px; font-weight: bold; color: #8B4513;">1</div>
+                            <div style="font-size: 12px; color: #fff; font-weight: bold;">TITAN</div>
+                            <div style="font-size: 11px; color: #888;">Facile</div>
+                        </div>
+                        <div style="background: rgba(0,191,255,0.1); border: 3px solid #00BFFF; border-radius: 12px; padding: 15px 20px; text-align: center; min-width: 80px;">
+                            <div style="font-size: 28px; font-weight: bold; color: #00BFFF;">2</div>
+                            <div style="font-size: 12px; color: #fff; font-weight: bold;">CRYO</div>
+                            <div style="font-size: 11px; color: #888;">Normal</div>
+                        </div>
+                        <div style="background: rgba(153,50,204,0.1); border: 3px solid #9932CC; border-radius: 12px; padding: 15px 20px; text-align: center; min-width: 80px;">
+                            <div style="font-size: 28px; font-weight: bold; color: #9932CC;">3</div>
+                            <div style="font-size: 12px; color: #fff; font-weight: bold;">SPECTRE</div>
+                            <div style="font-size: 11px; color: #888;">Difficile</div>
+                        </div>
+                        <div style="background: rgba(255,215,0,0.1); border: 3px solid #FFD700; border-radius: 12px; padding: 15px 20px; text-align: center; min-width: 80px;">
+                            <div style="font-size: 28px; font-weight: bold; color: #FFD700;">4</div>
+                            <div style="font-size: 12px; color: #fff; font-weight: bold;">FOUDRE</div>
+                            <div style="font-size: 11px; color: #888;">Extrême</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 25px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 14px; color: #888;">Runs</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #fff;" id="brs-total-runs">0</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 14px; color: #888;">Victoires</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #fff;" id="brs-completed-runs">0</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 14px; color: #888;">Meilleur</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #fff;" id="brs-best-time">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards -->
+                    <div style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
+                        <div style="font-size: 14px; color: #ffd700; margin-bottom: 8px;">Récompenses totales</div>
+                        <div style="display: flex; justify-content: center; gap: 40px; color: #fff; font-weight: bold; font-size: 20px;">
+                            <span>+1100 XP</span>
+                            <span>+300 💰</span>
+                        </div>
+                    </div>
+
+                    <!-- Start button -->
+                    <button class="menu-btn" style="background: linear-gradient(135deg, #ff4400 0%, #ff6600 100%); border: none; width: 100%; padding: 18px; font-size: 22px; font-weight: bold; border-radius: 12px; cursor: pointer;" onclick="window.bossRushManager?.startNewRun()">
+                        🎮 COMMENCER
+                    </button>
                 </div>
             </div>
         </div>

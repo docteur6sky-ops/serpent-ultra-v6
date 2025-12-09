@@ -316,6 +316,12 @@ class RoguelikeManager {
         const levelTime = (Date.now() - this.currentRun.levelStartTime) / 1000;
         this.currentRun.timePlayed += levelTime;
 
+        // 💰 Bonus 10 gold par stage complété
+        if (window.soloGame) {
+            window.soloGame.goldCollected = (window.soloGame.goldCollected || 0) + 10;
+            logger.log(`[RoguelikeManager] 💰 +10 gold bonus stage! Total: ${window.soloGame.goldCollected}`);
+        }
+
         // Achievement tracking
         achievementManager.onLevelComplete(this.currentRun.level, levelData.isBoss, levelTime);
 
@@ -438,6 +444,9 @@ class RoguelikeManager {
     endRun(reason = 'death') {
         if (!this.currentRun) return;
 
+        // ✅ Supprimer la sauvegarde mid-run (la run est terminee)
+        this.deleteSavedRun();
+
         const finalStats = {
             reason,
             level: this.currentRun.level,
@@ -468,37 +477,45 @@ class RoguelikeManager {
             this.metaProgression.bestScore = finalStats.score;
         }
 
-        // 💰 Ajouter le gold collecté
+        // 💰 Ajouter le gold collecté au BoxManager (pour acheter des coffres)
         if (finalStats.goldCollected > 0) {
             this.metaProgression.totalGold = (this.metaProgression.totalGold || 0) + finalStats.goldCollected;
+
+            // ✅ Ajouter les coins au BoxManager
+            if (window.boxManager) {
+                window.boxManager.addCoins(finalStats.goldCollected, 'Fortune Roguelike');
+                logger.log(`[RoguelikeManager] 💰 +${finalStats.goldCollected} coins ajoutés à la Box`);
+            }
+
             logger.log(`[RoguelikeManager] +${finalStats.goldCollected} gold → Total: ${this.metaProgression.totalGold}`);
         }
 
         this.saveMetaProgression();
 
-        // ✅ Synchroniser avec window.career pour le niveau du hub
-        if (window.career) {
+        // ✅ Synchroniser avec CareerManager (source unique de vérité)
+        if (window.careerManager) {
+            const result = window.careerManager.addXP(earnedXP);
+            if (result.leveledUp) {
+                logger.log(`[RoguelikeManager] Level UP! Niveau ${result.newLevel}`);
+            }
+            logger.log(`[RoguelikeManager] Career synced via CareerManager: +${earnedXP} XP → Level ${window.career.level}`);
+        } else if (window.career && window.save) {
+            // Fallback si CareerManager non disponible
             let careerXP = window.career.xp + earnedXP;
             let careerLevel = window.career.level;
             let careerXPNext = window.career.xpNext || (100 + careerLevel * 100);
 
-            // Gérer les level up
             while (careerXP >= careerXPNext && careerLevel < 100) {
                 careerXP -= careerXPNext;
                 careerLevel++;
                 careerXPNext = 100 + (careerLevel * 100);
-                logger.log(`[RoguelikeManager] Level UP! Niveau ${careerLevel}`);
             }
 
             window.career.xp = careerXP;
             window.career.level = careerLevel;
             window.career.xpNext = careerXPNext;
-
-            // Sauvegarder career
-            if (window.save) {
-                window.save('career', window.career);
-            }
-            logger.log(`[RoguelikeManager] Career synced: +${earnedXP} XP → Level ${careerLevel}, XP ${careerXP}/${careerXPNext}`);
+            window.save('career', window.career);
+            logger.log(`[RoguelikeManager] Career synced (fallback): +${earnedXP} XP`);
         }
 
         logger.log('[RoguelikeManager] Run terminée:', finalStats);
@@ -771,6 +788,186 @@ class RoguelikeManager {
             if (!upgrade.stackable) return true;
             return counts[id] >= upgrade.maxStacks;
         });
+    }
+
+    // ========== SAUVEGARDE MID-RUN ==========
+
+    /**
+     * Sauvegarde la run en cours pour pouvoir la reprendre plus tard
+     */
+    saveRunMidGame() {
+        if (!this.currentRun) {
+            logger.warn('[RoguelikeManager] Pas de run active a sauvegarder');
+            return false;
+        }
+
+        // Ne pas sauvegarder les daily challenges (doivent etre termines d'un coup)
+        if (this.currentRun.isDaily) {
+            logger.warn('[RoguelikeManager] Daily Challenge - sauvegarde mid-run desactivee');
+            return false;
+        }
+
+        try {
+            // Calculer le temps joue jusqu'ici
+            const currentTime = Date.now();
+            const levelTime = (currentTime - this.currentRun.levelStartTime) / 1000;
+
+            // Sauvegarder l'etat de la run
+            const runState = {
+                // Progression
+                level: this.currentRun.level,
+                world: this.currentRun.world,
+
+                // Stats
+                score: this.currentRun.score,
+                applesEaten: this.currentRun.applesEaten,
+                powerupsCollected: this.currentRun.powerupsCollected,
+                timePlayed: this.currentRun.timePlayed + levelTime,
+
+                // Upgrades et vies
+                upgrades: [...this.currentRun.upgrades],
+                lives: this.currentRun.lives,
+
+                // Etat du niveau
+                objectiveProgress: this.currentRun.objectiveProgress,
+
+                // Metadonnees
+                savedAt: currentTime,
+                version: 1
+            };
+
+            localStorage.setItem('roguelike_saved_run', JSON.stringify(runState));
+            logger.log('[RoguelikeManager] Run sauvegardee au niveau', runState.level);
+
+            // Terminer la run actuelle sans fin de partie
+            this.currentRun = null;
+
+            return true;
+        } catch (e) {
+            logger.error('[RoguelikeManager] Erreur sauvegarde run:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Charge et reprend une run sauvegardee
+     */
+    loadSavedRun() {
+        try {
+            const saved = localStorage.getItem('roguelike_saved_run');
+            if (!saved) {
+                logger.log('[RoguelikeManager] Aucune run sauvegardee');
+                return null;
+            }
+
+            const runState = JSON.parse(saved);
+
+            // Verifier la validite (max 24h)
+            const age = Date.now() - runState.savedAt;
+            const maxAge = 24 * 60 * 60 * 1000; // 24 heures
+
+            if (age > maxAge) {
+                logger.warn('[RoguelikeManager] Run sauvegardee expiree (plus de 24h)');
+                this.deleteSavedRun();
+                return null;
+            }
+
+            logger.log('[RoguelikeManager] Chargement run sauvegardee niveau', runState.level);
+
+            // Recreer la run
+            this.currentRun = {
+                // Progression
+                level: runState.level,
+                world: runState.world,
+
+                // Stats
+                score: runState.score,
+                applesEaten: runState.applesEaten,
+                powerupsCollected: runState.powerupsCollected,
+                timePlayed: runState.timePlayed,
+                startTime: Date.now() - (runState.timePlayed * 1000),
+
+                // Upgrades
+                upgrades: runState.upgrades,
+
+                // Etat du joueur
+                lives: runState.lives,
+
+                // Modificateurs recalcules
+                modifiers: calculateRunModifiers(runState.upgrades),
+
+                // Etat du niveau (sera reinitialise au demarrage)
+                currentLevelData: null,
+                levelStartTime: null,
+                objectiveProgress: 0 // Recommence le niveau du debut
+            };
+
+            // Supprimer la sauvegarde (on reprend)
+            this.deleteSavedRun();
+
+            // Achievement tracking
+            achievementManager.startNewRun();
+
+            // Demarrer le niveau sauvegarde
+            this.startLevel(runState.level);
+
+            return this.currentRun;
+        } catch (e) {
+            logger.error('[RoguelikeManager] Erreur chargement run:', e);
+            this.deleteSavedRun();
+            return null;
+        }
+    }
+
+    /**
+     * Supprime la run sauvegardee
+     */
+    deleteSavedRun() {
+        localStorage.removeItem('roguelike_saved_run');
+        logger.log('[RoguelikeManager] Run sauvegardee supprimee');
+    }
+
+    /**
+     * Verifie s'il y a une run sauvegardee valide
+     */
+    get hasSavedRun() {
+        try {
+            const saved = localStorage.getItem('roguelike_saved_run');
+            if (!saved) return false;
+
+            const runState = JSON.parse(saved);
+            const age = Date.now() - runState.savedAt;
+            const maxAge = 24 * 60 * 60 * 1000; // 24 heures
+
+            return age <= maxAge;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Retourne les infos de la run sauvegardee (pour affichage menu)
+     */
+    getSavedRunInfo() {
+        try {
+            const saved = localStorage.getItem('roguelike_saved_run');
+            if (!saved) return null;
+
+            const runState = JSON.parse(saved);
+            const age = Date.now() - runState.savedAt;
+            const maxAge = 24 * 60 * 60 * 1000;
+
+            if (age > maxAge) return null;
+
+            return {
+                level: runState.level,
+                score: runState.score,
+                upgrades: runState.upgrades.length,
+                savedAt: new Date(runState.savedAt).toLocaleString('fr-FR')
+            };
+        } catch (e) {
+            return null;
+        }
     }
 
     // ========== GETTERS ==========
