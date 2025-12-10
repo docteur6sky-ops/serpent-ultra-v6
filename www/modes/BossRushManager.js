@@ -89,6 +89,9 @@ class BossRushManager {
 
         logger.log('[BossRush] Nouvelle run démarrée');
 
+        // Mettre à jour stats CareerManager
+        this.updateCareerStat('bossRushRuns', 1);
+
         // Démarrer le premier boss
         this.startStage(1);
 
@@ -174,6 +177,12 @@ class BossRushManager {
             window.screenManager.show('game-solo');
         }
 
+        // 🎨 Changer le background selon le boss (APRÈS screenManager pour éviter écrasement)
+        // Boss 1: roche, Boss 2: glace, Boss 3: ghost, Boss 4: foudre
+        if (window.backgroundManager) {
+            window.backgroundManager.setStageBackground(stageNum, 'boss-rush');
+        }
+
         // Démarrer le combat de boss via la nouvelle méthode
         window.soloGame.startBossRushBattle(fullStageConfig);
 
@@ -195,6 +204,9 @@ class BossRushManager {
         const stageConfig = BOSS_RUSH_STAGES.find(s => s.stage === currentStage);
 
         logger.log(`[BossRush] Stage ${currentStage} complété en ${stageTime.toFixed(1)}s`);
+
+        // Tracker le kill du boss dans CareerManager
+        this.trackBossKill(currentStage);
 
         // Notifier l'UI
         if (this.onStageComplete) {
@@ -253,7 +265,7 @@ class BossRushManager {
         finalStats.earnedXP = totalReward.xp;
         finalStats.earnedCoins = totalReward.coins;
 
-        // Mettre à jour les stats
+        // Mettre à jour les stats locales
         this.stats.totalRuns++;
         this.stats.completedRuns++;
         if (!this.stats.bestTime || totalTime < this.stats.bestTime) {
@@ -261,12 +273,37 @@ class BossRushManager {
         }
         this.saveStats();
 
+        // Mettre à jour CareerManager
+        this.updateCareerStat('bossRushCompletions', 1);
+
+        // Run parfaite (sans dégâts)
+        if (this.currentRun.totalDamageTaken === 0) {
+            this.updateCareerStat('bossRushPerfectRuns', 1);
+            finalStats.isPerfect = true;
+            logger.log('[BossRush] Run parfaite! (0 dégâts)');
+        }
+
+        // Run rapide (< 5 minutes = 300 secondes)
+        if (totalTime < 300) {
+            this.updateCareerStat('bossRushFastRuns', 1);
+            finalStats.isFast = true;
+            logger.log(`[BossRush] Run rapide! (${totalTime.toFixed(1)}s < 5min)`);
+        }
+
+        // Meilleur temps
+        this.updateCareerBestTime(totalTime);
+
         // Donner les récompenses
         if (window.careerManager) {
             window.careerManager.addXP(totalReward.xp);
         }
         if (window.boxManager) {
             window.boxManager.addCoins(totalReward.coins, 'Boss Rush complété');
+        }
+
+        // Vérifier les trophées
+        if (window.trophyManager) {
+            window.trophyManager.checkTrophies();
         }
 
         logger.log('[BossRush] Run complétée!', finalStats);
@@ -305,7 +342,7 @@ class BossRushManager {
         const partialXP = bossesDefeated * 100;
         finalStats.earnedXP = partialXP;
 
-        // Mettre à jour stats
+        // Mettre à jour stats locales
         this.stats.totalRuns++;
         if (stage > this.stats.bestStage) {
             this.stats.bestStage = stage;
@@ -315,6 +352,11 @@ class BossRushManager {
         // Donner XP partiel
         if (window.careerManager && partialXP > 0) {
             window.careerManager.addXP(partialXP);
+        }
+
+        // Vérifier les trophées
+        if (window.trophyManager) {
+            window.trophyManager.checkTrophies();
         }
 
         logger.log(`[BossRush] Game Over au stage ${stage}`, finalStats);
@@ -330,6 +372,55 @@ class BossRushManager {
         }
 
         this.currentRun = null;
+    }
+
+    // ============================================
+    // TRACKING CAREER MANAGER
+    // ============================================
+
+    /**
+     * Met à jour une stat dans CareerManager
+     */
+    updateCareerStat(statName, increment = 1) {
+        if (!window.careerManager || !window.career) return;
+
+        const career = window.career;
+        if (typeof career[statName] === 'number') {
+            career[statName] += increment;
+            window.careerManager.save();
+            logger.log(`[BossRush] Career stat ${statName}: ${career[statName]}`);
+        }
+    }
+
+    /**
+     * Track le kill d'un boss spécifique
+     */
+    trackBossKill(stage) {
+        const bossStatMap = {
+            1: 'bossRushTitanKills',
+            2: 'bossRushCryoKills',
+            3: 'bossRushSpectreKills',
+            4: 'bossRushFoudreKills'
+        };
+
+        const statName = bossStatMap[stage];
+        if (statName) {
+            this.updateCareerStat(statName, 1);
+        }
+    }
+
+    /**
+     * Met à jour le meilleur temps si amélioration
+     */
+    updateCareerBestTime(time) {
+        if (!window.careerManager || !window.career) return;
+
+        const career = window.career;
+        if (career.bossRushBestTime === null || time < career.bossRushBestTime) {
+            career.bossRushBestTime = time;
+            window.careerManager.save();
+            logger.log(`[BossRush] Nouveau meilleur temps: ${time.toFixed(1)}s`);
+        }
     }
 
     // ============================================

@@ -106,6 +106,12 @@ export class RoguelikeSystem {
             window.screenManager.show('game-solo');
         }
 
+        // 🎨 Changer le background selon le stage (APRÈS screenManager pour éviter écrasement)
+        // Stages 1-5: roche, 6-10: glace, 11-15: ghost, 16-20: foudre
+        if (window.backgroundManager) {
+            window.backgroundManager.setStageBackground(levelData.level, 'roguelike');
+        }
+
         // Démarrer boucle
         this.game.loop(this.game.lastTime);
     }
