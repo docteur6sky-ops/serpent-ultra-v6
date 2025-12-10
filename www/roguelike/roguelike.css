@@ -511,17 +511,17 @@
 .rl-upgrade-card:nth-child(3) { animation-delay: 0.3s; }
 .rl-upgrade-card:nth-child(4) { animation-delay: 0.4s; }
 
-/* ===== OBJECTIF ROGUELIKE IN-GAME ===== */
+/* ===== OBJECTIF ROGUELIKE IN-GAME - COMPACT AAA ===== */
 .roguelike-objective {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(103, 58, 183, 0.2));
-    border: 2px solid rgba(156, 39, 176, 0.5);
-    border-radius: 12px;
-    padding: 10px 16px;
-    margin-top: 8px;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(156, 39, 176, 0.25), rgba(103, 58, 183, 0.25));
+    border: 1px solid rgba(156, 39, 176, 0.5);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-top: 4px;
     animation: objectivePulse 2s ease-in-out infinite;
 }
 
@@ -530,28 +530,28 @@
 }
 
 @keyframes objectivePulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(156, 39, 176, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(156, 39, 176, 0.5); }
+    0%, 100% { box-shadow: 0 0 8px rgba(156, 39, 176, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(156, 39, 176, 0.5); }
 }
 
 .rl-obj-icon {
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .rl-obj-text {
-    font-size: 12px;
+    font-size: 11px;
     color: #bb86fc;
     font-weight: bold;
     text-transform: uppercase;
 }
 
 .rl-obj-progress {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     color: #fff;
     background: rgba(0, 0, 0, 0.3);
-    padding: 4px 12px;
-    border-radius: 8px;
+    padding: 2px 8px;
+    border-radius: 6px;
 }
 
 #rl-obj-current {
@@ -572,16 +572,21 @@
 /* Responsive */
 @media (max-width: 480px) {
     .roguelike-objective {
-        gap: 8px;
-        padding: 8px 12px;
+        gap: 6px;
+        padding: 4px 10px;
+    }
+
+    .rl-obj-icon {
+        font-size: 14px;
     }
 
     .rl-obj-text {
-        font-size: 10px;
+        font-size: 9px;
     }
 
     .rl-obj-progress {
-        font-size: 14px;
+        font-size: 12px;
+        padding: 2px 6px;
     }
 }
 
@@ -803,40 +808,48 @@
     }
 }
 
-/* ===== BOSS UI ===== */
+/* ===== BOSS UI - AAA COMPACT STYLE ===== */
+/* Design: Barre horizontale fine et élégante */
 .boss-ui {
     display: flex;
-    flex-direction: column;
+    flex-direction: row !important;
     align-items: center;
-    gap: 8px;
-    padding: 10px 15px;
-    background: linear-gradient(180deg, rgba(60, 0, 0, 0.9) 0%, rgba(30, 0, 0, 0.95) 100%);
-    border-radius: 12px;
-    border: 2px solid #ff4444;
-    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: linear-gradient(90deg, rgba(80, 0, 0, 0.9) 0%, rgba(40, 0, 0, 0.95) 50%, rgba(80, 0, 0, 0.9) 100%);
+    border-radius: 8px;
+    border: 1px solid #ff4444;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 0 10px rgba(255, 0, 0, 0.1);
+    width: 95%;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .boss-name {
-    font-size: 18px;
+    font-size: 12px;
     font-weight: bold;
-    color: #ff4444;
+    color: #ff6666;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    white-space: nowrap;
     animation: bossNamePulse 2s ease-in-out infinite;
 }
 
 @keyframes bossNamePulse {
-    0%, 100% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
-    50% { text-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 100, 100, 0.5); }
+    0%, 100% { text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
+    50% { text-shadow: 0 0 15px rgba(255, 0, 0, 1); }
 }
 
 .boss-health-bar {
-    width: 200px;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    border: 2px solid #ff4444;
+    flex: 1;
+    min-width: 80px;
+    max-width: 150px;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 68, 68, 0.5);
     overflow: hidden;
     position: relative;
 }
@@ -844,8 +857,9 @@
 .boss-health-fill {
     height: 100%;
     background: linear-gradient(90deg, #ff4444, #ff6666);
-    border-radius: 8px;
+    border-radius: 5px;
     transition: width 0.3s ease-out, background-color 0.3s ease;
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
 }
 
 .boss-health-text {
@@ -853,17 +867,21 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 12px;
+    font-size: 9px;
     font-weight: bold;
     color: #fff;
-    text-shadow: 0 0 5px #000;
+    text-shadow: 0 0 3px #000, 0 0 3px #000;
 }
 
 .boss-timer {
-    font-size: 24px;
+    font-size: 14px;
     font-weight: bold;
     color: #ffffff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 3px;
 }
 
 .boss-timer.critical {
@@ -873,7 +891,7 @@
 
 @keyframes timerCritical {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    50% { transform: scale(1.05); }
 }
 
 /* ===== ÉCRAN INTRO BOSS ===== */
@@ -1023,88 +1041,30 @@
     50% { box-shadow: 0 5px 30px rgba(255, 0, 0, 0.7); }
 }
 
-/* ===== BOSS UI - PHASES ===== */
-.boss-ui {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-}
+/* ===== BOSS UI - PHASES (AAA Compact Override) ===== */
+/* Ces styles sont maintenant définis plus haut en version AAA */
 
 .boss-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
 }
 
-.boss-name {
-    font-size: 20px;
-    font-weight: bold;
-    color: #ff4444;
-    text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
-    animation: bossNamePulse 2s ease-in-out infinite;
-}
-
 .boss-phase {
-    font-size: 14px;
+    font-size: 9px;
     font-weight: bold;
     text-transform: uppercase;
-    padding: 4px 12px;
+    padding: 2px 8px;
     background: rgba(0, 0, 0, 0.5);
-    border-radius: 20px;
+    border-radius: 10px;
     border: 1px solid currentColor;
-    animation: phasePulse 1.5s ease-in-out infinite;
+    white-space: nowrap;
 }
 
 .boss-phase.phase-active {
     animation: phaseGlow 1s ease-in-out infinite alternate;
-}
-
-.boss-health-bar {
-    width: 200px;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-}
-
-.boss-health-fill {
-    height: 100%;
-    background: #ff4444;
-    transition: width 0.3s ease, background-color 0.5s ease, box-shadow 0.5s ease;
-    border-radius: 8px;
-}
-
-.boss-health-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    font-weight: bold;
-    color: white;
-    text-shadow: 0 0 3px black, 0 0 3px black;
-}
-
-.boss-timer {
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
-}
-
-.boss-timer.timer-critical {
-    animation: timerCritical 0.5s ease-in-out infinite alternate;
-}
-
-@keyframes bossNamePulse {
-    0%, 100% { text-shadow: 0 0 10px rgba(255, 68, 68, 0.8); }
-    50% { text-shadow: 0 0 20px rgba(255, 68, 68, 1), 0 0 40px rgba(255, 68, 68, 0.5); }
 }
 
 @keyframes phasePulse {
@@ -1113,8 +1073,8 @@
 }
 
 @keyframes phaseGlow {
-    0% { box-shadow: 0 0 5px currentColor; }
-    100% { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+    0% { box-shadow: 0 0 3px currentColor; }
+    100% { box-shadow: 0 0 8px currentColor; }
 }
 
 @keyframes timerCritical {
@@ -1628,17 +1588,17 @@
     font-size: 14px;
 }
 
-/* ===== HUD POWER-UPS IN-GAME ===== */
+/* ===== HUD POWER-UPS IN-GAME - COMPACT AAA ===== */
 .rl-powerups-hud {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 6px 12px;
-    background: linear-gradient(135deg, rgba(20, 10, 40, 0.9), rgba(40, 20, 60, 0.9));
+    gap: 6px;
+    margin-top: 4px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, rgba(20, 10, 40, 0.85), rgba(40, 20, 60, 0.85));
     border: 1px solid rgba(156, 39, 176, 0.4);
-    border-radius: 10px;
+    border-radius: 8px;
     flex-wrap: wrap;
 }
 
@@ -1650,17 +1610,17 @@
 .rl-hud-priority {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
-/* Item de HUD (prioritaire = grand) */
+/* Item de HUD (prioritaire = compact) */
 .rl-hud-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     background: rgba(0, 0, 0, 0.4);
-    padding: 6px 10px;
-    border-radius: 8px;
+    padding: 3px 6px;
+    border-radius: 6px;
     position: relative;
 }
 
@@ -1669,14 +1629,14 @@
 }
 
 .rl-hud-icon {
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .rl-hud-count {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     color: #fff;
-    min-width: 16px;
+    min-width: 12px;
     text-align: center;
 }
 

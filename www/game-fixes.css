@@ -2,15 +2,19 @@
    GAME-FIXES.CSS - Corrections layout écran de jeu
    ============================================ */
 
-/* FIX: game-column doit avoir une hauteur pour que flex fonctionne */
+/* FIX: game-column - distribution verticale optimisée mobile */
 #game-solo .game-column,
 #game-ai .game-column,
 #game-multi .game-column {
     height: 100% !important;
+    max-height: 100% !important;
+    max-width: 98vw !important;
     min-height: 0 !important;
     justify-content: flex-start !important;
-    gap: 12px !important;
-    padding-bottom: 16px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+    overflow: visible !important;
 }
 
 /* FIX: game-area doit prendre toute la hauteur */
@@ -19,15 +23,27 @@
 #game-multi .game-area {
     height: 100% !important;
     flex: 1 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
 }
 
-/* FIX: Empêcher les éléments de se compresser */
+/* FIX: Canvas doit s'adapter à l'espace disponible */
+#game-solo canvas,
+#game-ai canvas,
+#game-multi canvas {
+    flex-shrink: 1 !important;
+    flex-grow: 0 !important;
+    max-width: 95vw !important;
+    max-height: min(95vw, 50vh) !important;
+    width: auto !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+}
+
+/* FIX: Empêcher HUD et contrôles de se compresser */
 #game-solo .score-box,
 #game-ai .score-box,
 #game-multi .score-box,
-#game-solo canvas,
-#game-ai canvas,
-#game-multi canvas,
 #game-solo .dpad,
 #game-ai .dpad,
 #game-multi .dpad {
@@ -35,12 +51,169 @@
     flex-grow: 0 !important;
 }
 
-/* FIX: Pousser les boutons vers le bas */
+/* ============================================
+   AAA FLOATING CONTROLS - Style Mobile Premium
+   ============================================ */
+
+/* Boutons PAUSE/MENU flottants en bas */
 #game-solo .game-controls,
 #game-ai .game-controls,
 #game-multi .game-controls {
+    position: fixed !important;
+    bottom: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1000 !important;
+    margin: 0 !important;
+    padding: 8px 16px !important;
+    background: rgba(10, 10, 30, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 215, 0, 0.1) !important;
+    gap: 12px !important;
     flex-shrink: 0 !important;
-    margin-top: auto !important;
+}
+
+/* Boutons plus compacts dans la barre flottante */
+#game-solo .game-controls .game-control-btn,
+#game-ai .game-controls .game-control-btn,
+#game-multi .game-controls .game-control-btn {
+    padding: 8px 16px !important;
+    font-size: 11px !important;
+    min-width: 80px !important;
+    max-width: 100px !important;
+    border-radius: 12px !important;
+}
+
+#game-solo .game-controls .game-control-btn .btn-icon,
+#game-ai .game-controls .game-control-btn .btn-icon,
+#game-multi .game-controls .game-control-btn .btn-icon {
+    font-size: 14px !important;
+}
+
+/* Masquer le texte sur très petits écrans, garder juste l'icône */
+@media (max-width: 380px) {
+    #game-solo .game-controls .game-control-btn .btn-text,
+    #game-ai .game-controls .game-control-btn .btn-text,
+    #game-multi .game-controls .game-control-btn .btn-text {
+        display: none !important;
+    }
+
+    #game-solo .game-controls .game-control-btn,
+    #game-ai .game-controls .game-control-btn,
+    #game-multi .game-controls .game-control-btn {
+        min-width: 50px !important;
+        padding: 10px !important;
+    }
+}
+
+/* ============================================
+   AAA COMPACT HUD - Mode Roguelike
+   ============================================ */
+
+/* Score-box plus compact en mode jeu */
+#game-solo .score-box,
+#game-ai .score-box {
+    padding: 8px 12px !important;
+    margin-bottom: 6px !important;
+    border-radius: 10px !important;
+    border-width: 2px !important;
+}
+
+#game-solo .score-box table td,
+#game-ai .score-box table td {
+    padding: 2px 8px !important;
+}
+
+#game-solo .score-label,
+#game-ai .score-label {
+    font-size: 9px !important;
+    margin-bottom: 2px !important;
+}
+
+#game-solo .score-value,
+#game-ai .score-value {
+    font-size: 18px !important;
+}
+
+/* Canvas centré avec marge pour éviter troncature */
+#game-solo canvas,
+#game-ai canvas,
+#game-multi canvas {
+    max-width: 92vw !important;
+    max-height: min(92vw, 48vh) !important;
+    margin: 4px auto !important;
+}
+
+/* D-Pad plus compact */
+#game-solo .dpad,
+#game-ai .dpad,
+#game-multi .dpad {
+    gap: 4px !important;
+    margin: 6px auto !important;
+}
+
+#game-solo .dpad-btn,
+#game-ai .dpad-btn,
+#game-multi .dpad-btn {
+    width: 70px !important;
+    height: 70px !important;
+    font-size: 32px !important;
+    border-radius: 12px !important;
+}
+
+@media (max-width: 400px) {
+    #game-solo .dpad-btn,
+    #game-ai .dpad-btn,
+    #game-multi .dpad-btn {
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 28px !important;
+    }
+}
+
+/* ============================================
+   AAA BOSS HUD - Override Compact
+   ============================================ */
+
+/* Boss UI en ligne horizontale compacte */
+.boss-ui {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 5px 10px !important;
+    max-width: 95% !important;
+    margin: 2px auto !important;
+}
+
+/* Nom du boss plus petit */
+.boss-ui .boss-name {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Barre de vie compacte */
+.boss-ui .boss-health-bar {
+    height: 10px !important;
+    min-width: 60px !important;
+    max-width: 120px !important;
+}
+
+.boss-ui .boss-health-text {
+    font-size: 8px !important;
+}
+
+/* Timer compact */
+.boss-ui .boss-timer {
+    font-size: 12px !important;
+}
+
+/* Phase badge compact */
+.boss-ui .boss-phase {
+    font-size: 8px !important;
+    padding: 1px 6px !important;
 }
 
 /* ============================================

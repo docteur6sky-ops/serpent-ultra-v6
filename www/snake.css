@@ -1429,7 +1429,7 @@ canvas {
         height: 98vw;
     }
     .game-column {
-        max-width: 320px;
+        max-width: 98vw;        /* ✅ FIX: Aligné avec canvas pour éviter troncature */
     }
 }
 
@@ -2354,7 +2354,7 @@ button:focus, input:focus {
     .phone { padding: 8px; }
     canvas { max-width: 98vw; max-height: 98vw; }
     .score-box#game-score { max-width: 280px; padding: 8px 15px; }
-    .game-column { position: relative; width: 100%; padding: 3px; }
+    .game-column { position: relative; width: 100%; max-width: 98vw; padding: 3px; }
     .game-controls { flex-direction: row; gap: 10px; }
     .control-btn { width: 90px; padding: 8px; font-size: 11px; }
     .game-control-btn { max-width: 140px; padding: 10px 18px; font-size: 12px; }
@@ -9488,13 +9488,13 @@ body.dark-mode .hub-chest-timer {
 
 /* Écrans de jeu et lobby - fullscreen sans scroll */
 /* ✅ REFONTE: Layout flex comme hub/trophées */
-#game-solo,
-#game-ai,
-#game-multi {
+#game-solo:not(.hidden),
+#game-ai:not(.hidden),
+#game-multi:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
-    padding: 10px !important;
-    padding-bottom: 15px !important;
+    padding: 8px !important;
+    padding-bottom: 10px !important;
     overflow: hidden !important;
     height: 100vh !important;
     height: calc(var(--vh, 1vh) * 100) !important;
@@ -9508,8 +9508,11 @@ body.dark-mode .hub-chest-timer {
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     height: 100% !important;
     min-height: 0 !important;
+    overflow: visible !important;
 }
 
 /* ✅ game-column distribue les éléments verticalement */
@@ -9518,9 +9521,14 @@ body.dark-mode .hub-chest-timer {
 #game-multi .game-column {
     flex: 1 !important;
     height: 100% !important;
+    max-height: 100% !important;
+    max-width: 98vw !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 0 !important;
 }
 
 #lobby-screen,
