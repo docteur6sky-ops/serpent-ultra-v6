@@ -12,8 +12,8 @@
     <link rel="icon" href="data:,">
 
     <!-- Styles -->
-    <!-- <link rel="stylesheet" href="/snake.css"> -->
-    <link rel="stylesheet" href="/snake.min.css"> <!-- CSS optimisé (-48%) -->
+    <link rel="stylesheet" href="/snake.css">
+    <!-- <link rel="stylesheet" href="/snake.min.css"> --> <!-- CSS optimisé (-48%) -->
     <link rel="stylesheet" href="/game-fixes.css"> <!-- FIX: Corrections layout écran de jeu -->
     <link rel="stylesheet" href="/roguelike/roguelike.css"> <!-- Mode Roguelike -->
     <link rel="stylesheet" href="/roguelike/tutorial.css"> <!-- Tutoriel Serpent Academy -->
@@ -673,15 +673,15 @@
             <div class="stats-container-new">
                 <!-- Mode Selector Roguelike (en haut, plus grand) -->
                 <div class="mode-selector-roguelike">
-                    <button class="mode-btn mode-btn-roguelike" data-mode="roguelike" onclick="window.audio.buttonClick();window.switchStatsMode('roguelike')">
+                    <button class="mode-btn mode-btn-roguelike active" data-mode="roguelike" onclick="window.audio.buttonClick();window.switchStatsMode('roguelike')">
                         🎲 Roguelike
                     </button>
                 </div>
 
                 <!-- Mode Selector Classique -->
                 <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
-                    <button class="mode-btn" data-mode="ia" onclick="window.audio.buttonClick();window.switchStatsMode('ia')">IA</button>
+                    <button class="mode-btn" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
+                    <button class="mode-btn" data-mode="bossrush" onclick="window.audio.buttonClick();window.switchStatsMode('bossrush')">Boss</button>
                     <button class="mode-btn" data-mode="multi" onclick="window.audio.buttonClick();window.switchStatsMode('multi')">Multi</button>
                 </div>
 

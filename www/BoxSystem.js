@@ -694,6 +694,11 @@ function createItemCard(item) {
     const card = document.createElement('div');
     card.className = 'box-item';
 
+    // 🎨 Classe de rareté AAA
+    if (item.rarity) {
+        card.classList.add(`rarity-${item.rarity}`);
+    }
+
     if (isUnlocked) {
         card.classList.add('unlocked');
     } else {
@@ -721,7 +726,7 @@ function createItemCard(item) {
         previewHTML = `
             <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
                 ${rarityBadge}
-                <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
+                <canvas id="${canvasId}" width="140" height="140" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
                 ${centerBadge}
             </div>
         `;
@@ -825,7 +830,7 @@ function createItemCard(item) {
             const canvas = document.getElementById(canvasId);
             if (canvas) {
                 const ctx = canvas.getContext('2d');
-                drawSkinPreview(ctx, item.id, 100);
+                drawSkinPreview(ctx, item.id, 140);
             }
         }, 10);
     }
