@@ -667,79 +667,66 @@
         </div>
 
         <!-- ============================================ -->
-        <!-- ÉCRAN STATS / CARRIÈRE - REFONTE AAA -->
+        <!-- ÉCRAN STATS / CARRIÈRE - REFONTE UNIFIÉE -->
         <!-- ============================================ -->
         <div class="screen hidden" id="stats-screen">
-            <div class="stats-container-new">
-                <!-- Mode Selector Roguelike (en haut, plus grand) -->
-                <div class="mode-selector-roguelike">
-                    <button class="mode-btn mode-btn-roguelike active" data-mode="roguelike" onclick="window.audio.buttonClick();window.switchStatsMode('roguelike')">
-                        🎲 Roguelike
+            <!-- Bouton fermer en haut à droite -->
+            <button class="stats-close-btn" onclick="window.audio.buttonClick();window.backFromStats()">✕</button>
+
+            <div class="stats-container-unified">
+                <!-- Sélecteur 2 onglets: AVENTURE / ARÈNE -->
+                <div class="stats-tabs">
+                    <button class="stats-tab active" data-mode="aventure" onclick="window.audio.buttonClick();window.switchStatsMode('aventure')">
+                        <span class="tab-icon">🗺️</span>
+                        <span class="tab-label">AVENTURE</span>
+                    </button>
+                    <button class="stats-tab" data-mode="arene" onclick="window.audio.buttonClick();window.switchStatsMode('arene')">
+                        <span class="tab-icon">⚔️</span>
+                        <span class="tab-label">ARÈNE</span>
                     </button>
                 </div>
 
-                <!-- Mode Selector Classique -->
-                <div class="mode-selector">
-                    <button class="mode-btn" data-mode="solo" onclick="window.audio.buttonClick();window.switchStatsMode('solo')">Solo</button>
-                    <button class="mode-btn" data-mode="bossrush" onclick="window.audio.buttonClick();window.switchStatsMode('bossrush')">Boss</button>
-                    <button class="mode-btn" data-mode="multi" onclick="window.audio.buttonClick();window.switchStatsMode('multi')">Multi</button>
-                </div>
-
-                <!-- Rank Card - Hero Element -->
-                <div class="rank-card">
-                    <!-- Bannière en arrière-plan -->
+                <!-- Carte joueur AAA - Style ancien avec grand badge -->
+                <div class="stats-player-card">
                     <div class="stats-banner" id="stats-banner">
                         <img class="stats-banner-image" id="stats-banner-image" src="" alt="">
                         <div class="stats-banner-overlay"></div>
                     </div>
-                    <div class="rank-content">
-                        <!-- Partie haute : Badge + Info joueur -->
-                        <div class="rank-top">
-                            <!-- Badge en haut à gauche (photo d'identité) -->
-                            <div class="rank-badge" id="stats-rank-badge">
-                                <div class="rank-icon" id="stats-rank-icon">🥈</div>
-                            </div>
-
-                            <!-- Info à droite -->
-                            <div class="rank-info">
-                                <div class="rank-header">
-                                    <div class="player-name" id="stats-player-name">Joueur</div>
-                                    <div class="stats-grade-container" id="stats-grade-container">
-                                        <span class="stats-grade-value" id="stats-rank-name">Combattant</span>
-                                    </div>
-                                </div>
-
-                                <!-- Barre de progression -->
-                                <div class="progression">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" id="stats-progress-fill"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Stats importantes -->
-                                <div class="rank-stats" id="stats-card-stats">
-                                    <!-- Généré dynamiquement -->
-                                </div>
-                            </div>
+                    <div class="stats-player-info">
+                        <!-- Grand badge vertical à gauche -->
+                        <div class="rank-badge-large" id="stats-rank-badge">
+                            <div class="rank-icon-large" id="stats-rank-icon">🥉</div>
+                            <div class="rank-level-badge" id="stats-rank-level">3</div>
                         </div>
-
-                        <!-- Stats Vue d'ensemble -->
-                        <div class="overview-stats" id="stats-overview">
-                            <!-- Généré dynamiquement -->
+                        <!-- Infos joueur à droite -->
+                        <div class="stats-player-details">
+                            <div class="player-name" id="stats-player-name">Joueur</div>
+                            <div class="stats-grade-container" id="stats-grade-container">
+                                <span class="stats-grade-value" id="stats-rank-name">Apprenti</span>
+                            </div>
+                            <!-- Barre de progression -->
+                            <div class="grade-progression">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="stats-progress-fill"></div>
+                                    <div class="progress-shimmer"></div>
+                                </div>
+                            </div>
+                            <!-- Mini stats sur la carte (comme l'ancien) -->
+                            <div class="card-mini-stats" id="stats-card-mini">
+                                <!-- Généré dynamiquement -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Boutons Classement + Daily -->
-                <div style="margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                    <button class="btn btn-primary stats-ranking-btn" id="stats-ranking-btn" onclick="window.audio.buttonClick();window.showLeaderboardOverlay()" style="width: 80%; max-width: 400px;">Classement</button>
-                    <button class="btn btn-daily-stats" id="stats-daily-btn" onclick="window.audio?.buttonClick();window.showDailyChallenge()" style="width: 80%; max-width: 400px; display: none; background: linear-gradient(135deg, #e94560, #0f3460); border: 2px solid #e94560;">🎯 Défi du Jour</button>
+                <!-- Stats unifiées en grille compacte -->
+                <div class="stats-grid-unified" id="stats-grid-unified">
+                    <!-- Généré dynamiquement par JS -->
                 </div>
 
-                <!-- Bouton Retour -->
-                <button class="back-btn-compact" onclick="window.audio.buttonClick();window.backFromStats()">
-                    <span class="btn-icon">⬅️</span>
-                    <span class="btn-text">RETOUR</span>
+                <!-- Bouton Classement -->
+                <button class="btn btn-primary stats-ranking-btn" id="stats-ranking-btn" onclick="window.audio.buttonClick();window.statsManager.showRoguelikeLeaderboard()">
+                    🏆 Leaderboard
                 </button>
             </div>
         </div>
