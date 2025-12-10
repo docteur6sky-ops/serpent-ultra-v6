@@ -39,6 +39,17 @@ const defaultCareer = {
     aiWins: 0,
     aiGames: 0,
 
+    // Stats Boss Rush
+    bossRushRuns: 0,           // Total de runs lancées
+    bossRushCompletions: 0,    // Runs complètes (4/4 boss)
+    bossRushBestTime: null,    // Meilleur temps (en secondes)
+    bossRushTitanKills: 0,     // Boss 1 vaincu
+    bossRushCryoKills: 0,      // Boss 2 vaincu
+    bossRushSpectreKills: 0,   // Boss 3 vaincu
+    bossRushFoudreKills: 0,    // Boss 4 vaincu
+    bossRushPerfectRuns: 0,    // Runs parfaites (sans dégâts)
+    bossRushFastRuns: 0,       // Runs rapides (< 5 min)
+
     // Trophées créatifs
     phoenixRises: 0,
     quickDeaths: 0,
@@ -98,11 +109,22 @@ class CareerManager {
     /**
      * Met à jour les statistiques de carrière après une partie
      * @param {object} stats - Statistiques de la partie
-     * @returns {object} { leveledUp, oldLevel, newLevel, xpGained }
+     * @returns {object} { leveledUp, oldLevel, newLevel, xpGained, boosterBonus }
      */
     updateCareer(stats) {
         const oldLevel = this.career.level;
-        const xpGained = Math.floor((stats.score || 0) / 5);
+
+        // Calcul XP de base
+        const baseXP = Math.floor((stats.score || 0) / 5);
+
+        // Appliquer le bonus booster si actif
+        let boosterBonus = 0;
+        if (window.boxManager && window.boxManager.isBoosterActive()) {
+            const multiplier = window.boxManager.getXpMultiplier();
+            boosterBonus = Math.floor(baseXP * (multiplier - 1));
+            logger.log(`[CareerManager] Booster actif! Base: ${baseXP} × ${multiplier} = ${baseXP + boosterBonus} XP`);
+        }
+        const xpGained = baseXP + boosterBonus;
 
         // Mise à jour des statistiques de jeu
         this.career.totalGames++;
@@ -137,9 +159,12 @@ class CareerManager {
         // Sauvegarde
         this.save();
 
-        logger.log(`[CareerManager] Stats mises à jour - Niveau ${this.career.level}, XP ${this.career.xp}/${this.career.xpNext}`);
+        // ✅ Synchroniser window.career avec this.career
+        this.syncWindowCareer();
 
-        return { leveledUp, oldLevel, newLevel: this.career.level, xpGained };
+        logger.log(`[CareerManager] Stats mises à jour - Niveau ${this.career.level}, XP ${this.career.xp}/${this.career.xpNext} (+${xpGained} XP)`);
+
+        return { leveledUp, oldLevel, newLevel: this.career.level, xpGained, boosterBonus };
     }
 
     /**
@@ -161,7 +186,20 @@ class CareerManager {
 
         this.save();
 
+        // ✅ Synchroniser window.career avec this.career
+        this.syncWindowCareer();
+
         return { leveledUp, oldLevel, newLevel: this.career.level };
+    }
+
+    /**
+     * Synchronise window.career avec this.career
+     * Garantit que les deux références restent identiques
+     */
+    syncWindowCareer() {
+        if (window.career !== this.career) {
+            window.career = this.career;
+        }
     }
 
     /**

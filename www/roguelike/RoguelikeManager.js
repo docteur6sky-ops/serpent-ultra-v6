@@ -6,6 +6,7 @@
 import { ROGUELIKE_LEVELS, WORLDS } from './levels.js';
 import { RUN_UPGRADES, PERMANENT_UPGRADES, RARITIES, selectRandomUpgrades, applyUpgrade, calculateRunModifiers } from './upgrades.js';
 import { logger } from '../services/logger.js';
+import { save, load } from '../services/storage.js';
 import { achievementManager } from './achievements.js';
 
 // SecurityManager - accès via window pour éviter dépendance circulaire
@@ -678,6 +679,7 @@ class RoguelikeManager {
 
     /**
      * Charge la méta-progression depuis le localStorage
+     * Utilise storage.js pour bénéficier de la protection SecurityManager
      */
     loadMetaProgression() {
         // Valeurs par défaut
@@ -691,15 +693,11 @@ class RoguelikeManager {
             purchasedPerks: []
         };
 
-        try {
-            const saved = localStorage.getItem('snakeRoguelikeMeta');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                // Fusionner avec les valeurs par défaut (pour anciennes sauvegardes)
-                return { ...defaults, ...parsed };
-            }
-        } catch (e) {
-            logger.error('[RoguelikeManager] Erreur chargement méta:', e);
+        // Utiliser storage.js pour bénéficier de la protection SecurityManager
+        const saved = load('snakeRoguelikeMeta', null);
+        if (saved) {
+            // Fusionner avec les valeurs par défaut (pour anciennes sauvegardes)
+            return { ...defaults, ...saved };
         }
 
         return defaults;
@@ -707,14 +705,11 @@ class RoguelikeManager {
 
     /**
      * Sauvegarde la méta-progression
+     * Utilise storage.js pour bénéficier de la protection SecurityManager
      */
     saveMetaProgression() {
-        try {
-            localStorage.setItem('snakeRoguelikeMeta', JSON.stringify(this.metaProgression));
-            logger.log('[RoguelikeManager] Méta-progression sauvegardée');
-        } catch (e) {
-            logger.error('[RoguelikeManager] Erreur sauvegarde méta:', e);
-        }
+        save('snakeRoguelikeMeta', this.metaProgression);
+        logger.log('[RoguelikeManager] Méta-progression sauvegardée');
     }
 
     /**
@@ -998,6 +993,26 @@ class RoguelikeManager {
 
     get availableXP() {
         return this.metaProgression.totalXP;
+    }
+
+    /**
+     * Reset partiel des stats Roguelike (appelé par resetAllStats)
+     * Reset les STATS mais GARDE les ACHATS (perks, upgrades)
+     */
+    resetStats() {
+        // Reset des stats
+        this.metaProgression.totalXP = 0;
+        this.metaProgression.totalRuns = 0;
+        this.metaProgression.bestLevel = 0;
+        this.metaProgression.bestScore = 0;
+        this.metaProgression.totalGold = 0;
+
+        // GARDER les achats du joueur :
+        // - purchasedPerks (perks achetés)
+        // - unlockedUpgrades (upgrades débloqués)
+
+        this.saveMetaProgression();
+        logger.log('[RoguelikeManager] Stats reset (achats conservés)');
     }
 }
 

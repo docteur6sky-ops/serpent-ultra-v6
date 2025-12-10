@@ -9,6 +9,7 @@
  */
 
 import { logger } from '../services/logger.js';
+import { SnakeUltra } from '../SnakeUltra.js';
 
 // ============================================
 // CLASSE PROGRESSION MANAGER
@@ -225,10 +226,12 @@ class ProgressionManager {
             delay += 1200;
         });
 
-        // Stocker les valeurs finales pour synchronisation
-        const totalXPToAdd = gameXP + trophies.reduce((sum, t) => sum + t.xp, 0);
+        // Stocker UNIQUEMENT l'XP des trophées pour synchronisation
+        // L'XP de la partie (gameXP) est DÉJÀ sauvegardé par CareerManager.updateCareer()
+        // appelé dans handleSoloGameOver() AVANT showProgressionOverlay()
+        const trophiesXPOnly = trophies.reduce((sum, t) => sum + t.xp, 0);
         this.pendingCareerUpdate = {
-            totalXP: totalXPToAdd,
+            totalXP: trophiesXPOnly,  // Seulement les trophées !
             baseLevel: currentLevel,
             baseXP: currentXP,
             baseXPNext: currentXPNext
@@ -333,31 +336,36 @@ class ProgressionManager {
 
     /**
      * Synchronise les données career depuis l'animation
+     * IMPORTANT: N'ajoute que l'XP des TROPHÉES !
+     * L'XP de la partie est déjà sauvegardé par CareerManager.updateCareer()
      */
     syncCareerFromAnimation() {
         const update = this.pendingCareerUpdate || window.pendingCareerUpdate;
-        if (update && window.career) {
-            // Recalculer depuis les valeurs de base
-            let xp = update.baseXP + update.totalXP;
-            let level = update.baseLevel;
-            let xpNext = update.baseXPNext;
+        if (update && update.totalXP > 0) {
+            // Ajouter UNIQUEMENT l'XP des trophées (l'XP de partie est déjà sauvegardé)
+            if (window.careerManager) {
+                const result = window.careerManager.addXP(update.totalXP);
+                logger.log(`[ProgressionManager] Trophées XP synced: +${update.totalXP} XP → Level ${result.newLevel}`);
+            } else if (window.career) {
+                // Fallback si CareerManager non disponible
+                let xp = update.baseXP + update.totalXP;
+                let level = update.baseLevel;
+                let xpNext = update.baseXPNext;
 
-            // Gérer les level up
-            while (xp >= xpNext && level < 100) {
-                xp -= xpNext;
-                level++;
-                xpNext = 100 + (level * 100);
-            }
+                while (xp >= xpNext && level < 100) {
+                    xp -= xpNext;
+                    level++;
+                    xpNext = 100 + (level * 100);
+                }
 
-            // Mettre à jour window.career
-            window.career.xp = xp;
-            window.career.level = level;
-            window.career.xpNext = xpNext;
+                window.career.xp = xp;
+                window.career.level = level;
+                window.career.xpNext = xpNext;
 
-            // Sauvegarder
-            if (window.save) {
-                window.save('career', window.career);
-                logger.log(`[ProgressionManager] Career synced: Level ${level}, XP ${xp}/${xpNext}`);
+                if (window.save) {
+                    window.save('career', window.career);
+                    logger.log(`[ProgressionManager] Trophées XP synced (fallback): +${update.totalXP} XP → Level ${level}`);
+                }
             }
 
             // Nettoyer
@@ -458,6 +466,9 @@ window.showFinalStats = () => progressionManager.showFinalStats();
 window.returnToHubFromProgression = () => progressionManager.returnToHubFromProgression();
 window.replayFromProgression = () => progressionManager.replayFromProgression();
 window.returnToMenuFromStats = () => progressionManager.returnToMenuFromStats();
+
+// Enregistrer dans SnakeUltra
+SnakeUltra.registerManager('progression', progressionManager);
 
 logger.log('✅ ProgressionManager chargé');
 

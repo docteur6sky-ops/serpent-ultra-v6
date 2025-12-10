@@ -9,6 +9,7 @@
  */
 
 import { logger } from './services/logger.js';
+import { save, load } from './services/storage.js';
 import { ITEMS, getAllItems, getItemById, getItemsByType, RARITY } from './data/items.js';
 import { drawSkinPreview } from './SkinsRenderer.js';
 import { achievementManager } from './roguelike/achievements.js';
@@ -181,9 +182,20 @@ class BoxManager {
 
         logger.log(`🎁 [BoxManager] Item ${itemId} débloqué (${reason})`);
 
+        // ⚠️ Ne pas afficher d'overlay pendant une run roguelike active (bloque le jeu)
+        const isRoguelikeRunning = window.roguelikeManager?.isRunActive &&
+                                   window.soloGame?.running;
+
         // Animation de déblocage pour les skins (épique et légendaire)
+        // Sauf si une partie roguelike est en cours
         if (showAnimation && item.type === 'skin' && (item.rarity === 'epic' || item.rarity === 'legendary')) {
-            if (window.showSkinUnlockNotification) {
+            if (isRoguelikeRunning) {
+                // Pendant roguelike : notification simple sans overlay bloquant
+                if (window.NotificationManager && window.NotificationManager.show) {
+                    window.NotificationManager.show(`${item.emoji} ${item.name} débloqué !`, 'success', 3000);
+                }
+                logger.log(`🎁 [BoxManager] Skin unlock overlay différé (roguelike en cours)`);
+            } else if (window.showSkinUnlockNotification) {
                 window.showSkinUnlockNotification(item);
             }
         } else if (window.NotificationManager && window.NotificationManager.show) {
@@ -483,28 +495,24 @@ class BoxManager {
             activeBooster: this.activeBooster
         };
 
-        localStorage.setItem('boxData', JSON.stringify(data));
+        // Utiliser storage.js pour bénéficier de la protection SecurityManager
+        save('boxData', data);
     }
 
     load() {
-        const saved = localStorage.getItem('boxData');
+        // Utiliser storage.js pour bénéficier de la protection SecurityManager
+        const data = load('boxData', null);
 
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
+        if (data) {
+            this.coins = data.coins || 0;
+            this.unlockedItems = data.unlockedItems || [];
+            this.equippedSkin = data.equippedSkin || 'classic';
+            this.equippedBackground = data.equippedBackground || 'default';
+            this.equippedBanner = data.equippedBanner || 'banner_default';
+            this.boosters = data.boosters || { boost25: 0, boost50: 0 };
+            this.activeBooster = data.activeBooster || null;
 
-                this.coins = data.coins || 0;
-                this.unlockedItems = data.unlockedItems || [];
-                this.equippedSkin = data.equippedSkin || 'classic';
-                this.equippedBackground = data.equippedBackground || 'default';
-                this.equippedBanner = data.equippedBanner || 'banner_default';
-                this.boosters = data.boosters || { boost25: 0, boost50: 0 };
-                this.activeBooster = data.activeBooster || null;
-
-                logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items`);
-            } catch (e) {
-                logger.error('❌ [BoxManager] Erreur chargement:', e);
-            }
+            logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items`);
         } else {
             logger.log('📦 [BoxManager] Première initialisation');
         }

@@ -80,10 +80,21 @@ window.start = function() {
     // Créer l'instance si elle n'existe pas
     if (!soloGameInstance) {
         try {
-            soloGameInstance = new SoloSnakeGame();
+            // ✅ FIX: Utiliser window.SoloSnakeGame (exposé par solo-game.js)
+            if (!window.SoloSnakeGame) {
+                logger.error('[Navigation] SoloSnakeGame non disponible !');
+                if (window.ModalManager) {
+                    window.ModalManager.error('Jeu non chargé, rechargez la page');
+                }
+                return;
+            }
+            soloGameInstance = new window.SoloSnakeGame();
             window.soloGame = soloGameInstance; // Exposer globalement pour index.html
         } catch (error) {
-            alert('Erreur: Impossible de créer le jeu solo');
+            logger.error('[Navigation] Erreur création SoloSnakeGame:', error);
+            if (window.ModalManager) {
+                window.ModalManager.error('Impossible de créer le jeu solo');
+            }
             return;
         }
     }
@@ -101,13 +112,15 @@ window.start = function() {
  * Met en pause / reprend le jeu solo
  */
 window.pauseSolo = function() {
+    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
+    const gameInstance = soloGameInstance || window.soloGame;
 
-    if (soloGameInstance) {
+    if (gameInstance) {
         // Vérifier l'état AVANT de toggler
-        const wasPaused = soloGameInstance.paused;
+        const wasPaused = gameInstance.paused;
 
         // Toggle pause
-        soloGameInstance.pause();
+        gameInstance.pause();
 
         // Son de pause
         if (window.audio && window.audio.buttonClick) {
@@ -133,9 +146,12 @@ window.pauseSolo = function() {
 window.quitSolo = function() {
     window.audio.buttonClick();
 
-    // Mettre le jeu en pause
-    if (soloGameInstance && soloGameInstance.running) {
-        soloGameInstance.pause();
+    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
+    const gameInstance = soloGameInstance || window.soloGame;
+
+    // ✅ Mettre le jeu en pause IMMÉDIATEMENT (pas de condition running)
+    if (gameInstance && !gameInstance.paused) {
+        gameInstance.pause();
     }
 
     // Afficher l'overlay
@@ -155,9 +171,17 @@ function confirmQuitSolo() {
     overlay.classList.add('hidden');
     overlay.style.display = 'none';
 
+    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
+    const gameInstance = soloGameInstance || window.soloGame;
+
     // Arrêter le jeu
-    if (soloGameInstance) {
-        soloGameInstance.stop();
+    if (gameInstance) {
+        gameInstance.stop();
+    }
+
+    // ✅ Si on quitte une run Roguelike, proposer de sauvegarder
+    if (window.roguelikeManager?.isRunActive) {
+        window.roguelikeManager.saveRunMidGame();
     }
 
     // Retour au HUB V6
@@ -190,9 +214,12 @@ function cancelQuitSolo() {
     overlay.classList.add('hidden');
     overlay.style.display = 'none';
 
+    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
+    const gameInstance = soloGameInstance || window.soloGame;
+
     // Reprendre le jeu (pause() est un toggle)
-    if (soloGameInstance) {
-        soloGameInstance.pause();
+    if (gameInstance) {
+        gameInstance.pause();
     }
 }
 
@@ -452,100 +479,7 @@ function getCareerStats() {
     };
 }
 
-/**
- * Afficher les statistiques de carrière + classement
- */
-function renderCareerStats() {
-    const career = getCareerStats();
-    const leaderboard = getLeaderboard();
-    const container = document.querySelector('#career-menu .career-content');
-
-    if (!container) return;
-
-    // ✅ UNIFIÉ : Lecture depuis window.career
-    const careerData = window.career || career;
-
-    let html = '<div class="career-stats-grid">';
-
-    // Grille de stats (même style que l'écran Game Over)
-    const stats = [
-        { label: '📊 Total Parties', value: careerData.totalGames || 0 },
-        { label: '📈 Niveau Joueur', value: careerData.level || 1 },
-        { label: '⭐ XP Actuel', value: `${careerData.xp || 0} / ${careerData.xpNext || 100}` },
-        { label: '💯 Score Total', value: careerData.totalScore || 0 },
-        { label: '🏅 Meilleur Score', value: careerData.bestScore || 0 },
-        { label: '🍎 Pommes Totales', value: careerData.totalApples || 0 },
-        { label: '📊 Niveau Max', value: careerData.maxLevel || 0 },
-        { label: '🧱 Murs Détruits', value: careerData.totalWalls || 0 },
-        { label: '✨ Power-Ups', value: careerData.totalPowerups || 0 },
-        { label: '⏱️ Survie Max', value: formatSurvivalTime(careerData.maxSurvivalTime || 0) }
-    ];
-
-    stats.forEach(stat => {
-        html += `
-            <div class="stat-card">
-                <div class="stat-label">${stat.label}</div>
-                <div class="stat-value">${stat.value}</div>
-            </div>
-        `;
-    });
-
-    html += '</div>';
-
-    // Ajouter le Top 3
-    html += '<h3 style="margin-top: 40px; margin-bottom: 20px; text-align: center; color: var(--color-gold);">🏆 TOP 3</h3>';
-
-    if (leaderboard.length === 0) {
-        html += `
-            <div class="empty-leaderboard">
-                <p style="font-size: 36px; margin-bottom: 10px;">🎮</p>
-                <p>Aucun score enregistré</p>
-                <p style="font-size: 14px; opacity: 0.7; margin-top: 10px;">
-                    Joue ta première partie solo pour apparaître ici !
-                </p>
-            </div>
-        `;
-    } else {
-        const medals = ['🥇', '🥈', '🥉'];
-        const diffEmojis = ['😊', '😮', '😈'];
-
-        html += '<div class="leaderboard-grid">';
-
-        leaderboard.forEach((entry, index) => {
-            html += `
-                <div class="leaderboard-entry rank-${index + 1}">
-                    <!-- Médaille -->
-                    <div class="stat-card rank-medal-card">
-                        <div class="stat-value" style="font-size: 48px;">${medals[index]}</div>
-                        <div class="stat-label">#${index + 1}</div>
-                    </div>
-
-                    <!-- Score principal -->
-                    <div class="stat-card score-main-card">
-                        <div class="stat-label">🏆 Score</div>
-                        <div class="stat-value stat-score">${entry.score}</div>
-                    </div>
-
-                    <!-- Niveau -->
-                    <div class="stat-card">
-                        <div class="stat-label">🎯 Niveau</div>
-                        <div class="stat-value stat-level">${entry.level}</div>
-                    </div>
-
-                    <!-- Difficulté -->
-                    <div class="stat-card">
-                        <div class="stat-label">🎮 Difficulté</div>
-                        <div class="stat-value stat-difficulty-emoji">${diffEmojis[entry.difficulty]}</div>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += '</div>';
-    }
-
-    container.innerHTML = html;
-}
+// renderCareerStats supprimée - fonction non utilisée
 
 // showProgressionOverlay, updateProgressBar, showFinalStats,
 // syncCareerFromAnimation, returnToHubFromProgression, replayFromProgression,
@@ -609,19 +543,25 @@ window.editPseudoFromCareer = function() {
     const trimmed = newPseudo.trim();
 
     if (trimmed.length < 3) {
-        alert('⚠️ Le pseudo doit contenir au moins 3 caractères');
+        if (window.ModalManager) {
+            window.ModalManager.warning('Le pseudo doit contenir au moins 3 caractères');
+        }
         return;
     }
 
     if (trimmed.length > 12) {
-        alert('⚠️ Le pseudo ne peut pas dépasser 12 caractères');
+        if (window.ModalManager) {
+            window.ModalManager.warning('Le pseudo ne peut pas dépasser 12 caractères');
+        }
         return;
     }
 
     // Vérifier caractères autorisés
     const regex = /^[a-zA-Z0-9_-]+$/;
     if (!regex.test(trimmed)) {
-        alert('⚠️ Caractères autorisés: lettres, chiffres, _ et -');
+        if (window.ModalManager) {
+            window.ModalManager.warning('Caractères autorisés: lettres, chiffres, _ et -');
+        }
         return;
     }
 
@@ -631,7 +571,9 @@ window.editPseudoFromCareer = function() {
     localStorage.setItem('snakeUltraPseudo', trimmed); // Compatibilité
 
     logger.log(`✅ Nouveau pseudo sauvegardé: ${trimmed}`);
-    alert(`✅ Pseudo modifié avec succès !\n\nNouveau pseudo : ${trimmed}`);
+    if (window.ModalManager) {
+        window.ModalManager.success(`Pseudo modifié avec succès !\n\nNouveau pseudo : ${trimmed}`);
+    }
 };
 
 /**
@@ -650,8 +592,8 @@ window.savePseudoAndGoToMenu = function() {
             if (errorSpan) {
                 errorSpan.textContent = '⚠️ Pseudo invalide (3-12 caractères)';
                 errorSpan.style.display = 'block';
-            } else {
-                alert('Veuillez entrer un pseudo valide (3-12 caractères)');
+            } else if (window.ModalManager) {
+                window.ModalManager.warning('Veuillez entrer un pseudo valide (3-12 caractères)');
             }
             return;
         }
@@ -662,8 +604,8 @@ window.savePseudoAndGoToMenu = function() {
             if (errorSpan) {
                 errorSpan.textContent = '⚠️ Caractères autorisés : lettres, chiffres, _ et -';
                 errorSpan.style.display = 'block';
-            } else {
-                alert('Caractères autorisés : lettres, chiffres, _ et -');
+            } else if (window.ModalManager) {
+                window.ModalManager.warning('Caractères autorisés : lettres, chiffres, _ et -');
             }
             return;
         }
@@ -693,7 +635,9 @@ window.savePseudoAndGoToMenu = function() {
 
     } catch (error) {
         logger.error('❌ Erreur savePseudoAndGoToMenu:', error);
-        alert('Erreur lors de la sauvegarde du pseudo');
+        if (window.ModalManager) {
+            window.ModalManager.error('Erreur lors de la sauvegarde du pseudo');
+        }
     }
 };
 
@@ -713,8 +657,8 @@ window.startLocalMultiplayer = function() {
             if (errorSpan) {
                 errorSpan.textContent = '⚠️ Pseudo invalide (3-12 caractères)';
                 errorSpan.style.display = 'block';
-            } else {
-                alert('Veuillez entrer un pseudo valide (3-12 caractères)');
+            } else if (window.ModalManager) {
+                window.ModalManager.warning('Veuillez entrer un pseudo valide (3-12 caractères)');
             }
             return; // NE PAS connecter
         }
@@ -743,7 +687,9 @@ window.startLocalMultiplayer = function() {
                 multiGameInstance = new MultiplayerSnakeGame();
                 window.multiGame = multiGameInstance;
             } catch (error) {
-                alert('Erreur: Impossible de créer le jeu multijoueur');
+                if (window.ModalManager) {
+                    window.ModalManager.error('Impossible de créer le jeu multijoueur');
+                }
                 throw error;
             }
         }
@@ -760,7 +706,9 @@ window.startLocalMultiplayer = function() {
         }, 500);
 
     } catch (error) {
-        alert('Erreur critique: ' + error.message);
+        if (window.ModalManager) {
+            window.ModalManager.error('Erreur critique: ' + error.message);
+        }
         throw error;
     }
 };
@@ -888,7 +836,9 @@ window.setReady = function() {
 
     // Vérifier la connexion
     if (!multiGameInstance || !multiGameInstance.client || !multiGameInstance.client.connected) {
-        alert('Erreur: Non connecté au serveur');
+        if (window.ModalManager) {
+            window.ModalManager.error('Non connecté au serveur');
+        }
         return;
     }
 
@@ -1000,13 +950,8 @@ window.recalibrateLevel = function() {
     return { level: 1, xpInCurrentLevel: 0 };
 };
 
-// ✅ UNIFIÉ : awardXP utilise maintenant window.career
+// ✅ UNIFIÉ : awardXP utilise CareerManager (source unique de vérité)
 window.awardXP = function(amount) {
-    if (!window.career) {
-        logger.warn('[awardXP] window.career non disponible');
-        return { leveledUp: false, newLevel: 1, xpGained: amount };
-    }
-
     // ⚗️ Appliquer le multiplicateur si un booster est actif
     let finalAmount = amount;
     let boosterBonus = 0;
@@ -1019,11 +964,24 @@ window.awardXP = function(amount) {
         }
     }
 
+    // Utiliser CareerManager si disponible (source unique de vérité)
+    if (window.careerManager) {
+        const result = window.careerManager.addXP(finalAmount);
+        updatePlayerProgress();
+        logger.log(`[awardXP] +${finalAmount} XP via CareerManager → Niveau ${result.newLevel}`);
+        return { leveledUp: result.leveledUp, newLevel: result.newLevel, xpGained: finalAmount };
+    }
+
+    // Fallback si CareerManager non disponible
+    if (!window.career) {
+        logger.warn('[awardXP] window.career non disponible');
+        return { leveledUp: false, newLevel: 1, xpGained: finalAmount };
+    }
+
     const oldLevel = window.career.level;
     window.career.xp += finalAmount;
     let leveledUp = false;
 
-    // Formule linéaire : 100 + level×100
     while (window.career.xp >= window.career.xpNext && window.career.level < 100) {
         window.career.xp -= window.career.xpNext;
         window.career.level++;
@@ -1031,25 +989,117 @@ window.awardXP = function(amount) {
         leveledUp = true;
     }
 
-    // Sauvegarder via window.save
     if (window.save) {
         window.save('career', window.career);
     }
 
-    // Rafraîchir l'affichage
     updatePlayerProgress();
+    logger.log(`[awardXP] +${finalAmount} XP (fallback) → Niveau ${window.career.level}`);
 
-    logger.log(`[awardXP] +${amount} XP → Niveau ${window.career.level}, XP ${window.career.xp}/${window.career.xpNext}`);
+    return { leveledUp, newLevel: window.career.level, xpGained: finalAmount };
+};
 
-    return { leveledUp, newLevel: window.career.level, xpGained: amount };
+// ============================================
+// BOSS RUSH - FONCTIONS NAVIGATION
+// ============================================
+
+/**
+ * Démarre le mode Boss Rush - Affiche le menu
+ */
+window.startBossRush = function() {
+    logger.log('[BossRush] Affichage menu Boss Rush...');
+
+    // Mettre à jour les stats dans le menu
+    if (window.bossRushManager) {
+        const stats = window.bossRushManager.stats || {};
+        const runsEl = document.getElementById('brs-total-runs');
+        const winsEl = document.getElementById('brs-completed-runs');
+        const timeEl = document.getElementById('brs-best-time');
+
+        if (runsEl) runsEl.textContent = stats.totalRuns || 0;
+        if (winsEl) winsEl.textContent = stats.completedRuns || 0;
+        if (timeEl) {
+            if (stats.bestTime) {
+                const mins = Math.floor(stats.bestTime / 60);
+                const secs = Math.floor(stats.bestTime % 60);
+                timeEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                timeEl.textContent = '-';
+            }
+        }
+    }
+
+    // Afficher l'écran menu via screenManager
+    if (window.screenManager) {
+        window.screenManager.show('menu-boss-rush');
+    }
+};
+
+/**
+ * Rejouer Boss Rush (appelé depuis écran Game Over)
+ */
+window.replayBossRush = function() {
+    logger.log('[BossRush] Rejouer...');
+
+    if (window.audio?.buttonClick) {
+        window.audio.buttonClick();
+    }
+
+    // Nettoyer les overlays
+    if (window.bossRushUI) {
+        window.bossRushUI.cleanup();
+    }
+
+    // Nettoyer le jeu actuel
+    if (window.soloGame) {
+        window.soloGame.stop();
+        window.soloGame.isBossRushMode = false;
+    }
+
+    // Relancer (le manager gère l'affichage de l'écran de jeu)
+    if (window.bossRushManager) {
+        window.bossRushManager.startNewRun();
+    }
+};
+
+/**
+ * Retour au hub depuis Boss Rush (appelé depuis écran Game Over)
+ */
+window.returnToHubFromBossRush = function() {
+    logger.log('[BossRush] Retour au hub...');
+
+    if (window.audio?.buttonClick) {
+        window.audio.buttonClick();
+    }
+
+    // Nettoyer tous les overlays Boss Rush
+    if (window.bossRushUI) {
+        window.bossRushUI.cleanup();
+    }
+
+    // Nettoyer le jeu
+    if (window.soloGame) {
+        window.soloGame.stop();
+        window.soloGame.isBossRushMode = false;
+    }
+
+    // Retourner au hub
+    if (window.screenManager) {
+        window.screenManager.show('hub');
+    }
+
+    // Rafraîchir le hub
+    if (window.initHub) {
+        setTimeout(() => window.initHub(), 100);
+    }
 };
 
 // ============================================
 // INITIALISATION
 // ============================================
 
-// Charger les paramètres au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
+// ✅ FIX: Fonction d'initialisation extraite pour pouvoir l'appeler immédiatement si DOM prêt
+function initNavigation() {
     updatePlayerProgress();
     loadDarkMode();        // Depuis ui/settings.js
     loadSoundSettings();   // Depuis ui/settings.js
@@ -1072,7 +1122,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sélectionner FACILE par défaut au chargement
     setDiff(0);  // Depuis ui/difficulty.js
-});
+
+    logger.log('✅ Navigation initialisée');
+}
+
+// ✅ FIX: Avec les imports dynamiques, le DOM peut déjà être chargé
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // DOM déjà prêt, initialiser immédiatement
+    initNavigation();
+} else {
+    // DOM pas encore prêt, attendre l'événement
+    document.addEventListener('DOMContentLoaded', initNavigation);
+}
 
 // ============================================
 // EXPORTS GLOBAUX pour le système de carrière

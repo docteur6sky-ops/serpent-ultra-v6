@@ -190,10 +190,11 @@ import { trophyManager } from './managers/TrophyManager.js';
     }
 
     function resetAllStats() {
-        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n✖️ Pseudo du joueur\n\n✅ Votre collection (coins, items) sera CONSERVÉE\n\nCette action est IRRÉVERSIBLE !')) {
+        if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous SÛR de vouloir TOUT réinitialiser ?\n\n✖️ Niveau et XP\n✖️ Toutes les statistiques\n✖️ Tous les trophées\n✖️ Meilleurs scores\n✖️ Stats Roguelike\n✖️ Pseudo du joueur\n✖️ Tutoriel (sera revu)\n\n✅ Votre collection (coins, items, perks) sera CONSERVÉE\n\nCette action est IRRÉVERSIBLE !')) {
             // Reset des managers (PAS la box !)
             if (window.careerManager) careerManager.reset();
             if (window.trophyManager) trophyManager.reset();
+            if (window.roguelikeManager) roguelikeManager.resetStats(); // Reset stats mais garde perks
             // boxManager: NE PAS RESET - achats du joueur !
 
             // Nettoyage localStorage (PAS boxData !)
@@ -207,9 +208,22 @@ import { trophyManager } from './managers/TrophyManager.js';
             localStorage.removeItem('playerPseudo');      // Clé de compatibilité
             localStorage.removeItem('snakeUltraPseudo');  // Clé de compatibilité
             // boxData: NE PAS SUPPRIMER - achats du joueur !
+            // snakeRoguelikeMeta: Reset partiel via roguelikeManager.resetStats()
 
-            alert('✅ Statistiques réinitialisées !\n\n✅ Votre collection a été conservée.\n\nLa page va se recharger...');
-            location.reload();
+            // Reset du tutoriel Roguelike (sera revu au prochain lancement)
+            localStorage.removeItem('roguelike_tutorial_completed');
+
+            if (window.ModalManager) {
+                window.ModalManager.success(
+                    'Statistiques réinitialisées !\n\nVotre collection et vos perks Roguelike ont été conservés.\nLe tutoriel sera affiché au prochain lancement.',
+                    {
+                        title: 'Réinitialisation',
+                        onClose: () => location.reload()
+                    }
+                );
+            } else {
+                location.reload();
+            }
         }
     }
 
@@ -371,8 +385,19 @@ import { trophyManager } from './managers/TrophyManager.js';
     // EXPORTS GLOBAUX
     // ============================================
 
-    window.init = init;
-    window.onload = () => window.init();
+    // Wrapper init() pour éviter double appel
+    const originalInit = init;
+    window.init = function() {
+        if (window._initCalled) {
+            logger.log('⚠️ init() déjà appelé, skip');
+            return;
+        }
+        window._initCalled = true;
+        originalInit();
+    };
+
+    // Note: L'appel à init() est maintenant géré par main.js après tous les imports
+
     window.startGame = startGame;
 
     window.showRules = showRules;

@@ -8,52 +8,93 @@
 
 // 1. Services de base (pas de dépendances)
 import { logger } from './services/logger.js';
-import './services/CareerManager.js';  // ✅ Gestion carrière/XP/rangs
-import './managers/TrophyManager.js';  // ✅ Gestion trophées
-import './managers/ProgressionManager.js';  // ✅ Overlay progression XP
-import './managers/LeaderboardManager.js';  // ✅ Scores et classement
-import './managers/GradeManager.js';  // ✅ Grades Solo/Multi
-import './managers/BoosterManager.js';  // ✅ Boosters XP
-import './managers/ChestManager.js';  // ✅ Coffre quotidien
 
-// 2. Managers UI
-import './ScreenManager.js';
-import './BackgroundManager.js';
-import './AudioManager.js';
-import './NotificationManager.js';
-import './hub-manager.js';
-import './BoxSystem.js';  // ✅ Système Box unifié (manager + UI)
-import './chest-opening.js';  // ✅ Expérience AAA ouverture coffre
-import './stats-manager.js';  // ✅ Gestionnaire écran Stats/Carrière
+// ============================================
+// PHASE 1: Initialisation SecurityManager + Storage
+// DOIT être fait AVANT tout manager qui utilise storage.js
+// ============================================
+let securityManager = null;
+try {
+    const secModule = await import('./services/SecurityManager.js');
+    securityManager = secModule.securityManager;
 
-// 2. Utilitaires
-import './render-utils.js';
+    const storageModule = await import('./services/storage.js');
+    storageModule.initSecureStorage(securityManager);
+    securityManager.initializeProtection();
+    logger.log('[Main] SecurityManager initialisé');
+} catch (e) {
+    logger.warn('[Main] SecurityManager désactivé:', e.message);
+}
 
-// 3. Classes de jeu
-import './solo-game.js';
-import './ai-game.js';
-import './network-multiplayer.js';
-import './main-lobby.js'; // ✅ LOBBY PRINCIPAL
-import './multi-game.js';
+// ============================================
+// PHASE 2: Managers qui utilisent storage.js (imports dynamiques)
+// Ces imports DOIVENT attendre que storage.js soit initialisé
+// ============================================
+await import('./services/CareerManager.js');  // ✅ Gestion carrière/XP/rangs
+await import('./managers/TrophyManager.js');  // ✅ Gestion trophées
+await import('./managers/ProgressionManager.js');  // ✅ Overlay progression XP
+await import('./managers/LeaderboardManager.js');  // ✅ Scores et classement
+await import('./managers/GradeManager.js');  // ✅ Grades Solo/Multi
+await import('./managers/BoosterManager.js');  // ✅ Boosters XP
+await import('./managers/ChestManager.js');  // ✅ Coffre quotidien
+await import('./managers/ModalManager.js');  // ✅ Modales pour remplacer alert()
+await import('./managers/CleanupManager.js');  // ✅ Gestion mémoire centralisée
 
-// 3.5 Mode Roguelike
-import { initRoguelike } from './roguelike/index.js';
-initRoguelike();
+// ============================================
+// PHASE 3: Managers UI (peuvent être statiques)
+// ============================================
+await import('./ScreenManager.js');
+await import('./BackgroundManager.js');
+await import('./AudioManager.js');
+await import('./NotificationManager.js');
+await import('./hub-manager.js');
+await import('./BoxSystem.js');  // ✅ Système Box unifié (manager + UI)
+await import('./chest-opening.js');  // ✅ Expérience AAA ouverture coffre
+await import('./stats-manager.js');  // ✅ Gestionnaire écran Stats/Carrière
 
-// 4. Navigation (dépend des classes de jeu)
-import './navigation.js';
+// Utilitaires
+await import('./render-utils.js');
 
-// 5. Contrôles et lifecycle
-import './TouchControls.js';
-import './AppLifecycle.js';
+// ============================================
+// PHASE 4: Classes de jeu
+// ============================================
+await import('./solo-game.js');
+await import('./ai-game.js');
+await import('./network-multiplayer.js');
+await import('./main-lobby.js'); // ✅ LOBBY PRINCIPAL
+await import('./multi-game.js');
 
-// 6. Initialisation principale (dépend de tout le reste)
-import './snake.js';
+// Mode Roguelike
+const roguelikeModule = await import('./roguelike/index.js');
+roguelikeModule.initRoguelike();
+
+// Mode Boss Rush
+await import('./modes/BossRushManager.js');
+await import('./ui/boss-rush-ui.js');
+
+// ============================================
+// PHASE 5: Navigation et contrôles
+// ============================================
+await import('./navigation.js');
+await import('./TouchControls.js');
+await import('./AppLifecycle.js');
+
+// ============================================
+// PHASE 6: Initialisation principale
+// ============================================
+await import('./snake.js');
 
 // Log de démarrage
 logger.log('🐍 Snake Ultra - Deluxe Edition');
 logger.log('📦 Bundled with Vite');
 logger.log('✅ All modules loaded');
+
+// ✅ FIX: S'assurer que l'initialisation se fait après tous les imports dynamiques
+// Le DOM est probablement déjà prêt à ce stade
+if (window.init) {
+    window.init();
+    logger.log('✅ window.init() appelé depuis main.js');
+}
 
 // ============================================
 // FIX HAUTEUR MOBILE - Calcul précis du viewport
@@ -124,6 +165,11 @@ function hideLoadingScreen() {
         // ✅ Lancer la musique du menu maintenant que le loading est terminé
         if (window.audioManager) {
             window.audioManager.setAudio('hub');
+        }
+
+        // ✅ Synchroniser le registre SnakeUltra avec les variables globales
+        if (window.SnakeUltra?.sync) {
+            window.SnakeUltra.sync();
         }
 
         logger.log('🎬 Écran de chargement terminé');
