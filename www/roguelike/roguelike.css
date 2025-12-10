@@ -227,14 +227,16 @@
     cursor: not-allowed;
 }
 
-/* ===== ÉCRAN FIN DE RUN ===== */
+/* ===== ÉCRAN FIN DE RUN (AAA Style) ===== */
 .roguelike-run-end {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, rgba(10, 5, 20, 0.98) 0%, rgba(30, 10, 30, 0.98) 100%);
+    background:
+        linear-gradient(180deg, rgba(10, 5, 20, 0.85) 0%, rgba(20, 10, 30, 0.9) 50%, rgba(10, 5, 15, 0.95) 100%),
+        url('../assets/backgrounds/backgrounds_generique.webp') center/cover no-repeat;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -242,6 +244,12 @@
     z-index: 9000;
     padding: 20px;
     box-sizing: border-box;
+    animation: runEndFadeIn 0.5s ease-out;
+}
+
+@keyframes runEndFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .roguelike-run-end.hidden {
@@ -249,131 +257,258 @@
 }
 
 .rl-run-end-title {
-    font-size: 32px;
-    font-weight: bold;
+    font-size: 36px;
+    font-weight: 900;
     color: #ff4444;
-    text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+    text-shadow:
+        0 0 30px rgba(255, 68, 68, 0.6),
+        0 4px 15px rgba(0, 0, 0, 0.5);
     margin-bottom: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(255, 68, 68, 0.6), 0 4px 15px rgba(0, 0, 0, 0.5); }
+    50% { text-shadow: 0 0 40px rgba(255, 68, 68, 0.8), 0 4px 20px rgba(0, 0, 0, 0.6); }
 }
 
 .rl-run-end-title.victory {
     color: #ffd700;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    text-shadow:
+        0 0 30px rgba(255, 215, 0, 0.7),
+        0 4px 15px rgba(0, 0, 0, 0.5);
+    animation: victoryPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes victoryPulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(255, 215, 0, 0.7), 0 4px 15px rgba(0, 0, 0, 0.5); transform: scale(1); }
+    50% { text-shadow: 0 0 50px rgba(255, 215, 0, 1), 0 4px 25px rgba(0, 0, 0, 0.6); transform: scale(1.02); }
 }
 
 .rl-run-end-subtitle {
-    font-size: 18px;
-    color: #888;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 30px;
-}
-
-/* Stats de fin */
-.rl-run-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-width: 320px;
-    width: 100%;
-    margin-bottom: 30px;
-}
-
-.rl-stat-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 16px;
-    text-align: center;
-}
-
-.rl-stat-value {
-    font-size: 28px;
-    font-weight: bold;
-    color: #ffd700;
-    margin-bottom: 4px;
-}
-
-.rl-stat-label {
-    font-size: 11px;
-    color: #888;
-    text-transform: uppercase;
+    font-weight: 300;
     letter-spacing: 1px;
 }
 
-/* 💰 Gold stat (Fortune) */
+/* Stats de fin - AAA Glassmorphism */
+.rl-run-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-width: 340px;
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+.rl-stat-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.rl-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.rl-stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.rl-stat-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.rl-stat-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+
+/* 💰 Gold stat - Premium glow */
 .rl-stat-card.gold-stat {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1));
-    border: 1px solid rgba(255, 215, 0, 0.4);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 140, 0, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.15),
+        inset 0 0 30px rgba(255, 215, 0, 0.05);
+    animation: goldGlow 2s ease-in-out infinite;
+}
+
+@keyframes goldGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15), inset 0 0 30px rgba(255, 215, 0, 0.05); }
+    50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.25), inset 0 0 40px rgba(255, 215, 0, 0.1); }
 }
 
 .rl-stat-card.gold-stat .rl-stat-value {
     color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
 
-/* XP gagné */
+.rl-stat-card.gold-stat .rl-stat-label {
+    color: rgba(255, 215, 0, 0.8);
+}
+
+/* XP gagné - Hero Card AAA */
 .rl-xp-earned {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    border-radius: 16px;
-    padding: 20px 40px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(46, 125, 50, 0.15) 100%);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 2px solid rgba(76, 175, 80, 0.5);
+    border-radius: 20px;
+    padding: 20px 50px;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 0 30px rgba(76, 175, 80, 0.2),
+        inset 0 0 50px rgba(76, 175, 80, 0.05);
+    animation: xpCardPulse 3s ease-in-out infinite;
+}
+
+@keyframes xpCardPulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(76, 175, 80, 0.2), inset 0 0 50px rgba(76, 175, 80, 0.05); }
+    50% { box-shadow: 0 0 45px rgba(76, 175, 80, 0.35), inset 0 0 60px rgba(76, 175, 80, 0.1); }
+}
+
+.rl-xp-earned::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: xpShine 4s ease-in-out infinite;
+}
+
+@keyframes xpShine {
+    0%, 100% { left: -100%; }
+    50% { left: 100%; }
 }
 
 .rl-xp-value {
-    font-size: 36px;
-    font-weight: bold;
-    color: #ffd700;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    font-size: 42px;
+    font-weight: 900;
+    color: #4caf50;
+    text-shadow:
+        0 0 20px rgba(76, 175, 80, 0.6),
+        0 2px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
 }
 
 .rl-xp-label {
-    font-size: 12px;
-    color: #888;
-    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(76, 175, 80, 0.9);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
 }
 
-/* Boutons fin de run */
+/* Boutons fin de run - AAA Premium */
 .rl-run-end-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
-    max-width: 280px;
+    max-width: 300px;
 }
 
 .rl-btn-retry {
-    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
     border: none;
     color: #fff;
-    padding: 16px 32px;
-    border-radius: 12px;
+    padding: 18px 36px;
+    border-radius: 14px;
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 800;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 4px 15px rgba(76, 175, 80, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.rl-btn-retry::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.rl-btn-retry:hover::before {
+    left: 100%;
 }
 
 .rl-btn-retry:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 8px 30px rgba(76, 175, 80, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.rl-btn-retry:active {
+    transform: translateY(-1px) scale(0.98);
 }
 
 .rl-btn-menu {
-    background: rgba(100, 100, 100, 0.3);
-    border: 1px solid rgba(150, 150, 150, 0.3);
-    color: #ccc;
+    background: linear-gradient(135deg, rgba(80, 80, 100, 0.4) 0%, rgba(60, 60, 80, 0.3) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
     padding: 14px 32px;
     border-radius: 12px;
     font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
 }
 
 .rl-btn-menu:hover {
-    background: rgba(100, 100, 100, 0.5);
+    background: linear-gradient(135deg, rgba(100, 100, 120, 0.5) 0%, rgba(80, 80, 100, 0.4) 100%);
+    border-color: rgba(255, 255, 255, 0.25);
     color: #fff;
+    transform: translateY(-2px);
 }
 
 .rl-btn-achievements {

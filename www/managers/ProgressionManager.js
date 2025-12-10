@@ -119,9 +119,8 @@ class ProgressionManager {
                     <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(76,175,80,0.3); border-radius: 8px; font-size: 24px;">
                         🎮
                     </div>
-                    <div style="flex: 1;">
+                    <div style="flex: 1; display: flex; align-items: center;">
                         <div style="color: #4CAF50; font-weight: bold; font-size: 15px;">XP de la Partie</div>
-                        <div style="color: #aaa; font-size: 13px;">Score: ${stats.score} points${boosterBonus > 0 ? ` (base: ${baseGameXP})` : ''}</div>
                         ${boosterLine}
                     </div>
                     <div style="color: ${boosterBonus > 0 ? '#E040FB' : '#4CAF50'}; font-weight: bold; font-size: 16px;">+${gameXP} XP</div>

@@ -400,7 +400,8 @@ class SoloSnakeGame extends BaseSnakeGame {
             achievementManager.onAppleEaten();
             achievementManager.onScoreUpdate(this.score);
             achievementManager.onSegmentsUpdate(this.snake.length);
-            this.roguelikeSystem.onAppleEaten();
+            // Passer les points calculés (avec combo) pour le score roguelike
+            this.roguelikeSystem.onAppleEaten(points);
         }
 
         // Bonus épée pendant combat de boss
@@ -652,12 +653,15 @@ class SoloSnakeGame extends BaseSnakeGame {
         const sc = document.getElementById('solo-sc');
         if (sc) {
             if (this.roguelikeSystem.isActive && window.roguelikeManager?.currentRun) {
+                // Mode Roguelike : formule XP identique à RoguelikeManager.endRun()
                 const run = window.roguelikeManager.currentRun;
                 const xpMultiplier = run.modifiers?.xpMultiplier || 1;
-                const baseXP = this.score + (run.level * 50) + (run.applesEaten * 2);
+                // Utiliser run.score (score roguelike) et run.applesEaten, pas this.score
+                const baseXP = run.score + (run.level * 50) + (run.applesEaten * 2);
                 sc.textContent = Math.floor(baseXP * xpMultiplier);
             } else {
-                sc.textContent = this.score;
+                // Mode Solo classique : afficher XP gagné (score / 5)
+                sc.textContent = Math.floor(this.score / 5);
             }
         }
 

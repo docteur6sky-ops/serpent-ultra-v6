@@ -259,22 +259,17 @@ class RoguelikeUI {
         // Stats
         const statsContainer = document.getElementById('rl-run-stats');
 
-        // 💰 Afficher gold seulement si collecté
-        const goldStatHTML = stats.goldCollected > 0 ? `
-            <div class="rl-stat-card gold-stat">
-                <div class="rl-stat-value">+${stats.goldCollected} 💰</div>
-                <div class="rl-stat-label">Gold</div>
-            </div>
-        ` : '';
+        // 💰 Gold affiché dans la grille (remplace l'ancien XP en double)
+        const goldValue = stats.goldCollected || 0;
 
         statsContainer.innerHTML = `
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${stats.level}</div>
                 <div class="rl-stat-label">Stage</div>
             </div>
-            <div class="rl-stat-card">
-                <div class="rl-stat-value">+${stats.earnedXP}</div>
-                <div class="rl-stat-label">XP</div>
+            <div class="rl-stat-card gold-stat">
+                <div class="rl-stat-value">+${goldValue} 💰</div>
+                <div class="rl-stat-label">Gold</div>
             </div>
             <div class="rl-stat-card">
                 <div class="rl-stat-value">${stats.applesEaten}</div>
@@ -292,7 +287,6 @@ class RoguelikeUI {
                 <div class="rl-stat-value">${stats.powerupsCollected}</div>
                 <div class="rl-stat-label">Power-ups</div>
             </div>
-            ${goldStatHTML}
         `;
 
         // XP

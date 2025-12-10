@@ -89,6 +89,9 @@ export class RoguelikeSystem {
         // Synchroniser combo
         this.game.syncCombo();
 
+        // Mettre à jour l'UI après syncCombo (pour afficher le bon combo dès le début)
+        this.game.updateUI();
+
         // Appliquer modificateurs
         this.applyModifiers();
 
@@ -229,8 +232,9 @@ export class RoguelikeSystem {
 
     /**
      * Appelé quand une pomme est mangée
+     * @param {number} points - Points calculés (avec combo) depuis solo-game.js
      */
-    onAppleEaten() {
+    onAppleEaten(points = 10) {
         if (!this.isActive) return;
 
         // Gourmandise : 1 pomme = 2 pommes
@@ -238,7 +242,8 @@ export class RoguelikeSystem {
         const appleMultiplier = hasGourmandise ? 2 : 1;
 
         this.progress += appleMultiplier;
-        roguelikeManager.onAppleEaten(appleMultiplier);
+        // Passer les points réels (avec combo) au RoguelikeManager
+        roguelikeManager.onAppleEaten(points * appleMultiplier);
 
         // Si Gourmandise, ajouter un segment bonus
         if (hasGourmandise) {
@@ -275,7 +280,7 @@ export class RoguelikeSystem {
         this.game.paused = true;
         this.game.bossSystem.cleanup();
 
-        roguelikeManager.onAppleEaten(this.progress);
+        // Les pommes sont déjà comptées via onAppleEaten() quand mangées
         roguelikeManager.completeLevel();
     }
 

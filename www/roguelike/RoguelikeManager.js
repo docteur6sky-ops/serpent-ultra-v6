@@ -231,19 +231,20 @@ class RoguelikeManager {
 
     /**
      * Appelé quand une pomme est mangée
+     * @param {number} points - Points déjà calculés avec combo et multiplicateurs depuis solo-game.js
      */
-    onAppleEaten(points = 1) {
+    onAppleEaten(points = 10) {
         if (!this.currentRun) return;
 
-        const modifiedPoints = points * this.currentRun.modifiers.appleScore;
+        // Les points arrivent déjà calculés (avec combo, appleScore, etc.) depuis solo-game.js
         this.currentRun.applesEaten++;
-        this.currentRun.score += modifiedPoints;
+        this.currentRun.score += points;
 
         // Tracking anti-triche
         const sm = getSecurityManager();
         if (sm) {
             sm.trackGameEvent('apple', {
-                points: modifiedPoints,
+                points: points,
                 total: this.currentRun.score,
                 level: this.currentRun.level
             });
@@ -259,7 +260,7 @@ class RoguelikeManager {
             }
         }
 
-        return modifiedPoints;
+        return points;
     }
 
     /**
