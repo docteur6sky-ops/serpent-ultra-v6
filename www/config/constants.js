@@ -3,16 +3,30 @@
 // Configuration globale du jeu Snake Ultra
 // ============================================
 
+// ============================================
+// CONFIGURATION SERVEUR
+// ============================================
+export const SERVER_CONFIG = {
+    // URL de production - À MODIFIER avant publication sur Play Store
+    PRODUCTION_URL: 'wss://votre-serveur.com',
+
+    // URL de développement local
+    DEV_URL: 'ws://localhost:3000',
+
+    // Activer le mode production (mettre à true avant publication)
+    USE_PRODUCTION: false
+};
+
 export const CONFIG = {
-    GRID_SIZE: 30,
-    CANVAS_SIZE: 360,
-    CELL_SIZE: 360 / 30,
+    GRID_SIZE: 30,           // 30x30 = plus d'espace de jeu
+    CANVAS_SIZE: 540,        // Canvas agrandi pour garder cases lisibles
+    CELL_SIZE: 540 / 30,     // 18px par case (vs 12px avant)
     ANIMATION_DELAY: 300,
     MAX_SAVED_SCORES: 3,
     SLOW_DURATION: 10000,
     DOUBLE_DURATION: 15000,
     INVINCIBLE_DURATION: 8000,
-    POWERUP_SPAWN_CHANCE: 0.08,
+    POWERUP_SPAWN_CHANCE: 0.25,
     OBSTACLE_SPAWN_INTERVAL: 5,
     BAD_SPAWN_INTERVAL: 3
 };

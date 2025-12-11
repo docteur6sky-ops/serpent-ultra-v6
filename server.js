@@ -1812,7 +1812,7 @@ function validatePseudo(pseudo) {
 }
 
 /**
- * Valide un score (anti-triche basique)
+ * Valide un score (anti-triche renforcé)
  */
 function validateScore(data) {
     // Vérifications de base
@@ -1824,13 +1824,61 @@ function validateScore(data) {
     if (data.score > 999999) return { valid: false, reason: 'score_too_high' };
     if (data.level > 50) return { valid: false, reason: 'level_too_high' };
 
-    // Vérifier la cohérence score/level (heuristique simple)
-    const maxScorePerLevel = 5000;
+    // Vérifier la cohérence score/level (heuristique ajustée pour combos/multipliers)
+    const maxScorePerLevel = 10000; // Augmenté pour tenir compte des combos élevés
     if (data.score > data.level * maxScorePerLevel) {
         return { valid: false, reason: 'score_level_mismatch' };
     }
 
+    // Vérifier le temps minimum (15 secondes par niveau minimum)
+    if (data.time !== undefined && data.level > 1) {
+        const minExpectedTime = data.level * 15 * 0.5; // 50% du temps minimal
+        if (data.time < minExpectedTime) {
+            return { valid: false, reason: 'time_too_short' };
+        }
+    }
+
+    // Vérifier les pommes par minute (max 120 par minute)
+    if (data.apples !== undefined && data.time > 0) {
+        const applesPerMinute = (data.apples / data.time) * 60;
+        if (applesPerMinute > 150) { // Un peu de marge
+            return { valid: false, reason: 'apples_too_fast' };
+        }
+    }
+
     return { valid: true };
+}
+
+/**
+ * Vérifie le token de sécurité client
+ */
+function verifySecurityToken(verifyToken) {
+    if (!verifyToken) return { valid: false, reason: 'no_token' };
+
+    try {
+        // Décoder base64 -> UTF8
+        const decoded = JSON.parse(Buffer.from(verifyToken, 'base64').toString('utf8'));
+
+        // Vérifier que le token n'est pas trop vieux (5 minutes max)
+        if (Date.now() - decoded.timestamp > 5 * 60 * 1000) {
+            return { valid: false, reason: 'token_expired' };
+        }
+
+        // Vérifier qu'il y a une session ID
+        if (!decoded.sessionId) {
+            return { valid: false, reason: 'no_session' };
+        }
+
+        return {
+            valid: true,
+            sessionId: decoded.sessionId,
+            checksum: decoded.checksum,
+            timestamp: decoded.timestamp
+        };
+    } catch (e) {
+        logger.warn('SECURITY', 'Token verification failed:', e.message);
+        return { valid: false, reason: 'invalid_token' };
+    }
 }
 
 // GET /api/roguelike/leaderboard - Récupérer le classement
@@ -1870,7 +1918,7 @@ app.get('/api/roguelike/leaderboard', (req, res) => {
 // POST /api/roguelike/scores - Soumettre un score
 app.post('/api/roguelike/scores', (req, res) => {
     try {
-        const { pseudo, score, level, apples, time, upgrades, date } = req.body;
+        const { pseudo, score, level, apples, time, upgrades, date, trustScore, verifyToken, sessionId } = req.body;
 
         // Valider le pseudo
         const cleanPseudo = validatePseudo(pseudo);
@@ -1878,11 +1926,32 @@ app.post('/api/roguelike/scores', (req, res) => {
             return res.status(400).json({ success: false, error: 'invalid_pseudo' });
         }
 
-        // Valider le score
-        const scoreValidation = validateScore({ score, level });
+        // Valider le score (avec temps et pommes maintenant)
+        const scoreValidation = validateScore({ score, level, time, apples });
         if (!scoreValidation.valid) {
             logger.warn('LEADERBOARD', `⚠️ Score rejeté: ${scoreValidation.reason}`, { pseudo: cleanPseudo, score, level });
             return res.status(400).json({ success: false, error: scoreValidation.reason });
+        }
+
+        // Vérifier le token de sécurité (optionnel pour compatibilité)
+        let securityInfo = { verified: false };
+        if (verifyToken) {
+            const tokenValidation = verifySecurityToken(verifyToken);
+            if (tokenValidation.valid) {
+                securityInfo = {
+                    verified: true,
+                    sessionId: tokenValidation.sessionId,
+                    trustScore: trustScore || 0
+                };
+            } else {
+                logger.warn('LEADERBOARD', `⚠️ Token invalide: ${tokenValidation.reason}`, { pseudo: cleanPseudo });
+            }
+        }
+
+        // Rejeter les scores avec trustScore trop bas (< 30)
+        if (securityInfo.verified && securityInfo.trustScore < 30) {
+            logger.warn('LEADERBOARD', `⚠️ TrustScore trop bas: ${securityInfo.trustScore}`, { pseudo: cleanPseudo, score, level });
+            return res.status(400).json({ success: false, error: 'suspicious_activity' });
         }
 
         // Charger le leaderboard
@@ -1897,7 +1966,9 @@ app.post('/api/roguelike/scores', (req, res) => {
             apples: Math.floor(apples) || 0,
             time: Math.floor(time) || 0,
             upgrades: Math.floor(upgrades) || 0,
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            verified: securityInfo.verified,
+            trustScore: securityInfo.trustScore || null
         };
 
         // Ajouter l'entrée

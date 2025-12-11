@@ -85,8 +85,7 @@ export const RUN_UPGRADES = {
             powerup: "ice",
             multiplier: 2
         },
-        stackable: true,
-        maxStacks: 2
+        stackable: false
     },
     fire_duration: {
         id: "fire_duration",
@@ -101,8 +100,7 @@ export const RUN_UPGRADES = {
             powerup: "fire",
             multiplier: 2
         },
-        stackable: true,
-        maxStacks: 2
+        stackable: false
     },
     rock_duration: {
         id: "rock_duration",
@@ -117,8 +115,7 @@ export const RUN_UPGRADES = {
             powerup: "rock",
             multiplier: 2
         },
-        stackable: true,
-        maxStacks: 2
+        stackable: false
     },
     ghost_extended: {
         id: "ghost_extended",
@@ -133,8 +130,7 @@ export const RUN_UPGRADES = {
             powerup: "ghost",
             multiplier: 2
         },
-        stackable: true,
-        maxStacks: 2
+        stackable: false
     },
 
     // ===== CATÉGORIE : SCORE / XP =====

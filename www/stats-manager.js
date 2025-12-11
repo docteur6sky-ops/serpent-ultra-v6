@@ -1091,9 +1091,9 @@ class StatsManager {
         const diffMs = now - date;
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return "Aujourd'hui";
+        if (diffDays === 0) return "Auj.";
         if (diffDays === 1) return 'Hier';
-        if (diffDays < 7) return `Il y a ${diffDays}j`;
+        if (diffDays < 7) return `${diffDays}j`;
 
         return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     }

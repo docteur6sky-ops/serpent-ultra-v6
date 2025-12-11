@@ -420,6 +420,79 @@ export const ACHIEVEMENTS = [
         xpReward: 400
     },
 
+    // ===== CARRIÈRE GLOBALE (7) =====
+    // Ces achievements trackent la progression globale (tous modes confondus)
+    {
+        id: 'career_silver',
+        name: 'Ver de Terre',
+        description: 'Atteindre le niveau 11 (Rang Argent)',
+        icon: '🪱',
+        category: 'career',
+        rarity: 'common',
+        condition: { type: 'career_level', value: 11 },
+        xpReward: 200
+    },
+    {
+        id: 'career_gold',
+        name: 'Roi des Reptiles',
+        description: 'Atteindre le niveau 26 (Rang Or)',
+        icon: '👑',
+        category: 'career',
+        rarity: 'rare',
+        condition: { type: 'career_level', value: 26 },
+        xpReward: 500
+    },
+    {
+        id: 'career_platinum',
+        name: 'Dieu Serpent',
+        description: 'Atteindre le niveau 60 (Rang Platine)',
+        icon: '🌟',
+        category: 'career',
+        rarity: 'epic',
+        condition: { type: 'career_level', value: 60 },
+        xpReward: 1000
+    },
+    {
+        id: 'career_elite',
+        name: 'Ouroboros',
+        description: 'Atteindre le niveau 85 (Rang Élite)',
+        icon: '🐍',
+        category: 'career',
+        rarity: 'legendary',
+        condition: { type: 'career_level', value: 85 },
+        xpReward: 2000
+    },
+    {
+        id: 'career_legend',
+        name: 'Try Harder',
+        description: 'Atteindre le niveau 100 (Rang Légende)',
+        icon: '💪',
+        category: 'career',
+        rarity: 'legendary',
+        condition: { type: 'career_level', value: 100 },
+        xpReward: 5000
+    },
+    {
+        id: 'first_teleport',
+        name: 'Première Téléportation',
+        description: 'Traverser un bord de l\'écran',
+        icon: '🌀',
+        category: 'career',
+        rarity: 'common',
+        condition: { type: 'first_teleport', value: 1 },
+        xpReward: 150
+    },
+    {
+        id: 'kamikaze',
+        name: 'Kamikaze',
+        description: 'Mourir en moins de 30 secondes',
+        icon: '💥',
+        category: 'career',
+        rarity: 'common',
+        condition: { type: 'quick_death', value: 1 },
+        xpReward: 200
+    },
+
     // ===== SECRETS (5) =====
     {
         id: 'secret_poison',
@@ -848,13 +921,24 @@ class AchievementManager {
                 return this.stats.longestSurvivalTime >= value;
 
             case 'levels_no_death':
-                return run.levelsWithoutDeath >= value;
+                // Finir X niveaux sans prendre de dégât dans la run
+                return run.level >= value && run.damageTaken === 0;
 
             case 'no_hit_level':
                 return run.levelsWithoutDeath >= 1 && run.damageTaken === 0;
 
             case 'titan_dodges':
                 return run.chargesDodged >= value;
+
+            // ===== CONDITIONS CARRIÈRE GLOBALE =====
+            case 'career_level':
+                return (window.career?.level || 0) >= value;
+
+            case 'first_teleport':
+                return (window.career?.firstTeleport || 0) >= value;
+
+            case 'quick_death':
+                return (window.career?.quickDeaths || 0) >= value;
 
             default:
                 return false;
