@@ -10,6 +10,38 @@
  * - Dessin des lignes électriques (Boss 4 FOUDRE)
  */
 
+// Couleurs des skins pour chaque boss (basé sur items.js)
+const BOSS_SKIN_COLORS = {
+    TITAN: {
+        head: { light: '#CD853F', dark: '#8B4513' },
+        body: { from: '#CD853F', to: '#5C3317' },
+        tail: { color: '#3D2314' },
+        outline: '#2D1810',
+        glow: '#8B4513'
+    },
+    CRYO: {
+        head: { light: '#B0E0FF', dark: '#4DB8FF' },
+        body: { from: '#B0E0FF', to: '#1E90FF' },
+        tail: { color: '#1E90FF' },
+        outline: '#003D66',
+        glow: '#00FFFF'
+    },
+    SPECTRE: {
+        head: { light: '#F0F0F0', dark: '#C0C0C0' },
+        body: { from: '#E0E0E0', to: '#808080' },
+        tail: { color: '#606060' },
+        outline: '#404040',
+        glow: '#FFFFFF'
+    },
+    FOUDRE: {
+        head: { light: '#FFFF00', dark: '#FFD700' },
+        body: { from: '#FFFF00', to: '#FF8C00' },
+        tail: { color: '#FF8C00' },
+        outline: '#664400',
+        glow: '#FFFF00'
+    }
+};
+
 export class BossRenderer {
     constructor(ctx, cellSize, gridSize) {
         this.ctx = ctx;
@@ -35,7 +67,8 @@ export class BossRenderer {
         const cellSize = this.cellSize;
         const now = Date.now();
 
-        const phaseColor = boss.phaseColor || '#ff0000';
+        // Utiliser les couleurs du skin correspondant au boss
+        const skinColors = BOSS_SKIN_COLORS[boss.name] || BOSS_SKIN_COLORS.TITAN;
         const isInvincible = boss.invincible;
 
         // Effet de pulsation
@@ -53,29 +86,30 @@ export class BossRenderer {
             const segmentScale = index === 0 ? 1 : 0.85 + (0.15 * (1 - index / boss.snake.length));
             const size = (cellSize - 2) * segmentScale * pulse;
 
-            // Couleur du boss selon phase et état
+            // Couleur du boss selon skin et état
             let mainColor, glowColor, glowIntensity;
 
             if (index === 0) {
-                // Tête du boss
+                // Tête du boss - utiliser les couleurs du skin
                 if (isInvincible) {
                     mainColor = '#ffffff';
                     glowColor = '#88ccff';
                     glowIntensity = 30;
                 } else {
-                    mainColor = boss.hasSword ? '#ff3300' : phaseColor;
-                    glowColor = boss.hasSword ? '#ff6600' : phaseColor;
+                    mainColor = boss.hasSword ? '#ff3300' : skinColors.head.light;
+                    glowColor = boss.hasSword ? '#ff6600' : skinColors.glow;
                     glowIntensity = boss.hasSword ? 20 : 12;
                 }
             } else {
-                // Corps - dégradé vers la queue
-                const fadeRatio = 1 - (index / boss.snake.length) * 0.4;
+                // Corps - dégradé du skin vers la queue
+                const ratio = index / boss.snake.length;
                 if (isInvincible) {
-                    mainColor = `rgba(200, 200, 200, ${fadeRatio})`;
+                    mainColor = `rgba(200, 200, 200, ${1 - ratio * 0.4})`;
+                } else if (boss.hasSword) {
+                    mainColor = this.darkenColor('#ff3300', index * 3);
                 } else {
-                    mainColor = boss.hasSword ?
-                        this.darkenColor('#ff3300', index * 3) :
-                        this.darkenColor(phaseColor, index * 3);
+                    // Interpoler entre body.from et body.to selon la position
+                    mainColor = this.interpolateColor(skinColors.body.from, skinColors.body.to, ratio);
                 }
                 glowColor = null;
                 glowIntensity = 0;
@@ -123,7 +157,7 @@ export class BossRenderer {
 
             // Détails de la tête
             if (index === 0) {
-                this.drawBossHead(ctx, x, y, cellSize, mainColor, boss);
+                this.drawBossHead(ctx, x, y, cellSize, mainColor, boss, skinColors);
             }
 
             ctx.restore();
@@ -133,7 +167,7 @@ export class BossRenderer {
     /**
      * Dessine les détails de la tête du boss
      */
-    drawBossHead(ctx, x, y, cellSize, mainColor, boss) {
+    drawBossHead(ctx, x, y, cellSize, mainColor, boss, skinColors) {
         // Yeux blancs avec lueur
         ctx.shadowColor = '#ffffff';
         ctx.shadowBlur = 5;
@@ -170,8 +204,8 @@ export class BossRenderer {
         ctx.arc(x + cellSize * 0.64, y + cellSize * 0.35, eyeSize * 0.2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Cornes
-        ctx.fillStyle = this.darkenColor(mainColor, 20);
+        // Cornes - utiliser la couleur outline du skin
+        ctx.fillStyle = skinColors ? skinColors.outline : this.darkenColor(mainColor, 20);
         ctx.beginPath();
         ctx.moveTo(x + cellSize * 0.2, y + cellSize * 0.15);
         ctx.lineTo(x + cellSize * 0.35, y + cellSize * 0.3);
@@ -475,5 +509,38 @@ export class BossRenderer {
         const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
         const B = Math.max(0, (num & 0x0000FF) - amt);
         return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`;
+    }
+
+    /**
+     * Interpole entre deux couleurs hex
+     * @param {string} color1 - Couleur de départ (hex)
+     * @param {string} color2 - Couleur d'arrivée (hex)
+     * @param {number} ratio - Ratio d'interpolation (0-1)
+     * @returns {string} Couleur interpolée en RGB
+     */
+    interpolateColor(color1, color2, ratio) {
+        const c1 = this.hexToRgb(color1);
+        const c2 = this.hexToRgb(color2);
+
+        const r = Math.round(c1.r + (c2.r - c1.r) * ratio);
+        const g = Math.round(c1.g + (c2.g - c1.g) * ratio);
+        const b = Math.round(c1.b + (c2.b - c1.b) * ratio);
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    /**
+     * Convertit hex en RGB
+     * @param {string} hex - Couleur en hexadécimal
+     * @returns {object} {r, g, b}
+     */
+    hexToRgb(hex) {
+        if (!hex || !hex.startsWith('#')) return { r: 255, g: 0, b: 0 };
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 255, g: 0, b: 0 };
     }
 }
