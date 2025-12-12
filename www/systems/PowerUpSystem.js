@@ -56,6 +56,13 @@ export class PowerUpSystem {
         this.storedItem = null;           // Item stocké : null ou 'ice'/'fire'/'rock'/'ghost'
         this.mysteryBox = null;           // Position de la boîte : {x, y} ou null
         this.isRevealingItem = false;     // Animation en cours
+
+        // ========== SYSTÈME BOOST UNIVERSEL ==========
+        this.boostDuration = 1.5;         // Durée du boost en secondes
+        this.boostCooldown = 5;           // Cooldown en secondes
+        this.boostCooldownRemaining = 0;  // Temps restant avant prochain boost
+        this.boostActive = false;         // Boost actuellement actif
+        this.boostSpeedMultiplier = 2;    // Vitesse x2 pendant le boost
     }
 
     /**
@@ -230,6 +237,11 @@ export class PowerUpSystem {
         this.mysteryBox = null;
         this.isRevealingItem = false;
         this.updateStoredItemUI();
+
+        // Reset Boost
+        this.boostActive = false;
+        this.boostCooldownRemaining = 0;
+        this.updateBoostUI();
     }
 
     // ============================================
@@ -536,5 +548,122 @@ export class PowerUpSystem {
      */
     get hasStoredItem() {
         return this.storedItem !== null;
+    }
+
+    // ============================================
+    // SYSTÈME BOOST UNIVERSEL
+    // ============================================
+
+    /**
+     * Active le boost de vitesse
+     * @returns {boolean} true si le boost a été activé
+     */
+    activateBoost() {
+        // Vérifier si le jeu est en cours
+        if (!this.game.running || this.game.paused) return false;
+
+        // Vérifier cooldown
+        if (this.boostCooldownRemaining > 0 || this.boostActive) return false;
+
+        logger.log('[PowerUp] BOOST activé!');
+        this.boostActive = true;
+
+        // Son et effet visuel
+        if (this.game.audio) this.game.audio.powerup();
+        if (this.game.createParticles) {
+            this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#00ffff', 10);
+        }
+
+        // Mettre à jour l'UI
+        this.updateBoostUI();
+
+        // Désactiver après la durée
+        setTimeout(() => {
+            this.boostActive = false;
+            this.boostCooldownRemaining = this.boostCooldown;
+            this.updateBoostUI();
+
+            // Décrémenter le cooldown
+            this.startBoostCooldown();
+
+            logger.log('[PowerUp] BOOST terminé, cooldown: ' + this.boostCooldown + 's');
+        }, this.boostDuration * 1000);
+
+        return true;
+    }
+
+    /**
+     * Démarre le décompte du cooldown
+     */
+    startBoostCooldown() {
+        const startTime = Date.now();
+        const totalCooldown = this.boostCooldown * 1000;
+
+        const updateCooldown = () => {
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, totalCooldown - elapsed);
+            this.boostCooldownRemaining = remaining / 1000;
+
+            this.updateBoostUI();
+
+            if (remaining > 0) {
+                requestAnimationFrame(updateCooldown);
+            }
+        };
+
+        requestAnimationFrame(updateCooldown);
+    }
+
+    /**
+     * Met à jour l'UI du bouton boost
+     */
+    updateBoostUI() {
+        const btn = document.getElementById('boost-btn');
+        const progress = document.getElementById('boost-cd-progress');
+
+        if (!btn) return;
+
+        // État actif
+        if (this.boostActive) {
+            btn.classList.add('boost-active');
+            btn.classList.remove('boost-cooldown');
+        }
+        // État cooldown
+        else if (this.boostCooldownRemaining > 0) {
+            btn.classList.remove('boost-active');
+            btn.classList.add('boost-cooldown');
+
+            // Mettre à jour le cercle de progression
+            if (progress) {
+                const percentage = (this.boostCooldownRemaining / this.boostCooldown) * 100;
+                const circumference = 2 * Math.PI * 45; // r=45
+                const offset = circumference * (1 - percentage / 100);
+                progress.style.strokeDasharray = circumference;
+                progress.style.strokeDashoffset = offset;
+            }
+        }
+        // État prêt
+        else {
+            btn.classList.remove('boost-active', 'boost-cooldown');
+            if (progress) {
+                progress.style.strokeDashoffset = 0;
+            }
+        }
+    }
+
+    /**
+     * Getter pour le multiplicateur de vitesse actuel
+     */
+    get currentSpeedMultiplier() {
+        if (this.boostActive) return this.boostSpeedMultiplier;
+        if (this.sprintActive) return this.sprintSpeedBoost;
+        return 1;
+    }
+
+    /**
+     * Getter pour savoir si le boost est prêt
+     */
+    get isBoostReady() {
+        return !this.boostActive && this.boostCooldownRemaining <= 0;
     }
 }

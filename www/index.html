@@ -942,9 +942,16 @@
                     </div>
                     <canvas id="canvas-solo" width="540" height="540" aria-label="Zone de jeu Snake Ultra Solo"></canvas>
                     <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
-                        <div class="dpad-btn dpad-empty"></div>
+                        <!-- BOUTON BOOST (case haut-gauche) -->
+                        <button id="boost-btn" class="dpad-btn boost-btn" ontouchstart="window.activateBoost();event.preventDefault()" onclick="window.activateBoost()" aria-label="Activer le boost de vitesse">
+                            <span class="boost-icon">⚡</span>
+                            <svg class="boost-cooldown-ring" viewBox="0 0 100 100">
+                                <circle class="boost-cd-bg" cx="50" cy="50" r="45" fill="none" stroke-width="8"/>
+                                <circle class="boost-cd-progress" id="boost-cd-progress" cx="50" cy="50" r="45" fill="none" stroke-width="8"/>
+                            </svg>
+                        </button>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
-                        <!-- SLOT ITEM dans la case vide du D-pad -->
+                        <!-- SLOT ITEM (case haut-droite) -->
                         <button id="stored-item-slot" class="dpad-btn item-slot" ontouchstart="window.useStoredItem();event.preventDefault()" onclick="window.useStoredItem()" aria-label="Utiliser l'item stocké">
                             <span id="stored-item-icon"></span>
                         </button>

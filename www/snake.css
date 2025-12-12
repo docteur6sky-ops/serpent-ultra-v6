@@ -1721,6 +1721,91 @@ canvas {
     }
 }
 
+/* ============================================
+   BOUTON BOOST (intégré dans le D-pad)
+   ============================================ */
+#boost-btn.boost-btn {
+    background: linear-gradient(145deg, #1a2a3e, #0f1a28) !important;
+    border: 3px solid rgba(0, 200, 255, 0.3) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.boost-icon {
+    font-size: 38px;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease;
+}
+
+/* Cercle de cooldown SVG */
+.boost-cooldown-ring {
+    position: absolute;
+    top: 12%;
+    left: 12%;
+    width: 76%;
+    height: 76%;
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+
+.boost-cd-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+}
+
+.boost-cd-progress {
+    stroke: #00d4ff;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+/* État PRÊT - pulse cyan */
+#boost-btn.boost-btn:not(.boost-cooldown):not(.boost-active) {
+    animation: boostReady 2s ease-in-out infinite;
+    border-color: rgba(0, 212, 255, 0.5) !important;
+}
+
+@keyframes boostReady {
+    0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.4), inset 0 0 10px rgba(0, 212, 255, 0.1); }
+    50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.6), inset 0 0 15px rgba(0, 212, 255, 0.2); }
+}
+
+/* État ACTIF - glow intense */
+#boost-btn.boost-active {
+    background: linear-gradient(145deg, #00d4ff, #0099cc) !important;
+    border-color: #fff !important;
+    box-shadow: 0 0 30px #00d4ff, 0 0 60px #00d4ff, inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
+    animation: boostActiveFlash 0.15s ease-in-out infinite alternate !important;
+}
+
+@keyframes boostActiveFlash {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+#boost-btn.boost-active .boost-icon {
+    transform: scale(1.2);
+    filter: brightness(1.5);
+}
+
+/* État COOLDOWN - grisé avec cercle de progression */
+#boost-btn.boost-cooldown {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a) !important;
+    border-color: rgba(100, 100, 100, 0.5) !important;
+    box-shadow: none !important;
+    animation: none !important;
+}
+
+#boost-btn.boost-cooldown .boost-icon {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+
+/* Feedback tactile */
+#boost-btn.boost-btn:not(.boost-cooldown):active {
+    transform: scale(0.9) !important;
+}
+
 .panel .score-box {
     display: none !important;  /* Cacher toute la box power-up de droite */
 }

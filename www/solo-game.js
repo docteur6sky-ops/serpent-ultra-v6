@@ -255,8 +255,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         if (this.roguelikeSystem.isActive) {
             let speed = 100;
 
-            // Sprint reste actif
-            if (this.powerUpSystem.sprintActive) {
+            // Boost universel (priorité sur sprint)
+            if (this.powerUpSystem.boostActive) {
+                speed = speed / this.powerUpSystem.boostSpeedMultiplier;
+            }
+            // Sprint (ability roguelike)
+            else if (this.powerUpSystem.sprintActive) {
                 speed = speed / this.powerUpSystem.sprintSpeedBoost;
             }
 
@@ -273,8 +277,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         const baseSpeed = this.difficulty === 0 ? 2.5 : this.difficulty === 1 ? 5 : 8;
         let speed = 1000 / (baseSpeed + (this.level - 1) * 0.5);
 
+        // Boost universel (priorité sur sprint)
+        if (this.powerUpSystem.boostActive) {
+            speed = speed / this.powerUpSystem.boostSpeedMultiplier;
+        }
         // Sprint
-        if (this.powerUpSystem.sprintActive) {
+        else if (this.powerUpSystem.sprintActive) {
             speed = speed / this.powerUpSystem.sprintSpeedBoost;
         }
 

@@ -119,6 +119,13 @@ function handleSoloKeys(e) {
                 // Item utilisé avec succès
             }
             break;
+        case 'Shift':
+            e.preventDefault();
+            // Activer le boost de vitesse
+            if (window.soloGame?.powerUpSystem?.activateBoost()) {
+                // Boost activé avec succès
+            }
+            break;
     }
 }
 
@@ -232,7 +239,22 @@ export function useStoredItem() {
     return false;
 }
 
-// Exposer globalement (utilisé par le slot cliquable)
+// ============================================
+// BOOST DE VITESSE
+// ============================================
+
+/**
+ * Active le boost de vitesse (appelable depuis n'importe où)
+ */
+export function activateBoost() {
+    if (window.soloGame?.powerUpSystem?.activateBoost()) {
+        return true;
+    }
+    return false;
+}
+
+// Exposer globalement (utilisé par les boutons cliquables)
 window.useStoredItem = useStoredItem;
+window.activateBoost = activateBoost;
 
 logger.log('✅ Module controls.js chargé');
