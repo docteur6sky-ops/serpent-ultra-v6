@@ -51,6 +51,11 @@ export class PowerUpSystem {
             ghost: '👻',
             lightning: '⚡'
         };
+
+        // ========== SYSTÈME MYSTERY BOX ==========
+        this.storedItem = null;           // Item stocké : null ou 'ice'/'fire'/'rock'/'ghost'
+        this.mysteryBox = null;           // Position de la boîte : {x, y} ou null
+        this.isRevealingItem = false;     // Animation en cours
     }
 
     /**
@@ -219,6 +224,12 @@ export class PowerUpSystem {
         this.sprintCooldown = 0;
         this.lastDirectionTap = null;
         this.hideBar();
+
+        // Reset Mystery Box
+        this.storedItem = null;
+        this.mysteryBox = null;
+        this.isRevealingItem = false;
+        this.updateStoredItemUI();
     }
 
     // ============================================
@@ -383,5 +394,147 @@ export class PowerUpSystem {
             ghostCount: this.ghostCount,
             lightningCount: this.lightningCount
         };
+    }
+
+    // ============================================
+    // SYSTÈME MYSTERY BOX (Style Mario Kart)
+    // ============================================
+
+    /**
+     * Spawn une mystery box sur la grille
+     * @param {Function} findFreePosition - Fonction pour trouver une position libre
+     * @param {number} powerupChance - Probabilité de spawn (0-1)
+     */
+    spawnMysteryBox(findFreePosition, powerupChance = 0.25) {
+        // Ne pas spawn si déjà une boîte présente
+        if (this.mysteryBox) return;
+
+        if (Math.random() < powerupChance) {
+            const position = findFreePosition({ maxAttempts: 50 });
+            if (position) {
+                this.mysteryBox = { x: position.x, y: position.y };
+                logger.log('[PowerUp] Mystery Box spawnée à', position);
+            }
+        }
+    }
+
+    /**
+     * Vérifie si le serpent touche la mystery box
+     * @param {Object} head - Position de la tête {x, y}
+     * @returns {boolean} true si collision
+     */
+    checkMysteryBoxCollision(head) {
+        if (!this.mysteryBox) return false;
+        return head.x === this.mysteryBox.x && head.y === this.mysteryBox.y;
+    }
+
+    /**
+     * Ramasse la mystery box et révèle l'item
+     */
+    async collectMysteryBox() {
+        if (!this.mysteryBox || this.isRevealingItem) return;
+
+        if (this.game.audio) this.game.audio.powerup();
+
+        // Retirer la boîte de la grille
+        this.mysteryBox = null;
+
+        // Déterminer type aléatoire (25% chaque)
+        const types = ['ice', 'fire', 'rock', 'ghost'];
+        const newItem = types[Math.floor(Math.random() * types.length)];
+
+        // Animation de révélation AAA
+        await this.revealItemAnimation(newItem);
+
+        // Stocker l'item (remplace l'ancien si existant)
+        this.storedItem = newItem;
+        this.updateStoredItemUI();
+
+        logger.log(`[PowerUp] Mystery Box collectée! Item: ${newItem}`);
+    }
+
+    /**
+     * Animation de révélation style roulette (AAA)
+     * @param {string} finalType - Type final de l'item
+     */
+    async revealItemAnimation(finalType) {
+        this.isRevealingItem = true;
+
+        const slot = document.getElementById('stored-item-slot');
+        const icon = document.getElementById('stored-item-icon');
+
+        if (!slot || !icon) {
+            this.isRevealingItem = false;
+            return;
+        }
+
+        // Afficher le slot avec animation
+        slot.classList.add('revealing');
+
+        const emojis = ['❄️', '🔥', '🪨', '👻'];
+
+        // Roulette rapide (600ms) - ralentit progressivement
+        for (let i = 0; i < 12; i++) {
+            icon.textContent = emojis[i % 4];
+            await new Promise(r => setTimeout(r, 30 + i * 8));
+        }
+
+        // Révéler le vrai item
+        icon.textContent = this.powerupEmojis[finalType];
+        slot.classList.remove('revealing');
+        slot.classList.add('has-item', 'item-revealed');
+
+        // Flash de révélation
+        setTimeout(() => {
+            slot.classList.remove('item-revealed');
+        }, 500);
+
+        this.isRevealingItem = false;
+    }
+
+    /**
+     * Utilise l'item stocké
+     * @returns {boolean} true si un item a été utilisé
+     */
+    useStoredItem() {
+        if (!this.storedItem || this.isRevealingItem) return false;
+        if (this.game.paused || !this.game.running) return false;
+
+        const type = this.storedItem;
+
+        // Activer l'effet du power-up
+        this.activate(type);
+
+        // Vider le slot
+        this.storedItem = null;
+        this.updateStoredItemUI();
+
+        logger.log(`[PowerUp] Item utilisé: ${type}`);
+        return true;
+    }
+
+    /**
+     * Met à jour l'UI du slot d'item stocké
+     */
+    updateStoredItemUI() {
+        const slot = document.getElementById('stored-item-slot');
+        const icon = document.getElementById('stored-item-icon');
+
+        if (!slot || !icon) return;
+
+        if (this.storedItem) {
+            slot.classList.add('has-item');
+            icon.textContent = this.powerupEmojis[this.storedItem];
+        } else {
+            slot.classList.remove('has-item', 'revealing', 'item-revealed');
+            icon.textContent = '';
+        }
+    }
+
+    /**
+     * Getter pour savoir si un item est stocké
+     */
+    get hasStoredItem() {
+        return this.storedItem !== null;
     }
 }

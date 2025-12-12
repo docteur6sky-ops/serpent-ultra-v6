@@ -3,6 +3,7 @@
 // Fonctions pures extraites du mode solo
 // ============================================
 
+import { logger } from './services/logger.js';
 const RenderUtils = {
     /**
      * Dessine la grille et la bordure du terrain
@@ -55,8 +56,8 @@ const RenderUtils = {
         // Réinitialiser l'ombre
         ctx.shadowBlur = 0;
 
-        // Emoji pomme
-        ctx.font = '12px Arial, sans-serif';
+        // Emoji pomme (taille adaptée à la cellule)
+        ctx.font = `${Math.floor(cellSize * 0.85)}px Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🍎', x * cellSize + center, y * cellSize + center);
@@ -83,8 +84,8 @@ const RenderUtils = {
         // Réinitialiser l'ombre
         ctx.shadowBlur = 0;
 
-        // Emoji crâne
-        ctx.font = '12px Arial, sans-serif';
+        // Emoji crâne (taille adaptée à la cellule)
+        ctx.font = `${Math.floor(cellSize * 0.85)}px Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('💀', x * cellSize + center, y * cellSize + center);
@@ -116,8 +117,8 @@ const RenderUtils = {
         // Réinitialiser l'ombre
         ctx.shadowBlur = 0;
 
-        // Emoji mur
-        ctx.font = '10px Arial, sans-serif';
+        // Emoji mur (taille adaptée à la cellule)
+        ctx.font = `${Math.floor(cellSize * 0.75)}px Arial, sans-serif`;
         ctx.fillStyle = '#FFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -152,18 +153,85 @@ const RenderUtils = {
 
         ctx.restore();
 
-        // Emoji selon le type
-        ctx.font = '12px Arial, sans-serif';
+        // Emoji selon le type (taille adaptée à la cellule)
+        ctx.font = `${Math.floor(cellSize * 0.85)}px Arial, sans-serif`;
         ctx.fillStyle = '#000';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
         let emoji = '❄️'; // ice par défaut
-        if (type === 'fire') emoji = '🔥';
+        if (type === 'lightning') emoji = '⚡';
         else if (type === 'rock') emoji = '🪨';
         else if (type === 'ghost') emoji = '👻';
 
         ctx.fillText(emoji, x * cellSize + center, y * cellSize + center);
+    },
+
+    /**
+     * Dessine une Mystery Box animée style Mario Kart
+     * @param {CanvasRenderingContext2D} ctx - Contexte du canvas
+     * @param {number} x - Position X en coordonnées grille
+     * @param {number} y - Position Y en coordonnées grille
+     * @param {number} cellSize - Taille d'une cellule
+     */
+    drawMysteryBox(ctx, x, y, cellSize) {
+        const center = cellSize / 2;
+        const time = performance.now();
+
+        ctx.save();
+
+        // Animation arc-en-ciel pour le glow
+        const hue = (time / 10) % 360;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+
+        // Fond qui pulse
+        const scale = 1 + 0.1 * Math.sin(time / 200);
+        ctx.translate(x * cellSize + center, y * cellSize + center);
+        ctx.scale(scale, scale);
+        ctx.translate(-center, -center);
+
+        // Fond dégradé doré
+        const gradient = ctx.createRadialGradient(
+            center, center, 0,
+            center, center, cellSize / 2
+        );
+        gradient.addColorStop(0, '#FFD700');
+        gradient.addColorStop(0.7, '#FFA500');
+        gradient.addColorStop(1, '#FF8C00');
+        ctx.fillStyle = gradient;
+
+        // Boîte arrondie
+        const radius = 4;
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(cellSize - radius, 0);
+        ctx.quadraticCurveTo(cellSize, 0, cellSize, radius);
+        ctx.lineTo(cellSize, cellSize - radius);
+        ctx.quadraticCurveTo(cellSize, cellSize, cellSize - radius, cellSize);
+        ctx.lineTo(radius, cellSize);
+        ctx.quadraticCurveTo(0, cellSize, 0, cellSize - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.fill();
+
+        // Bordure brillante
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Point d'interrogation animé
+        const bounce = Math.sin(time / 150) * 2;
+        ctx.font = `bold ${Math.floor(cellSize * 0.7)}px Arial, sans-serif`;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#000';
+        ctx.fillText('❓', x * cellSize + center, y * cellSize + center + bounce);
+        ctx.shadowBlur = 0;
     },
 
     /**

@@ -101,7 +101,6 @@ function handleSoloKeys(e) {
             e.preventDefault();
             window.soloGame.changeDirection(1, 0);
             break;
-        case ' ':
         case 'p':
         case 'P':
             e.preventDefault();
@@ -110,6 +109,15 @@ function handleSoloKeys(e) {
         case 'Escape':
             e.preventDefault();
             if (window.quitSolo) window.quitSolo();
+            break;
+        case ' ':
+        case 'e':
+        case 'E':
+            e.preventDefault();
+            // Utiliser l'item stocké (Mystery Box)
+            if (window.soloGame?.powerUpSystem?.useStoredItem()) {
+                // Item utilisé avec succès
+            }
             break;
     }
 }
@@ -209,5 +217,22 @@ window.moveUp = moveUp;
 window.moveDown = moveDown;
 window.moveLeft = moveLeft;
 window.moveRight = moveRight;
+
+// ============================================
+// ITEM STOCKÉ (Mystery Box)
+// ============================================
+
+/**
+ * Utilise l'item stocké (appelable depuis n'importe où)
+ */
+export function useStoredItem() {
+    if (window.soloGame?.powerUpSystem?.useStoredItem()) {
+        return true;
+    }
+    return false;
+}
+
+// Exposer globalement (utilisé par le slot cliquable)
+window.useStoredItem = useStoredItem;
 
 logger.log('✅ Module controls.js chargé');

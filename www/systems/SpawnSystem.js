@@ -45,8 +45,9 @@ export class SpawnSystem {
             return false;
         }
 
-        // Vérifier collision avec le power-up
-        if (this.game.powerup && x === this.game.powerup.x && y === this.game.powerup.y) {
+        // Vérifier collision avec la mystery box
+        const mysteryBox = this.game.powerUpSystem?.mysteryBox;
+        if (mysteryBox && x === mysteryBox.x && y === mysteryBox.y) {
             return false;
         }
 
@@ -141,7 +142,8 @@ export class SpawnSystem {
     }
 
     /**
-     * Spawn un power-up avec une certaine probabilité
+     * Spawn une Mystery Box avec une certaine probabilité
+     * Le type est déterminé lors du ramassage, pas du spawn
      */
     spawnPowerup() {
         // Probabilité selon difficulté
@@ -156,22 +158,11 @@ export class SpawnSystem {
             }
         }
 
-        // Ne pas spawn si déjà un power-up présent
-        if (this.game.powerup) return;
-
-        if (Math.random() < powerupChance) {
-            // Choisir le type (5 types : 20% chacun)
-            const rand = Math.random();
-            const type = rand < 0.20 ? 'ice' :
-                        rand < 0.40 ? 'fire' :
-                        rand < 0.60 ? 'rock' :
-                        rand < 0.80 ? 'ghost' : 'lightning';
-
-            const position = this.findFreePosition({ maxAttempts: 50 });
-            if (position) {
-                this.game.powerup = { ...position, t: type };
-            }
-        }
+        // Déléguer au système de mystery box
+        this.game.powerUpSystem.spawnMysteryBox(
+            (options) => this.findFreePosition(options),
+            powerupChance
+        );
     }
 
     /**
@@ -198,19 +189,37 @@ export class SpawnSystem {
 
     /**
      * Génère les murs de bordure (roguelike)
+     * Crée des trous à gauche et droite au niveau du spawn pour éviter game over immédiat
      */
     generateBorderWalls() {
+        const gridSize = this.game.GRID_SIZE;
+        const spawnY = 15; // Y du spawn du serpent (centre)
+        const holeSize = 3; // Taille du trou (3 blocs de haut)
+
         // Haut et bas
-        for (let x = 0; x < this.game.GRID_SIZE; x++) {
+        for (let x = 0; x < gridSize; x++) {
             this.game.obstacles.push({ x: x, y: 0, isBorder: true });
-            this.game.obstacles.push({ x: x, y: this.game.GRID_SIZE - 1, isBorder: true });
+            this.game.obstacles.push({ x: x, y: gridSize - 1, isBorder: true });
         }
-        // Gauche et droite (sans les coins)
-        for (let y = 1; y < this.game.GRID_SIZE - 1; y++) {
-            this.game.obstacles.push({ x: 0, y: y, isBorder: true });
-            this.game.obstacles.push({ x: this.game.GRID_SIZE - 1, y: y, isBorder: true });
+
+        // Gauche et droite (avec trous au niveau du spawn)
+        for (let y = 1; y < gridSize - 1; y++) {
+            // Vérifier si on est dans la zone du trou (spawnY ± holeSize/2)
+            const isInHoleZone = y >= spawnY - Math.floor(holeSize / 2) &&
+                                  y <= spawnY + Math.floor(holeSize / 2);
+
+            // Mur gauche (avec trou)
+            if (!isInHoleZone) {
+                this.game.obstacles.push({ x: 0, y: y, isBorder: true });
+            }
+
+            // Mur droit (avec trou)
+            if (!isInHoleZone) {
+                this.game.obstacles.push({ x: gridSize - 1, y: y, isBorder: true });
+            }
         }
-        logger.log(`[SpawnSystem] Murs de bordure générés: ${this.game.obstacles.length} blocs`);
+
+        logger.log(`[SpawnSystem] Murs de bordure générés avec trous: ${this.game.obstacles.length} blocs (trou Y=${spawnY}±${Math.floor(holeSize/2)})`);
     }
 
     /**

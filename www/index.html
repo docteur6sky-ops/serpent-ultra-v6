@@ -944,7 +944,10 @@
                     <div class="dpad" id="solo-dpad" role="group" aria-label="Contrôles de direction">
                         <div class="dpad-btn dpad-empty"></div>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
-                        <div class="dpad-btn dpad-empty"></div>
+                        <!-- SLOT ITEM dans la case vide du D-pad -->
+                        <button id="stored-item-slot" class="dpad-btn item-slot" ontouchstart="window.useStoredItem();event.preventDefault()" onclick="window.useStoredItem()" aria-label="Utiliser l'item stocké">
+                            <span id="stored-item-icon"></span>
+                        </button>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
                         <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>

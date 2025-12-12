@@ -1648,6 +1648,79 @@ canvas {
     display: none !important;
 }
 
+/* ============================================
+   SLOT ITEM STOCKÉ (intégré dans le D-pad)
+   ============================================ */
+#stored-item-slot.item-slot {
+    background: linear-gradient(145deg, #1a1a2e, #0f0f23) !important;
+    border: 3px solid rgba(255, 255, 255, 0.15) !important;
+    position: relative;
+}
+
+#stored-item-slot.item-slot::before {
+    content: '?';
+    font-size: 36px;
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+}
+
+#stored-item-slot.has-item::before {
+    display: none;
+}
+
+#stored-item-slot.has-item {
+    background: linear-gradient(145deg, #2a2a1e, #1f1f13) !important;
+    border-color: var(--color-gold) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.1);
+    animation: itemPulse 2s ease-in-out infinite;
+}
+
+@keyframes itemPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.1); }
+    50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.2); }
+}
+
+#stored-item-slot.has-item:active {
+    transform: scale(0.9) !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+#stored-item-icon {
+    font-size: 50px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Animation de révélation roulette */
+#stored-item-slot.revealing {
+    animation: slotSpin 0.1s linear infinite !important;
+    border-color: #00ffff !important;
+    box-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff !important;
+}
+
+@keyframes slotSpin {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Flash de révélation */
+#stored-item-slot.item-revealed {
+    animation: revealFlash 0.5s ease-out !important;
+}
+
+@keyframes revealFlash {
+    0% {
+        transform: scale(1.15);
+        box-shadow: 0 0 40px #FFD700, 0 0 80px #FFD700;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+}
+
 .panel .score-box {
     display: none !important;  /* Cacher toute la box power-up de droite */
 }

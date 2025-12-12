@@ -319,10 +319,10 @@ class SoloSnakeGame extends BaseSnakeGame {
             return;
         }
 
-        // Collision power-up
-        if (this.powerup && head.x === this.powerup.x && head.y === this.powerup.y) {
-            this.eatPowerup(head);
-            return;
+        // Collision Mystery Box
+        if (this.powerUpSystem.checkMysteryBoxCollision(head)) {
+            this.powerUpSystem.collectMysteryBox();
+            // Pas de return - le serpent continue de bouger normalement
         }
 
         // Collision gold
@@ -530,8 +530,9 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Crâne
         if (this.bad) RenderUtils.drawSkull(this.ctx, this.bad.x, this.bad.y, this.CELL_SIZE);
 
-        // Power-up
-        if (this.powerup) RenderUtils.drawPowerup(this.ctx, this.powerup.x, this.powerup.y, this.CELL_SIZE, this.powerup.t);
+        // Mystery Box
+        const mysteryBox = this.powerUpSystem.mysteryBox;
+        if (mysteryBox) RenderUtils.drawMysteryBox(this.ctx, mysteryBox.x, mysteryBox.y, this.CELL_SIZE);
 
         // Gold
         this.goldSystem.draw();
