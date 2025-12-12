@@ -8659,6 +8659,7 @@ body.dark-mode .hub-chest-timer {
 
 /* Item Card - Style AAA avec bordure dorée épaisse */
 .box-item {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -8672,6 +8673,25 @@ body.dark-mode .hub-chest-timer {
     box-shadow:
         0 0 15px rgba(184, 134, 11, 0.3),
         inset 0 1px 0 rgba(255, 215, 0, 0.1);
+}
+
+/* Carte avec image fullsize - texte en overlay */
+.box-item:has(.fullsize-preview) {
+    padding: 0;
+    justify-content: flex-end;
+}
+
+.box-item:has(.fullsize-preview) .box-item-info,
+.box-item:has(.fullsize-preview) .box-item-actions {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9) 30%);
+    padding: 1rem 0.75rem 0.75rem;
+}
+
+.box-item:has(.fullsize-preview) .box-item-info {
+    padding-top: 3rem;
 }
 
 .box-item:hover {
@@ -8728,6 +8748,27 @@ body.dark-mode .hub-chest-timer {
     background: radial-gradient(ellipse at center, rgba(40, 50, 70, 0.8) 0%, rgba(15, 20, 30, 0.95) 100%);
     border-radius: 12px;
     overflow: hidden;
+}
+
+/* Preview plein écran pour backgrounds/bannières - Image remplit la carte */
+.box-item-preview.fullsize-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border-radius: 16px;
+    z-index: 0;
+}
+
+.box-item-preview.fullsize-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
 }
 
 .box-item-emoji {
@@ -8844,7 +8885,7 @@ body.dark-mode .hub-chest-timer {
 }
 
 .box-item-name {
-    margin: 0 0 0.2rem 0;
+    margin: 0;
     font-size: 0.9rem;
     font-weight: bold;
     color: white;
@@ -8852,6 +8893,8 @@ body.dark-mode .hub-chest-timer {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
 }
 
 .box-item-type {
@@ -8978,6 +9021,254 @@ body.dark-mode .hub-chest-timer {
 }
 
 /* ============================================
+   SKIN INFO BUTTON & BONUS MODAL - AAA Style
+   ============================================ */
+
+/* Header de la carte avec nom + bouton info */
+.box-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    width: 100%;
+    margin-bottom: 0.2rem;
+}
+
+/* Bouton info (ℹ️) - juste l'emoji */
+.skin-info-btn {
+    position: relative;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.skin-info-btn .info-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.skin-info-btn:hover {
+    transform: scale(1.2);
+}
+
+.skin-info-btn:active {
+    transform: scale(0.95);
+}
+
+/* Popup de bonus skin - AAA Style - Centré sur la carte */
+.skin-bonus-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 200px;
+    background: linear-gradient(145deg, rgba(15, 20, 35, 0.98), rgba(5, 10, 20, 0.98));
+    border: 2px solid rgba(100, 150, 255, 0.6);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.8),
+        0 0 30px rgba(100, 150, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    z-index: 1000;
+    animation: popupFadeIn 0.2s ease-out;
+    backdrop-filter: blur(10px);
+}
+
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.skin-bonus-popup .popup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skin-bonus-popup .popup-emoji {
+    font-size: 24px;
+}
+
+.skin-bonus-popup .popup-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.skin-bonus-popup .popup-bonus-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4fc3f7;
+    margin-bottom: 4px;
+    text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+}
+
+.skin-bonus-popup .popup-bonus-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.skin-bonus-popup .popup-footer {
+    font-size: 9px;
+    color: rgba(255, 200, 100, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+
+.skin-bonus-content {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    background: linear-gradient(145deg, rgba(30, 40, 60, 0.98), rgba(15, 25, 45, 0.98));
+    border-radius: 20px;
+    border: 2px solid rgba(0, 200, 255, 0.4);
+    box-shadow:
+        0 0 40px rgba(0, 200, 255, 0.3),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.skin-bonus-modal.visible .skin-bonus-content {
+    transform: scale(1) translateY(0);
+}
+
+/* Bouton fermer */
+.skin-bonus-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skin-bonus-close:hover {
+    background: rgba(255, 100, 100, 0.3);
+    color: #ff6b6b;
+    transform: scale(1.1);
+}
+
+/* Header avec emoji + titre */
+.skin-bonus-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.skin-bonus-emoji {
+    font-size: 48px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    animation: emojiFloat 3s ease-in-out infinite;
+}
+
+@keyframes emojiFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.skin-bonus-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Divider */
+.skin-bonus-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.5), transparent);
+    margin: 16px 0;
+}
+
+/* Body */
+.skin-bonus-body {
+    text-align: center;
+}
+
+.skin-bonus-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(0, 200, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.skin-bonus-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    margin-bottom: 12px;
+}
+
+.skin-bonus-desc {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.5;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Footer */
+.skin-bonus-footer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.skin-bonus-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(100, 0, 200, 0.3), rgba(150, 50, 255, 0.3));
+    border: 1px solid rgba(150, 100, 255, 0.4);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #c8b6ff;
+}
+
+/* ============================================
    BADGES DE RARETÉ
    ============================================ */
 
@@ -9030,17 +9321,19 @@ body.dark-mode .hub-chest-timer {
 }
 
 /* ════════════════════════════════════════════ */
-/* 🎨 BORDURES DE RARETÉ AAA - CARTES */
+/* 🎨 RARETÉ AAA - FONDS COLORÉS + BORDURES */
 /* ════════════════════════════════════════════ */
 
-/* COMMUN - Gris discret */
+/* COMMUN - Gris */
 .box-item.rarity-common {
     border-color: var(--rarity-common-border);
+    background: linear-gradient(180deg, rgba(60, 65, 75, 0.9) 0%, rgba(40, 45, 55, 0.95) 100%);
 }
 
-/* RARE - Bleu électrique avec glow léger */
+/* RARE - Bleu */
 .box-item.rarity-rare {
     border-color: var(--rarity-rare-border);
+    background: linear-gradient(180deg, rgba(0, 60, 100, 0.9) 0%, rgba(0, 40, 70, 0.95) 100%);
     box-shadow: 0 0 15px var(--rarity-rare-glow);
 }
 
@@ -9048,9 +9341,10 @@ body.dark-mode .hub-chest-timer {
     box-shadow: 0 0 25px var(--rarity-rare-glow), 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* ÉPIQUE - Violet royal avec glow moyen */
+/* ÉPIQUE - Violet */
 .box-item.rarity-epic {
     border-color: var(--rarity-epic-border);
+    background: linear-gradient(180deg, rgba(80, 30, 120, 0.9) 0%, rgba(50, 20, 80, 0.95) 100%);
     box-shadow: 0 0 20px var(--rarity-epic-glow);
 }
 
@@ -9058,9 +9352,10 @@ body.dark-mode .hub-chest-timer {
     box-shadow: 0 0 35px var(--rarity-epic-glow), 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* LÉGENDAIRE - Or brillant avec pulse */
+/* LÉGENDAIRE - Or */
 .box-item.rarity-legendary {
     border-color: var(--rarity-legendary-border);
+    background: linear-gradient(180deg, rgba(100, 70, 0, 0.9) 0%, rgba(60, 40, 0, 0.95) 100%);
     box-shadow: 0 0 25px var(--rarity-legendary-glow);
     animation: legendaryCardPulse 2.5s ease-in-out infinite;
 }

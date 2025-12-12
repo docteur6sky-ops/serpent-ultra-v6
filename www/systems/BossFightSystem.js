@@ -1193,8 +1193,9 @@ export class BossFightSystem {
     }
 
     playerStealsBossSegments() {
-        // Formule : 3 segments de base + pommes mangées pendant le combat
-        const baseSegments = 3;
+        // Formule : 3 segments de base (ou 6 avec skin blood) + pommes mangées pendant le combat
+        const run = window.roguelikeManager?.currentRun;
+        const baseSegments = run?.swordDamage || 3;
         const bonusFromApples = this.applesEatenDuringBoss;
         const segmentsToSteal = baseSegments + bonusFromApples;
         const actualStolen = Math.min(segmentsToSteal, this.boss.snake.length);

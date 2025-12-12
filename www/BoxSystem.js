@@ -732,16 +732,14 @@ function createItemCard(item) {
         `;
     } else if (item.type === 'banner' && item.image) {
         previewHTML = `
-            <div class="box-item-preview banner-preview ${!isUnlocked ? 'locked-preview' : ''}">
-                ${rarityBadge}
+            <div class="box-item-preview fullsize-preview banner-preview ${!isUnlocked ? 'locked-preview' : ''}">
                 <img src="${item.image}" alt="${item.name}" class="banner-preview-image ${!isUnlocked ? 'locked-banner' : ''}">
                 ${centerBadge}
             </div>
         `;
     } else if (item.type === 'background' && item.image) {
         previewHTML = `
-            <div class="box-item-preview background-preview ${!isUnlocked ? 'locked-preview' : ''}">
-                ${rarityBadge}
+            <div class="box-item-preview fullsize-preview background-preview ${!isUnlocked ? 'locked-preview' : ''}">
                 <img src="${item.image}" alt="${item.name}" class="background-preview-image ${!isUnlocked ? 'locked-background' : ''}">
                 ${centerBadge}
             </div>
@@ -758,33 +756,38 @@ function createItemCard(item) {
     // Type label
     const typeLabels = { 'skin': 'Skin', 'background': 'Background', 'banner': 'Bannière' };
 
+    // Bouton info pour les skins avec bonus roguelike
+    let infoBtnHTML = '';
+    if (item.type === 'skin' && item.roguelikeBonus) {
+        infoBtnHTML = `
+            <button class="skin-info-btn" onclick="window.showSkinBonusInfo('${item.id}', event); return false;" title="Bonus Roguelike">
+                <span class="info-icon">ℹ️</span>
+            </button>
+        `;
+    }
+
     // Info
     const infoHTML = `
         <div class="box-item-info">
-            <h4 class="box-item-name">${item.emoji} ${item.name}</h4>
+            <div class="box-item-header">
+                <h4 class="box-item-name">${item.emoji} ${item.name}</h4>
+                ${infoBtnHTML}
+            </div>
             <p class="box-item-type">${typeLabels[item.type] || item.type}</p>
         </div>
     `;
 
-    // Status badge avec progression achievement
+    // Status badge (uniquement pour achievements/level/chest)
     let statusHTML = '';
     let progressHTML = '';
 
-    if (isEquipped) {
-        statusHTML = '<span class="status-badge equipped">⭐ Équipé</span>';
-    } else if (isUnlocked) {
-        statusHTML = '<span class="status-badge unlocked">✓ Possédé</span>';
-    } else {
-        if (item.unlockType === 'coins' && item.price > 0) {
-            statusHTML = `<span class="status-badge price">💰 ${item.price}</span>`;
-        } else if (item.unlockType === 'level') {
+    if (!isEquipped && !isUnlocked) {
+        if (item.unlockType === 'level') {
             statusHTML = `<span class="status-badge level">🎮 Niveau ${item.unlockLevel}</span>`;
         } else if (item.unlockType === 'achievement') {
-            // Afficher la condition d'achievement
             const label = item.unlockLabel || '🏆 Achievement';
             statusHTML = `<span class="status-badge achievement">${label}</span>`;
 
-            // Barre de progression
             if (item.unlockAchievement && window.boxManager.getAchievementProgress) {
                 const progress = window.boxManager.getAchievementProgress(item.unlockAchievement);
                 if (progress) {
@@ -800,20 +803,20 @@ function createItemCard(item) {
             }
         } else if (item.unlockType === 'chest') {
             statusHTML = '<span class="status-badge chest">🎁 Coffre</span>';
-        } else {
+        } else if (item.unlockType !== 'coins') {
             statusHTML = '<span class="status-badge locked">🔒 Verrouillé</span>';
         }
     }
 
-    // Button
+    // Button - tout fusionné en un seul bouton
     let buttonHTML = '';
     if (isEquipped) {
-        buttonHTML = '<button class="btn-equipped" disabled>✅ Équipé</button>';
+        buttonHTML = '<button class="btn-equipped" disabled>⭐ Équipé</button>';
     } else if (isUnlocked) {
         buttonHTML = `<button class="btn-equip" onclick="equipBoxItem('${item.id}')">Équiper</button>`;
     } else if (item.unlockType === 'coins' && item.price > 0) {
         const canAfford = window.boxManager.getCoins() >= item.price;
-        buttonHTML = `<button class="btn-buy ${!canAfford ? 'cant-afford' : ''}" onclick="buyBoxItem('${item.id}')" ${!canAfford ? 'title="Pas assez de coins"' : ''}>Acheter</button>`;
+        buttonHTML = `<button class="btn-buy ${!canAfford ? 'cant-afford' : ''}" onclick="buyBoxItem('${item.id}')" ${!canAfford ? 'title="Pas assez de coins"' : ''}>💰 ${item.price}</button>`;
     } else {
         buttonHTML = '<button class="btn-locked" disabled>Verrouillé</button>';
     }
@@ -875,6 +878,75 @@ window.filterBoxItems = filterBoxItems;
 window.buyBoxItem = buyBoxItem;
 window.equipBoxItem = equipBoxItem;
 window.refreshBoxUI = refreshBoxUI;
+
+// ============================================
+// MODAL BONUS SKIN ROGUELIKE
+// ============================================
+
+/**
+ * Affiche une popup avec les infos du bonus roguelike du skin
+ */
+function showSkinBonusInfo(skinId, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    // Fermer toute popup existante
+    closeSkinBonusInfo();
+
+    const skin = getItemById(skinId);
+    if (!skin || !skin.roguelikeBonus) return;
+
+    const bonus = skin.roguelikeBonus;
+
+    // Trouver la carte parent
+    const btn = event.target.closest('.skin-info-btn');
+    const card = btn?.closest('.box-item');
+    if (!card) return;
+
+    // Créer la popup
+    const popup = document.createElement('div');
+    popup.className = 'skin-bonus-popup';
+    popup.id = 'skinBonusPopup';
+    popup.innerHTML = `
+        <div class="popup-header">
+            <span class="popup-emoji">${skin.emoji}</span>
+            <h4 class="popup-title">${skin.name}</h4>
+        </div>
+        <div class="popup-bonus-name">${bonus.bonusName}</div>
+        <div class="popup-bonus-desc">${bonus.bonusDesc}</div>
+        <div class="popup-footer">Roguelike uniquement</div>
+    `;
+
+    card.appendChild(popup);
+
+    // Fermer en cliquant ailleurs
+    setTimeout(() => {
+        document.addEventListener('click', closeSkinBonusInfoOnClick);
+    }, 10);
+}
+
+function closeSkinBonusInfoOnClick(e) {
+    const popup = document.getElementById('skinBonusPopup');
+    if (popup && !popup.contains(e.target) && !e.target.closest('.skin-info-btn')) {
+        closeSkinBonusInfo();
+    }
+}
+
+/**
+ * Ferme la popup de bonus skin
+ */
+function closeSkinBonusInfo() {
+    const popup = document.getElementById('skinBonusPopup');
+    if (popup) {
+        popup.remove();
+    }
+    document.removeEventListener('click', closeSkinBonusInfoOnClick);
+}
+
+window.showSkinBonusInfo = showSkinBonusInfo;
+window.closeSkinBonusInfo = closeSkinBonusInfo;
 
 // ============================================
 // ANIMATION DE DÉBLOCAGE

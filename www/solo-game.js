@@ -344,20 +344,29 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Collision avec soi-même
         if (this.snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
-            if (!this.powerUpSystem.isInvincibleActive) {
+            // Vérifier immunité auto-collision (skin cyber/glitch/spectral)
+            const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
+            const selfCollisionImmune = run?.selfCollisionImmune || false;
+
+            if (!this.powerUpSystem.isInvincibleActive && !selfCollisionImmune) {
                 if (this.audio) this.audio.die();
                 this.gameOver();
                 return;
             }
         }
 
-        // Collision obstacles
-        if (this.obstacles.some(o => o.x === head.x && o.y === head.y)) {
+        // Collision obstacles (ignore les obstacles en preview - skin Scanner)
+        const now = Date.now();
+        const collidedObs = this.obstacles.find(o =>
+            o.x === head.x && o.y === head.y && (!o.previewUntil || now >= o.previewUntil)
+        );
+
+        if (collidedObs) {
             if (this.powerUpSystem.isGhostActive) {
                 // Traverse
             } else if (this.powerUpSystem.isInvincibleActive) {
                 // Détruit le mur
-                const obsIndex = this.obstacles.findIndex(o => o.x === head.x && o.y === head.y);
+                const obsIndex = this.obstacles.indexOf(collidedObs);
                 if (obsIndex !== -1) {
                     if (this.audio) this.audio.breakWall();
                     this.createBreakEffect(this.obstacles[obsIndex].x, this.obstacles[obsIndex].y);
@@ -443,20 +452,32 @@ class SoloSnakeGame extends BaseSnakeGame {
 
     eatSkull(head) {
         this.skullsEaten++;
-        if (this.audio) this.audio.bad();
 
-        this.snake.unshift(head);
+        // Vérifier immunité aux crânes (skin toxic)
+        const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
+        const skullImmunity = run?.skullImmunity || false;
 
-        const oldLength = this.snake.length;
-        const targetLength = Math.max(3, Math.floor(this.snake.length / 2));
-        const segmentsToRemove = this.snake.length - targetLength;
-
-        for (let i = 0; i < segmentsToRemove; i++) {
+        if (skullImmunity) {
+            // Immunité : juste respawn le crâne, pas de dégâts
+            if (this.audio) this.audio.powerup(); // Son positif
+            this.createParticles(head.x, head.y, '#39FF14', 8); // Particules vertes
+            this.snake.unshift(head);
             this.snake.pop();
-        }
+        } else {
+            // Comportement normal : perd la moitié des segments
+            if (this.audio) this.audio.bad();
+            this.snake.unshift(head);
 
-        this.syncCombo();
-        this.createParticles(head.x, head.y, '#ff4444', 8);
+            const targetLength = Math.max(3, Math.floor(this.snake.length / 2));
+            const segmentsToRemove = this.snake.length - targetLength;
+
+            for (let i = 0; i < segmentsToRemove; i++) {
+                this.snake.pop();
+            }
+
+            this.syncCombo();
+            this.createParticles(head.x, head.y, '#ff4444', 8);
+        }
 
         this.spawnSystem.spawnFood();
         this.spawnSystem.spawnBad();
@@ -546,8 +567,23 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.goldSystem.draw();
 
         // Obstacles
+        const now = Date.now();
         for (let obs of this.obstacles) {
-            RenderUtils.drawWall(this.ctx, obs.x, obs.y, this.CELL_SIZE);
+            // Vérifier si l'obstacle est en preview (skin Scanner)
+            if (obs.previewUntil && now < obs.previewUntil) {
+                // Dessiner en clignotant rouge semi-transparent
+                const flash = Math.floor(now / 200) % 2 === 0;
+                if (flash) {
+                    this.ctx.globalAlpha = 0.5;
+                    this.ctx.fillStyle = '#FF0000';
+                    const x = obs.x * this.CELL_SIZE;
+                    const y = obs.y * this.CELL_SIZE;
+                    this.ctx.fillRect(x + 2, y + 2, this.CELL_SIZE - 4, this.CELL_SIZE - 4);
+                    this.ctx.globalAlpha = 1;
+                }
+            } else {
+                RenderUtils.drawWall(this.ctx, obs.x, obs.y, this.CELL_SIZE);
+            }
         }
 
         // Boss
@@ -589,8 +625,8 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Particules
         this.drawParticles();
 
-        // Pause
-        if (this.paused) {
+        // Pause (ne pas afficher pendant les cinématiques de boss)
+        if (this.paused && !this.cinematicPlaying) {
             this.ctx.save();
             this.ctx.font = 'bold 120px "Courier New", monospace';
             this.ctx.textAlign = 'center';

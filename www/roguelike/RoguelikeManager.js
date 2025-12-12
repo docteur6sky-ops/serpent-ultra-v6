@@ -8,6 +8,7 @@ import { RUN_UPGRADES, PERMANENT_UPGRADES, RARITIES, selectRandomUpgrades, apply
 import { logger } from '../services/logger.js';
 import { save, load } from '../services/storage.js';
 import { achievementManager } from './achievements.js';
+import { getItemById } from '../data/items.js';
 
 // SecurityManager - accès via window pour éviter dépendance circulaire
 const getSecurityManager = () => window.securityManager;
@@ -39,6 +40,102 @@ class RoguelikeManager {
      * Démarre une nouvelle run
      */
     startNewRun() {
+        // Récupérer le skin équipé et son bonus
+        const skinBonus = this.getEquippedSkinBonus();
+
+        // Calculer les vies de départ
+        let startingLives = 1 + this.getMetaBonus('starting_lives');
+
+        // Calculer les upgrades de départ
+        const startingUpgrades = [];
+
+        // Calculer le bouclier de départ
+        let startingShield = 0;
+
+        // Flags spéciaux
+        let selfCollisionImmune = false;
+        let skullImmunity = false;
+        let swordDamage = 3; // Par défaut
+        let powerupDurationBonus = 1; // Par défaut x1
+        let dangerPreview = false;
+
+        // Appliquer les bonus du skin
+        if (skinBonus) {
+            switch (skinBonus.type) {
+                case 'extra_lives':
+                    startingLives += skinBonus.value;
+                    break;
+
+                case 'starting_upgrade':
+                    if (skinBonus.upgradeId) {
+                        startingUpgrades.push(skinBonus.upgradeId);
+                    }
+                    break;
+
+                case 'starting_upgrades':
+                    if (skinBonus.upgradeIds) {
+                        startingUpgrades.push(...skinBonus.upgradeIds);
+                    }
+                    break;
+
+                case 'starting_shield':
+                    startingShield = skinBonus.value;
+                    break;
+
+                case 'self_collision_immune':
+                    selfCollisionImmune = true;
+                    break;
+
+                case 'skull_immunity':
+                    skullImmunity = true;
+                    break;
+
+                case 'sword_damage':
+                    swordDamage = skinBonus.value;
+                    break;
+
+                case 'powerup_random':
+                    powerupDurationBonus = 1.5; // +50%
+                    break;
+
+                case 'danger_preview':
+                    dangerPreview = true;
+                    break;
+
+                case 'combo':
+                    // Combinaison de bonus (void, glitch)
+                    if (skinBonus.upgradeIds) {
+                        startingUpgrades.push(...skinBonus.upgradeIds);
+                    }
+                    if (skinBonus.shield) {
+                        startingShield = skinBonus.shield;
+                    }
+                    if (skinBonus.extraLives) {
+                        startingLives += skinBonus.extraLives;
+                    }
+                    if (skinBonus.selfCollisionImmune) {
+                        selfCollisionImmune = true;
+                    }
+                    break;
+
+                case 'ultimate':
+                    // SPECTRAL - Tout !
+                    if (skinBonus.upgradeIds) {
+                        startingUpgrades.push(...skinBonus.upgradeIds);
+                    }
+                    if (skinBonus.shield) {
+                        startingShield = skinBonus.shield;
+                    }
+                    if (skinBonus.extraLives) {
+                        startingLives += skinBonus.extraLives;
+                    }
+                    if (skinBonus.selfCollisionImmune) {
+                        selfCollisionImmune = true;
+                    }
+                    break;
+            }
+        }
+
         this.currentRun = {
             // Progression
             level: 1,
@@ -51,14 +148,27 @@ class RoguelikeManager {
             timePlayed: 0,
             startTime: Date.now(),
 
-            // Upgrades collectés cette run
-            upgrades: [],
+            // Upgrades collectés cette run (avec bonus skin)
+            upgrades: [...startingUpgrades],
 
             // État du joueur
-            lives: 1 + this.getMetaBonus('starting_lives'),
+            lives: startingLives,
+
+            // Bouclier de départ
+            shield: startingShield,
 
             // Modificateurs calculés
-            modifiers: calculateRunModifiers([]),
+            modifiers: calculateRunModifiers(startingUpgrades),
+
+            // Bonus du skin actif
+            skinBonus: skinBonus,
+
+            // Flags spéciaux du skin
+            selfCollisionImmune: selfCollisionImmune,
+            skullImmunity: skullImmunity,
+            swordDamage: swordDamage,
+            powerupDurationBonus: powerupDurationBonus,
+            dangerPreview: dangerPreview,
 
             // État du niveau actuel
             currentLevelData: null,
@@ -67,12 +177,30 @@ class RoguelikeManager {
         };
 
         logger.log('[RoguelikeManager] Nouvelle run démarrée', this.currentRun);
+        if (skinBonus) {
+            logger.log('[RoguelikeManager] Bonus skin appliqué:', skinBonus.bonusName);
+        }
 
         // Achievement tracking
         achievementManager.startNewRun();
 
         this.startLevel(1);
         return this.currentRun;
+    }
+
+    /**
+     * Récupère le bonus roguelike du skin équipé
+     */
+    getEquippedSkinBonus() {
+        if (!window.boxManager) return null;
+
+        const equippedSkin = window.boxManager.getEquippedSkin();
+        if (!equippedSkin || !equippedSkin.id) return null;
+
+        const skinData = getItemById(equippedSkin.id);
+        if (!skinData || !skinData.roguelikeBonus) return null;
+
+        return skinData.roguelikeBonus;
     }
 
     /**
@@ -291,13 +419,18 @@ class RoguelikeManager {
             return { continueRun: true, livesLeft: this.currentRun.lives };
         }
 
-        // Vérifier le bouclier
-        const hasShield = this.currentRun.upgrades.includes('shield');
+        // Vérifier le bouclier (skin diamond ou upgrade shield)
+        const hasShield = this.currentRun.upgrades.includes('shield') || this.currentRun.shield > 0;
         if (hasShield) {
-            // Retirer le bouclier et infliger des dégâts
-            const shieldIndex = this.currentRun.upgrades.indexOf('shield');
-            this.currentRun.upgrades.splice(shieldIndex, 1);
-            logger.log('[RoguelikeManager] Bouclier consommé');
+            // Consommer une charge de bouclier
+            if (this.currentRun.shield > 0) {
+                this.currentRun.shield--;
+                logger.log(`[RoguelikeManager] Bouclier skin consommé (restant: ${this.currentRun.shield})`);
+            } else {
+                const shieldIndex = this.currentRun.upgrades.indexOf('shield');
+                this.currentRun.upgrades.splice(shieldIndex, 1);
+                logger.log('[RoguelikeManager] Bouclier upgrade consommé');
+            }
             return { continueRun: true, shieldUsed: true, segmentsLost: 3 };
         }
 

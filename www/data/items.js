@@ -38,7 +38,8 @@ export const ITEMS = {
                 outline: '#004422',
                 glow: '#00FF87'
             },
-            description: 'Le snake vert classique avec yeux animés'
+            description: 'Le snake vert classique avec yeux animés',
+            roguelikeBonus: null // Pas de bonus
         },
 
         // ============================================
@@ -61,7 +62,13 @@ export const ITEMS = {
                 outline: '#4B0000',
                 glow: '#FF4500'
             },
-            description: 'Brûle tout sur ton passage'
+            description: 'Brûle tout sur ton passage',
+            roguelikeBonus: {
+                type: 'starting_upgrade',
+                upgradeId: 'fire_duration',
+                bonusName: 'Feu Prolongé',
+                bonusDesc: 'Le power-up Feu dure 2x plus longtemps'
+            }
         },
 
         ice: {
@@ -81,7 +88,13 @@ export const ITEMS = {
                 outline: '#003D66',
                 glow: '#00FFFF'
             },
-            description: 'Version glacée du serpent, froid comme la glace'
+            description: 'Version glacée du serpent, froid comme la glace',
+            roguelikeBonus: {
+                type: 'starting_upgrade',
+                upgradeId: 'ice_duration',
+                bonusName: 'Gel Prolongé',
+                bonusDesc: 'Le power-up Glace dure 2x plus longtemps'
+            }
         },
 
         lightning: {
@@ -101,7 +114,13 @@ export const ITEMS = {
                 outline: '#664400',
                 glow: '#FFFF00'
             },
-            description: 'Serpent électrique ultra rapide et lumineux'
+            description: 'Serpent électrique ultra rapide et lumineux',
+            roguelikeBonus: {
+                type: 'starting_upgrade',
+                upgradeId: 'lightning_duration',
+                bonusName: 'Foudre Prolongée',
+                bonusDesc: 'Le power-up Foudre dure 2x plus longtemps'
+            }
         },
 
         ghost: {
@@ -123,7 +142,13 @@ export const ITEMS = {
                 outline: '#404040',
                 glow: '#FFFFFF'
             },
-            description: 'Serpent spectral et mystérieux'
+            description: 'Serpent spectral et mystérieux',
+            roguelikeBonus: {
+                type: 'starting_upgrade',
+                upgradeId: 'ghost_extended',
+                bonusName: 'Spectre',
+                bonusDesc: 'Le power-up Ghost dure 2x plus longtemps'
+            }
         },
 
         // ============================================
@@ -146,7 +171,13 @@ export const ITEMS = {
                 outline: '#4B0082',
                 glow: '#00FF00'
             },
-            description: 'Toutes les couleurs de l\'arc-en-ciel'
+            description: 'Toutes les couleurs de l\'arc-en-ciel',
+            roguelikeBonus: {
+                type: 'starting_upgrades',
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended'],
+                bonusName: 'Maître Élémentaire',
+                bonusDesc: 'Tous les power-ups élémentaires durent 2x plus longtemps'
+            }
         },
 
         diamond: {
@@ -168,7 +199,13 @@ export const ITEMS = {
                 outline: '#006688',
                 glow: '#B9F2FF'
             },
-            description: 'Brillant comme un diamant'
+            description: 'Brillant comme un diamant',
+            roguelikeBonus: {
+                type: 'starting_shield',
+                value: 3,
+                bonusName: 'Armure Cristalline',
+                bonusDesc: 'Commence avec un bouclier complet (3 charges)'
+            }
         },
 
         neon: {
@@ -188,7 +225,13 @@ export const ITEMS = {
                 outline: '#660066',
                 glow: '#FF00FF'
             },
-            description: 'Éclaire la nuit avec style'
+            description: 'Éclaire la nuit avec style',
+            roguelikeBonus: {
+                type: 'starting_upgrades',
+                upgradeIds: ['xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
+                bonusName: 'Sagesse Ultime',
+                bonusDesc: 'Commence avec +100% XP (Sagesse x4)'
+            }
         },
 
         // ============================================
@@ -214,7 +257,13 @@ export const ITEMS = {
                 outline: '#1A0000',
                 glow: '#FF0000'
             },
-            description: 'Lumière rouge qui scanne de la tête à la queue'
+            description: 'Lumière rouge qui scanne de la tête à la queue',
+            roguelikeBonus: {
+                type: 'danger_preview',
+                value: true,
+                bonusName: 'Détection',
+                bonusDesc: 'Les obstacles clignotent avant d\'apparaître'
+            }
         },
 
         chameleon: {
@@ -235,7 +284,13 @@ export const ITEMS = {
                 outline: '#003300',
                 glow: '#7FFF00'
             },
-            description: 'Change de couleur périodiquement'
+            description: 'Change de couleur périodiquement',
+            roguelikeBonus: {
+                type: 'powerup_random',
+                value: true,
+                bonusName: 'Adaptation',
+                bonusDesc: 'Les power-ups durent +50% plus longtemps'
+            }
         },
 
         // ============================================
@@ -261,7 +316,13 @@ export const ITEMS = {
                 outline: '#654321',
                 glow: '#FFD700'
             },
-            description: 'Le roi des serpents avec sa couronne royale'
+            description: 'Le roi des serpents avec sa couronne royale',
+            roguelikeBonus: {
+                type: 'starting_upgrades',
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
+                bonusName: 'Royauté',
+                bonusDesc: 'Rainbow + Neon : Élémentaires x2 + Sagesse x4'
+            }
         },
 
         // ============================================
@@ -288,7 +349,13 @@ export const ITEMS = {
                 outline: '#001A00',
                 glow: '#39FF14'
             },
-            description: 'Radioactif et mortel, résistant au poison'
+            description: 'Radioactif et mortel, résistant au poison',
+            roguelikeBonus: {
+                type: 'skull_immunity',
+                value: true,
+                bonusName: 'Antidote',
+                bonusDesc: 'Immunité aux crânes (ne perd pas de segments)'
+            }
         },
 
         blood: {
@@ -310,7 +377,13 @@ export const ITEMS = {
                 outline: '#1A0000',
                 glow: '#FF0000'
             },
-            description: 'Le serpent assoiffé de sang'
+            description: 'Le serpent assoiffé de sang',
+            roguelikeBonus: {
+                type: 'sword_damage',
+                value: 6,
+                bonusName: 'Soif de Sang',
+                bonusDesc: 'L\'épée vole 6 segments aux boss (au lieu de 3)'
+            }
         },
 
         void: {
@@ -333,7 +406,14 @@ export const ITEMS = {
                 outline: '#000000',
                 glow: '#8B00FF'
             },
-            description: 'Né des ténèbres, maître du vide'
+            description: 'Né des ténèbres, maître du vide',
+            roguelikeBonus: {
+                type: 'combo',
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended'],
+                shield: 3,
+                bonusName: 'Maître du Néant',
+                bonusDesc: 'Rainbow + Diamond : Élémentaires x2 + 3 boucliers'
+            }
         },
 
         golden: {
@@ -356,7 +436,13 @@ export const ITEMS = {
                 outline: '#5C4A00',
                 glow: '#FFD700'
             },
-            description: 'Brillant de mille feux, le serpent doré'
+            description: 'Brillant de mille feux, le serpent doré',
+            roguelikeBonus: {
+                type: 'starting_upgrades',
+                upgradeIds: ['fortune', 'fortune', 'fortune'],
+                bonusName: 'Roi Midas',
+                bonusDesc: 'Fortune x3 : 30% chance de spawn gold'
+            }
         },
 
         glitch: {
@@ -379,7 +465,14 @@ export const ITEMS = {
                 outline: '#000000',
                 glow: '#FFFFFF'
             },
-            description: 'Erreur système, réalité corrompue'
+            description: 'Erreur système, réalité corrompue',
+            roguelikeBonus: {
+                type: 'combo',
+                selfCollisionImmune: true,
+                extraLives: 3,
+                bonusName: 'Bug Exploit',
+                bonusDesc: 'Immunité auto-collision + 3 vies supplémentaires'
+            }
         },
 
         phoenix: {
@@ -402,7 +495,13 @@ export const ITEMS = {
                 outline: '#8B0000',
                 glow: '#FF4500'
             },
-            description: 'Renaît de ses cendres, immortel'
+            description: 'Renaît de ses cendres, immortel',
+            roguelikeBonus: {
+                type: 'extra_lives',
+                value: 3,
+                bonusName: 'Renaissance',
+                bonusDesc: 'Commence avec 3 vies supplémentaires'
+            }
         },
 
         cyber: {
@@ -425,7 +524,13 @@ export const ITEMS = {
                 outline: '#00FFFF',
                 glow: '#00BFFF'
             },
-            description: 'Technologie avancée, circuits lumineux'
+            description: 'Technologie avancée, circuits lumineux',
+            roguelikeBonus: {
+                type: 'self_collision_immune',
+                value: true,
+                bonusName: 'Firewall',
+                bonusDesc: 'Immunité à l\'auto-collision (peut traverser sa queue)'
+            }
         },
 
         spectral: {
@@ -448,7 +553,16 @@ export const ITEMS = {
                 outline: 'rgba(255, 255, 255, 0.5)',
                 glow: '#AAAAFF'
             },
-            description: 'Entre les mondes, ni vivant ni mort'
+            description: 'Entre les mondes, ni vivant ni mort',
+            roguelikeBonus: {
+                type: 'ultimate',
+                selfCollisionImmune: true,
+                extraLives: 3,
+                shield: 3,
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
+                bonusName: 'Transcendance',
+                bonusDesc: 'ULTIME : Neon + Phoenix + Diamond + Rainbow + Immunité'
+            }
         }
     },
 

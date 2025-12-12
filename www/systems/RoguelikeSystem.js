@@ -99,6 +99,10 @@ export class RoguelikeSystem {
         const hasTeleport = this.modifiers?.passives?.some(p => p.type === 'wrap_around') || false;
         this.game.spawnSystem.generateRoguelikeObstacles(levelData, hasTeleport);
 
+        // Respawn nourriture et crâne APRÈS les obstacles (pour éviter spawn sur les murs)
+        this.game.spawnSystem.spawnFood();
+        this.game.spawnSystem.spawnBad();
+
         // Boss fight si niveau boss
         if (this.objective?.type === 'boss') {
             this.game.bossSystem.startBossFight(this.objective, levelData);
@@ -391,10 +395,14 @@ export class RoguelikeSystem {
         const shieldsCount = document.getElementById('rl-hud-shields-count');
         if (!shieldsEl || !shieldsCount) return;
 
-        const shieldCount = run.upgrades.filter(u => u === 'shield').length;
-        if (shieldCount > 0) {
+        // Compter les boucliers : upgrades + bonus skin diamond
+        const upgradeShields = run.upgrades.filter(u => u === 'shield').length;
+        const skinShields = run.shield || 0;
+        const totalShields = upgradeShields + skinShields;
+
+        if (totalShields > 0) {
             shieldsEl.classList.remove('hidden');
-            shieldsCount.textContent = shieldCount;
+            shieldsCount.textContent = totalShields;
         } else {
             shieldsEl.classList.add('hidden');
         }

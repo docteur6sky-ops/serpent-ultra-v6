@@ -245,6 +245,11 @@ export class SpawnSystem {
             radius: 5
         };
 
+        // Vérifier si le skin Scanner est actif (danger_preview)
+        const run = window.roguelikeManager?.currentRun;
+        const dangerPreview = run?.dangerPreview || false;
+        const previewDuration = dangerPreview ? 1500 : 0; // 1.5s de clignotement
+
         for (const obs of levelData.obstacles) {
             if (obs.type === 'wall_static') {
                 for (let i = 0; i < obs.count; i++) {
@@ -254,6 +259,10 @@ export class SpawnSystem {
                         safeZone: safeZone
                     });
                     if (position) {
+                        // Ajouter le temps de preview si skin Scanner actif
+                        if (dangerPreview) {
+                            position.previewUntil = Date.now() + previewDuration;
+                        }
                         this.game.obstacles.push(position);
                     }
                 }

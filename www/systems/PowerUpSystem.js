@@ -104,6 +104,13 @@ export class PowerUpSystem {
             const multiplier = this.game.roguelikeModifiers.powerupDurations[type] || 1;
             baseDuration = baseDuration * multiplier;
         }
+
+        // Bonus skin chameleon : +50% durée sur TOUS les powerups
+        const run = window.roguelikeManager?.currentRun;
+        if (run?.powerupDurationBonus && run.powerupDurationBonus > 1) {
+            baseDuration = baseDuration * run.powerupDurationBonus;
+        }
+
         this.powerupDuration = baseDuration;
 
         // Achievement tracking
