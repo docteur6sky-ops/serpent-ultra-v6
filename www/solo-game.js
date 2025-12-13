@@ -233,7 +233,17 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Calculer vitesse
         let speed = this.calculateSpeed();
-        if (this.powerUpSystem.isSlowActive) speed *= 1.5;
+        if (this.powerUpSystem.isSlowActive) {
+            speed *= 1.5;
+            // ZÉRO ABSOLU : encore plus lent (x2 supplémentaire)
+            const run = this.roguelikeSystem?.isActive ? window.roguelikeManager?.currentRun : null;
+            const hasIceAbsolute = run?.upgrades?.includes('ice_absolute') || false;
+            if (hasIceAbsolute) {
+                speed *= 2; // Total: x3 au lieu de x1.5
+                // Tracking achievement Maîtrise Légendaire (une seule fois)
+                achievementManager.onUsedIceAbsolute();
+            }
+        }
 
         // Update si temps écoulé
         if (timestamp - this.lastTime > speed) {
@@ -385,10 +395,21 @@ class SoloSnakeGame extends BaseSnakeGame {
         );
 
         if (collidedObs) {
+            // Vérifier bonus roguelike
+            const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
+            const hasRockDevour = run?.upgrades?.includes('rock_devour') || false;
+            const hasFirePhoenix = run?.upgrades?.includes('fire_phoenix') || false;
+
             if (this.powerUpSystem.isGhostActive) {
-                // Traverse
+                // Ghost : Traverse
+            } else if (this.powerUpSystem.isDoubleActive && hasFirePhoenix) {
+                // PHÉNIX : Feu + immunité murs = traverse comme Ghost
+                // Particules de feu
+                this.createParticles(collidedObs.x, collidedObs.y, '#FF4500', 5);
+                // Tracking achievement Maîtrise Légendaire
+                achievementManager.onUsedFirePhoenix();
             } else if (this.powerUpSystem.isInvincibleActive) {
-                // Détruit le mur
+                // Roche : Détruit le mur
                 const obsIndex = this.obstacles.indexOf(collidedObs);
                 if (obsIndex !== -1) {
                     if (this.audio) this.audio.breakWall();
@@ -396,6 +417,18 @@ class SoloSnakeGame extends BaseSnakeGame {
                     this.obstacles.splice(obsIndex, 1);
                     this.score += 5;
                     this.wallsDestroyed++;
+
+                    // MANGEUR DE MURS : +1 segment +1 combo
+                    if (hasRockDevour) {
+                        this.snake.unshift({ x: head.x, y: head.y });
+                        // Ne pas faire pop() = +1 segment
+                        this.combo++;
+                        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+                        this.createParticles(head.x, head.y, '#8B4513', 10); // Particules marron
+                        // Tracking achievement Maîtrise Légendaire
+                        achievementManager.onUsedRockDevour();
+                    }
+
                     this.updateUI();
                 }
             } else {
@@ -492,6 +525,12 @@ class SoloSnakeGame extends BaseSnakeGame {
             // Ne pas faire pop() = +1 segment
             this.combo++;
             if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+            // Tracking achievement Maîtrise Légendaire
+            achievementManager.onUsedVampire();
+        } else if (isGhostActive) {
+            // Ghost SANS Vampire : traverse le crâne sans effet (comme les murs)
+            this.snake.unshift(head);
+            this.snake.pop();
         } else if (skullImmunity) {
             // Immunité : juste respawn le crâne, pas de dégâts
             if (this.audio) this.audio.powerup(); // Son positif
@@ -616,10 +655,17 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.firstDirectionChangeTime = Date.now();
         }
 
-        // Lightning inverse les contrôles
+        // Lightning inverse les contrôles (sauf si bonus Maîtrise de l'Éclair)
         if (this.powerUpSystem.isLightningActive) {
-            newDx = -newDx;
-            newDy = -newDy;
+            const run = this.roguelikeSystem?.isActive ? window.roguelikeManager?.currentRun : null;
+            const hasLightningMaster = run?.upgrades?.includes('lightning_master') || false;
+            if (!hasLightningMaster) {
+                newDx = -newDx;
+                newDy = -newDy;
+            } else {
+                // Tracking achievement Maîtrise Légendaire (une seule fois)
+                achievementManager.onUsedLightningMaster();
+            }
         }
 
         this.ndx = newDx;

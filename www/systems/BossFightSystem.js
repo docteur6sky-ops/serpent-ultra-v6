@@ -1061,9 +1061,21 @@ export class BossFightSystem {
             const skullHit = this.boss.skulls.find(s =>
                 s.x === playerHead.x && s.y === playerHead.y
             );
-            if (skullHit && !this.game.powerupEffects.ghost && !this.game.powerupEffects.invincible) {
-                this.playerHitSkull(skullHit);
-                if (!this.boss) return; // Combat terminé
+            if (skullHit) {
+                const isGhost = this.game.powerupEffects.ghost;
+                const isInvincible = this.game.powerupEffects.invincible;
+                const run = window.roguelikeManager?.currentRun;
+                const hasVampire = run?.upgrades?.includes('segment_steal') || false;
+
+                if (hasVampire && isGhost) {
+                    // VAMPIRE : Vole +1 segment au crâne, +1 combo
+                    this.playerVampireSkull(skullHit);
+                } else if (!isGhost && !isInvincible) {
+                    // Normal : dégâts
+                    this.playerHitSkull(skullHit);
+                    if (!this.boss) return; // Combat terminé
+                }
+                // Ghost sans Vampire ou Invincible : traverse sans effet
             }
         }
 
@@ -1116,6 +1128,37 @@ export class BossFightSystem {
         }
 
         this.checkBossPhase();
+    }
+
+    /**
+     * Joueur utilise Vampire sur un skull (Boss 3 SPECTRE)
+     */
+    playerVampireSkull(skull) {
+        logger.log('[BossFight] VAMPIRE : Vol de segment sur crâne!');
+
+        // Retirer le skull
+        const idx = this.boss.skulls.indexOf(skull);
+        if (idx !== -1) {
+            this.boss.skulls.splice(idx, 1);
+        }
+
+        // VAMPIRE : +1 segment
+        const head = this.game.snake[0];
+        this.game.snake.unshift({ x: head.x, y: head.y });
+        // +1 combo
+        this.game.combo++;
+        if (this.game.combo > this.game.maxCombo) {
+            this.game.maxCombo = this.game.combo;
+        }
+
+        // Effets
+        if (this.game.audio) this.game.audio.eatSound();
+        this.game.createParticles(head.x, head.y, '#9932CC', 10);
+
+        // Tracking achievement Maîtrise Légendaire
+        achievementManager.onUsedVampire();
+
+        this.updateBossUI();
     }
 
     /**

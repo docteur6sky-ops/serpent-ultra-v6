@@ -352,36 +352,6 @@ export const ACHIEVEMENTS = [
         xpReward: 150  // Rare = 150
     },
     {
-        id: 'ghost_master',
-        name: 'Fantôme',
-        description: 'Traverser 20 murs en mode ghost',
-        icon: '🌫️',
-        category: 'mastery',
-        rarity: 'rare',
-        condition: { type: 'walls_ghosted', value: 20 },
-        xpReward: 150  // Rare = 150
-    },
-    {
-        id: 'fire_destroyer',
-        name: 'Pyromane',
-        description: 'Détruire 30 murs avec le power-up feu',
-        icon: '🔥',
-        category: 'mastery',
-        rarity: 'rare',
-        condition: { type: 'walls_destroyed', value: 30 },
-        xpReward: 150  // Rare = 150
-    },
-    {
-        id: 'ice_master',
-        name: 'Cryomancien',
-        description: 'Geler des ennemis 20 fois',
-        icon: '🧊',
-        category: 'mastery',
-        rarity: 'rare',
-        condition: { type: 'enemies_frozen', value: 20 },
-        xpReward: 150  // Rare = 150
-    },
-    {
         id: 'survivor',
         name: 'Survivant',
         description: 'Survivre 5 minutes en une run',
@@ -410,6 +380,59 @@ export const ACHIEVEMENTS = [
         rarity: 'epic',
         condition: { type: 'levels_no_death', value: 5 },
         xpReward: 350  // Epic = 350
+    },
+
+    // ===== MAÎTRISE LÉGENDAIRE (5) =====
+    // Débloquer en utilisant les bonus légendaires de power-ups
+    {
+        id: 'mastery_vampire',
+        name: 'Seigneur Vampire',
+        description: 'Utiliser le bonus Vampire pour voler un segment à un crâne',
+        icon: '🧛',
+        category: 'mastery',
+        rarity: 'legendary',
+        condition: { type: 'used_vampire', value: 1 },
+        xpReward: 750  // Legendary = 750
+    },
+    {
+        id: 'mastery_rock',
+        name: 'Dévoreur de Pierre',
+        description: 'Utiliser le bonus Mangeur de Murs pour gagner un segment',
+        icon: '🦷',
+        category: 'mastery',
+        rarity: 'legendary',
+        condition: { type: 'used_rock_devour', value: 1 },
+        xpReward: 750  // Legendary = 750
+    },
+    {
+        id: 'mastery_fire',
+        name: 'Oiseau de Feu',
+        description: 'Utiliser le bonus Phénix pour traverser un mur en mode Feu',
+        icon: '🔶',
+        category: 'mastery',
+        rarity: 'legendary',
+        condition: { type: 'used_fire_phoenix', value: 1 },
+        xpReward: 750  // Legendary = 750
+    },
+    {
+        id: 'mastery_lightning',
+        name: 'Dompteur de Foudre',
+        description: 'Utiliser le bonus Maîtrise de l\'Éclair en mode Foudre',
+        icon: '🎮',
+        category: 'mastery',
+        rarity: 'legendary',
+        condition: { type: 'used_lightning_master', value: 1 },
+        xpReward: 750  // Legendary = 750
+    },
+    {
+        id: 'mastery_ice',
+        name: 'Maître du Gel',
+        description: 'Utiliser le bonus Zéro Absolu en mode Glace',
+        icon: '🧊',
+        category: 'mastery',
+        rarity: 'legendary',
+        condition: { type: 'used_ice_absolute', value: 1 },
+        xpReward: 750  // Legendary = 750
     },
 
     // ===== DIVERS (2) =====
@@ -533,6 +556,13 @@ class AchievementManager {
             wallsDestroyed: 0,
             enemiesFrozen: 0,
             longestSurvivalTime: 0,
+
+            // Maîtrise Légendaire (bonus power-ups légendaires)
+            usedVampire: 0,         // Vampire: crâne volé en Ghost
+            usedRockDevour: 0,      // Mangeur de Murs: segment gagné en Rock
+            usedFirePhoenix: 0,     // Phénix: mur traversé en Feu
+            usedLightningMaster: 0, // Maîtrise Éclair: utilisé Foudre sans inversion
+            usedIceAbsolute: 0,     // Zéro Absolu: utilisé Glace ultra-lent
 
             // Secrets
             cryoNoSlowKill: 0,        // Nombre de fois CRYO battu sans ralentissement
@@ -777,6 +807,37 @@ class AchievementManager {
         this.checkAchievements();
     }
 
+    // ===== TRACKING MAÎTRISE LÉGENDAIRE =====
+
+    onUsedVampire() {
+        this.stats.usedVampire++;
+        this.checkAchievements();
+    }
+
+    onUsedRockDevour() {
+        this.stats.usedRockDevour++;
+        this.checkAchievements();
+    }
+
+    onUsedFirePhoenix() {
+        this.stats.usedFirePhoenix++;
+        this.checkAchievements();
+    }
+
+    onUsedLightningMaster() {
+        if (this.stats.usedLightningMaster === 0) {
+            this.stats.usedLightningMaster++;
+            this.checkAchievements();
+        }
+    }
+
+    onUsedIceAbsolute() {
+        if (this.stats.usedIceAbsolute === 0) {
+            this.stats.usedIceAbsolute++;
+            this.checkAchievements();
+        }
+    }
+
     // ===== TRACKING SECRETS =====
 
     onTitanWallDestroyed() {
@@ -962,6 +1023,22 @@ class AchievementManager {
             case 'first_run_win':
                 // Vérifié dans checkRunAchievements
                 return false;  // Géré séparément
+
+            // ===== CONDITIONS MAÎTRISE LÉGENDAIRE =====
+            case 'used_vampire':
+                return this.stats.usedVampire >= value;
+
+            case 'used_rock_devour':
+                return this.stats.usedRockDevour >= value;
+
+            case 'used_fire_phoenix':
+                return this.stats.usedFirePhoenix >= value;
+
+            case 'used_lightning_master':
+                return this.stats.usedLightningMaster >= value;
+
+            case 'used_ice_absolute':
+                return this.stats.usedIceAbsolute >= value;
 
             default:
                 return false;

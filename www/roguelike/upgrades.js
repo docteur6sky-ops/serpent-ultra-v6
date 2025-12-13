@@ -207,6 +207,64 @@ export const RUN_UPGRADES = {
         stackable: false
     },
 
+    // ===== CATÉGORIE : POWER-UPS LÉGENDAIRES =====
+    rock_devour: {
+        id: "rock_devour",
+        name: "Mangeur de Murs",
+        description: "En mode Roche : mur détruit = +1 segment et +1 combo",
+        icon: "🦷",
+        category: "powerup",
+        rarity: "legendary",
+        weight: 1,
+        effect: {
+            type: "devour_on_rock",
+            amount: 1
+        },
+        stackable: false
+    },
+    fire_phoenix: {
+        id: "fire_phoenix",
+        name: "Phénix",
+        description: "En mode Feu : immunité aux murs (traverse sans dégâts)",
+        icon: "🔶",
+        category: "powerup",
+        rarity: "legendary",
+        weight: 1,
+        effect: {
+            type: "fire_wall_immunity",
+            enabled: true
+        },
+        stackable: false
+    },
+    lightning_master: {
+        id: "lightning_master",
+        name: "Maîtrise de l'Éclair",
+        description: "En mode Foudre : contrôles normaux, garde bonus points",
+        icon: "🎮",
+        category: "powerup",
+        rarity: "legendary",
+        weight: 1,
+        effect: {
+            type: "lightning_no_invert",
+            enabled: true
+        },
+        stackable: false
+    },
+    ice_absolute: {
+        id: "ice_absolute",
+        name: "Zéro Absolu",
+        description: "En mode Glace : vitesse encore plus lente (x0.5)",
+        icon: "🧊",
+        category: "powerup",
+        rarity: "legendary",
+        weight: 1,
+        effect: {
+            type: "ice_ultra_slow",
+            multiplier: 0.5
+        },
+        stackable: false
+    },
+
     // ===== CATÉGORIE : SPÉCIAL =====
     teleport: {
         id: "teleport",
