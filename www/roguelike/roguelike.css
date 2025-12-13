@@ -1176,6 +1176,79 @@
     50% { box-shadow: 0 5px 30px rgba(255, 0, 0, 0.7); }
 }
 
+/* ===== BOSS VS SCREEN - Triple AAA ===== */
+.boss-vs-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.boss-vs-player,
+.boss-vs-boss {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.boss-vs-icon {
+    font-size: 64px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+    animation: bossVSBounce 1.5s ease-in-out infinite;
+}
+
+.boss-vs-player .boss-vs-icon {
+    animation-delay: 0s;
+}
+
+.boss-vs-boss .boss-vs-icon {
+    animation-delay: 0.75s;
+}
+
+@keyframes bossVSBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-8px) scale(1.05); }
+}
+
+.boss-vs-label {
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.boss-vs-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.boss-vs-text {
+    font-size: 48px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow:
+        0 0 20px #ffd700,
+        0 0 40px #ff8c00,
+        2px 2px 4px rgba(0, 0, 0, 0.8);
+    animation: bossVSPulse 1s ease-in-out infinite;
+    letter-spacing: 4px;
+}
+
+@keyframes bossVSPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.9; }
+}
+
+.boss-intro-stat-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
 /* ===== BOSS UI - PHASES (AAA Compact Override) ===== */
 /* Ces styles sont maintenant définis plus haut en version AAA */
 

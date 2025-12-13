@@ -13,7 +13,7 @@
 
 import { logger } from '../services/logger.js';
 import { achievementManager } from '../roguelike/achievements.js';
-import { drawSnakeEnhanced, getDirectionString } from '../SkinsRenderer.js';
+// Imports SkinsRenderer retirés - cinématiques supprimées pour performance
 
 // Couleurs des skins pour chaque boss (basé sur items.js)
 const BOSS_SKIN_COLORS = {
@@ -91,6 +91,16 @@ export class BossFightSystem {
             ? (levelData.level === 1)
             : (levelData.level === 5);
 
+        // Config par boss (background + couleur flash)
+        const bossConfig = {
+            TITAN: { bg: 'roche_background.webp', flash: '#8B4513', emoji: '🏔️' },
+            CRYO: { bg: 'glace_background.webp', flash: '#00BFFF', emoji: '❄️' },
+            SPECTRE: { bg: 'ghost_background.webp', flash: '#9932CC', emoji: '👻' },
+            FOUDRE: { bg: 'foudre_background.webp', flash: '#FFD700', emoji: '⚡' }
+        };
+        const bossName = levelData.name?.toUpperCase() || 'TITAN';
+        const config = bossConfig[bossName] || bossConfig.TITAN;
+
         let introScreen = document.getElementById('boss-intro-screen');
         if (!introScreen) {
             introScreen = document.createElement('div');
@@ -98,6 +108,11 @@ export class BossFightSystem {
             introScreen.className = 'boss-intro-screen';
             document.body.appendChild(introScreen);
         }
+
+        // Appliquer le background spécifique au boss
+        introScreen.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('./assets/backgrounds/${config.bg}')`;
+        introScreen.style.backgroundSize = 'cover';
+        introScreen.style.backgroundPosition = 'center';
 
         const mins = Math.floor((objective.timeLimit || 120) / 60);
         const secs = (objective.timeLimit || 120) % 60;
@@ -124,33 +139,49 @@ export class BossFightSystem {
             `;
         }
 
+        // Écran VS Triple AAA
         introScreen.innerHTML = `
-            <div class="boss-intro-icon">⚔️</div>
-            <div class="boss-intro-title">BOSS</div>
-            <div class="boss-intro-name">${levelData.name}</div>
+            <div class="boss-vs-container">
+                <div class="boss-vs-player">
+                    <div class="boss-vs-icon">🐍</div>
+                    <div class="boss-vs-label">TOI</div>
+                </div>
+                <div class="boss-vs-center">
+                    <div class="boss-vs-text">VS</div>
+                </div>
+                <div class="boss-vs-boss">
+                    <div class="boss-vs-icon">${config.emoji}</div>
+                    <div class="boss-vs-label">${levelData.name}</div>
+                </div>
+            </div>
             <div class="boss-intro-stats">
                 <div class="boss-intro-stat">
+                    <div class="boss-intro-stat-icon">❤️</div>
                     <div class="boss-intro-stat-value">${objective.bossSegments || 15}</div>
                     <div class="boss-intro-stat-label">Segments</div>
                 </div>
                 <div class="boss-intro-stat">
+                    <div class="boss-intro-stat-icon">⏱️</div>
                     <div class="boss-intro-stat-value">${timerStr}</div>
                     <div class="boss-intro-stat-label">Timer</div>
                 </div>
             </div>
             ${tutorialHTML}
-            <button class="boss-intro-btn" id="boss-intro-start">COMBATTRE</button>
+            <button class="boss-intro-btn" id="boss-intro-start">⚔️ COMBATTRE</button>
         `;
 
         introScreen.classList.remove('hidden');
 
+        // Stocker la config pour le flash
+        this._currentBossConfig = config;
+
         document.getElementById('boss-intro-start').addEventListener('click', () => {
             this.hideBossIntro();
-            // Lancer la cinématique du boss avant le combat
-            this.playBossCinematic(levelData, objective);
+            // Flash couleur simple puis combat
+            this.startBossWithFlash(levelData, objective);
         });
 
-        logger.log(`[BossFight] Écran intro boss affiché: ${levelData.name}`);
+        logger.log(`[BossFight] Écran VS affiché: ${levelData.name}`);
     }
 
     hideBossIntro() {
@@ -1344,882 +1375,24 @@ export class BossFightSystem {
     }
 
     // ============================================
-    // CINÉMATIQUES D'INTRO DES BOSS
+    // TRANSITION SIMPLE VERS LE COMBAT
     // ============================================
 
     /**
-     * Lance la cinématique d'intro selon le type de boss
+     * Lance un flash couleur puis démarre le combat (remplace les cinématiques lourdes)
      */
-    async playBossCinematic(levelData, objective) {
-        const bossName = levelData.name?.toUpperCase() || '';
+    startBossWithFlash(levelData, objective) {
+        const config = this._currentBossConfig || { flash: '#9932CC' };
 
-        logger.log(`[BossFight] Lancement cinématique pour: ${bossName}`);
+        logger.log(`[BossFight] Flash ${config.flash} puis combat: ${levelData.name}`);
 
-        // Préparer le canvas pour la cinématique (afficher le jeu en arrière-plan)
-        this.game.paused = true;
-        this.game.cinematicPlaying = true; // Masquer l'icône pause
-        this.game.draw();
+        // Flash de couleur selon le boss (0.3s)
+        this.flashScreen(config.flash, 300);
 
-        switch (bossName) {
-            case 'TITAN':
-                await this.playTitanCinematic();
-                break;
-            case 'CRYO':
-                await this.playCryoCinematic();
-                break;
-            case 'SPECTRE':
-                await this.playSpectreCinematic();
-                break;
-            case 'FOUDRE':
-                await this.playFoudreCinematic();
-                break;
-            default:
-                // Pas de cinématique spéciale, démarrer directement
-                break;
-        }
-
-        // Fin de la cinématique
-        this.game.cinematicPlaying = false;
-
-        // Après la cinématique, démarrer le vrai combat
-        this.startBossFightAfterIntro(objective, levelData);
-    }
-
-    /**
-     * Utilitaire : Attendre X millisecondes
-     */
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
-     * Affiche une bulle de dialogue BD au-dessus du boss (dessinée sur le canvas)
-     */
-    async showBossDialogue(bossName, message, color) {
-        const gridSize = this.game.GRID_SIZE;
-        const cellSize = this.game.CELL_SIZE;
-        const ctx = this.game.ctx;
-
-        // Utiliser le boss cinématique s'il existe, sinon en créer un temporaire
-        let boss = this.cinematicBoss;
-        if (!boss) {
-            boss = {
-                snake: [],
-                name: bossName,
-                direction: 'left'
-            };
-            const bossX = gridSize - 5;
-            const bossY = 5;
-            for (let i = 0; i < 12; i++) {
-                boss.snake.push({ x: bossX + i, y: bossY });
-            }
-        } else if (!boss.name) {
-            // S'assurer que le nom est défini
-            boss.name = bossName;
-            boss.direction = boss.direction || 'left';
-        }
-
-        // Position de la tête du boss pour la bulle
-        const bossHeadX = boss.snake[0].x;
-        const bossHeadY = boss.snake[0].y;
-
-        // Animation de la bulle
-        const startTime = Date.now();
-        const duration = 2000;
-
-        const drawFrame = () => {
-            const elapsed = Date.now() - startTime;
-            if (elapsed > duration) return;
-
-            // Dessiner le jeu + boss
-            this.game.draw();
-            this.drawCinematicBoss(boss);
-
-            // Position de la bulle (au-dessus de la tête du boss)
-            const bubbleX = bossHeadX * cellSize + cellSize / 2;
-            const bubbleY = bossHeadY * cellSize - 20;
-
-            // Animation d'entrée
-            const progress = Math.min(elapsed / 200, 1);
-            const scale = 0.5 + progress * 0.5;
-            const alpha = progress;
-
-            ctx.save();
-            ctx.globalAlpha = alpha;
-
-            // Bulle blanche
-            const bubbleWidth = Math.min(message.length * 8 + 30, 180);
-            const bubbleHeight = 40;
-            const bubbleLeft = bubbleX - bubbleWidth / 2;
-            const bubbleTop = bubbleY - bubbleHeight;
-
-            ctx.translate(bubbleX, bubbleY - bubbleHeight / 2);
-            ctx.scale(scale, scale);
-            ctx.translate(-bubbleX, -(bubbleY - bubbleHeight / 2));
-
-            // Ombre
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-            ctx.shadowBlur = 8;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-
-            // Corps de la bulle
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.roundRect(bubbleLeft, bubbleTop, bubbleWidth, bubbleHeight, 15);
-            ctx.fill();
-
-            // Queue de la bulle (triangle)
-            ctx.shadowBlur = 0;
-            ctx.beginPath();
-            ctx.moveTo(bubbleX - 8, bubbleY - 5);
-            ctx.lineTo(bubbleX + 8, bubbleY - 5);
-            ctx.lineTo(bubbleX, bubbleY + 10);
-            ctx.closePath();
-            ctx.fill();
-
-            // Texte
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#000';
-            ctx.font = 'bold 11px "Comic Sans MS", cursive, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Wrap text si trop long
-            const words = message.split(' ');
-            let line = '';
-            let lines = [];
-            for (const word of words) {
-                const testLine = line + word + ' ';
-                if (ctx.measureText(testLine).width > bubbleWidth - 20) {
-                    lines.push(line.trim());
-                    line = word + ' ';
-                } else {
-                    line = testLine;
-                }
-            }
-            lines.push(line.trim());
-
-            const lineHeight = 13;
-            const textY = bubbleTop + bubbleHeight / 2 - ((lines.length - 1) * lineHeight) / 2;
-            lines.forEach((l, i) => {
-                ctx.fillText(l, bubbleX, textY + i * lineHeight);
-            });
-
-            ctx.restore();
-
-            requestAnimationFrame(drawFrame);
-        };
-
-        drawFrame();
-
-        // Screen shake léger
-        this.game.triggerScreenShake(3);
-
-        await this.sleep(duration + 300);
-    }
-
-    /**
-     * Utilitaire : Créer un mur temporaire avec effet visuel
-     */
-    spawnCinematicWall(x, y, duration = 999999, isBossWall = true) {
-        const wall = {
-            x, y,
-            temporary: true,
-            expiresAt: Date.now() + duration,
-            isBossWall: isBossWall,
-            cinematicWall: true
-        };
-        this.game.obstacles.push(wall);
-        this.game.createParticles(x, y, '#8B4513', 3);
-        return wall;
-    }
-
-    // ============================================
-    // TITAN : Murs bordure + 30 murs centre
-    // ============================================
-
-    async playTitanCinematic() {
-        logger.log('[BossFight] TITAN Cinématique: Démonstration de puissance!');
-
-        const gridSize = this.game.GRID_SIZE;
-        const playerHead = this.game.snake[0];
-
-        // Créer le boss cinématique qui reste visible pendant toute l'intro
-        this.cinematicBoss = {
-            snake: [],
-            name: 'TITAN',
-            direction: 'left'
-        };
-        const bossStartX = gridSize - 5;
-        const bossStartY = 5;
-        for (let i = 0; i < 15; i++) {
-            this.cinematicBoss.snake.push({ x: bossStartX + i, y: bossStartY });
-        }
-
-        // Phase 0: Le boss apparaît et parle
-        await this.showBossDialogue('TITAN', 'QUI OSE TROUBLER MON SOMMEIL ?!', '#8B4513');
-
-        // Phase 1: Murs des bordures (effet domino rapide) - boss reste visible
-        await this.titanSpawnBorderWalls(gridSize);
-
-        // Pause dramatique
-        await this.sleep(300);
-
-        // Phase 2: 5 murs au centre de la grille - boss reste visible
-        await this.titanSpawnCenterWalls(5, gridSize, playerHead);
-
-        // Pause pour montrer le résultat
-        await this.sleep(500);
-
-        // Phase 3: Le boss charge et casse quelques murs sur son passage
-        await this.titanBossEntrance(gridSize);
-
-        // Pause finale
-        await this.sleep(300);
-
-        // Nettoyer
-        this.cinematicBoss = null;
-
-        logger.log('[BossFight] TITAN Cinématique terminée!');
-    }
-
-    async titanSpawnBorderWalls(gridSize) {
-        // Créer les murs de bordure en commençant par les coins
-        // On laisse des trous pour que le joueur puisse circuler
-
-        const borderWalls = [];
-
-        // Haut (de gauche à droite, avec trous)
-        for (let x = 0; x < gridSize; x++) {
-            if (x % 4 !== 0) { // Laisser des trous tous les 4 cases
-                borderWalls.push({ x, y: 0 });
-            }
-        }
-
-        // Bas (de gauche à droite, avec trous)
-        for (let x = 0; x < gridSize; x++) {
-            if (x % 4 !== 2) {
-                borderWalls.push({ x, y: gridSize - 1 });
-            }
-        }
-
-        // Gauche (de haut en bas, avec trous)
-        for (let y = 1; y < gridSize - 1; y++) {
-            if (y % 4 !== 1) {
-                borderWalls.push({ x: 0, y });
-            }
-        }
-
-        // Droite (de haut en bas, avec trous)
-        for (let y = 1; y < gridSize - 1; y++) {
-            if (y % 4 !== 3) {
-                borderWalls.push({ x: gridSize - 1, y });
-            }
-        }
-
-        // Spawn progressif (effet domino)
-        for (let i = 0; i < borderWalls.length; i++) {
-            const w = borderWalls[i];
-            this.spawnCinematicWall(w.x, w.y);
-
-            // Redessiner pour voir l'effet (avec le boss)
-            if (i % 3 === 0) {
-                this.game.draw();
-                if (this.cinematicBoss) this.drawCinematicBoss(this.cinematicBoss);
-                await this.sleep(15);
-            }
-        }
-
-        this.game.draw();
-        if (this.cinematicBoss) this.drawCinematicBoss(this.cinematicBoss);
-
-        // Son et screen shake
-        this.game.triggerScreenShake(8);
-        if (window.audio) window.audio.breakWall?.();
-    }
-
-    async titanSpawnCenterWalls(count, gridSize, playerHead) {
-        const centerWalls = [];
-        const margin = 4; // Distance minimum des bords
-        const playerSafeZone = 4; // Distance minimum du joueur
-
-        // Générer 30 positions aléatoires au centre
-        let attempts = 0;
-        while (centerWalls.length < count && attempts < 200) {
-            const x = Math.floor(Math.random() * (gridSize - margin * 2)) + margin;
-            const y = Math.floor(Math.random() * (gridSize - margin * 2)) + margin;
-
-            // Vérifier que ce n'est pas trop près du joueur
-            const distToPlayer = Math.abs(x - playerHead.x) + Math.abs(y - playerHead.y);
-            if (distToPlayer < playerSafeZone) {
-                attempts++;
-                continue;
-            }
-
-            // Vérifier que ce n'est pas déjà occupé
-            const alreadyExists = centerWalls.some(w => w.x === x && w.y === y) ||
-                                  this.game.obstacles.some(o => o.x === x && o.y === y);
-            if (alreadyExists) {
-                attempts++;
-                continue;
-            }
-
-            centerWalls.push({ x, y });
-            attempts++;
-        }
-
-        // Spawn par vagues de 5-6 murs
-        for (let i = 0; i < centerWalls.length; i++) {
-            const w = centerWalls[i];
-            this.spawnCinematicWall(w.x, w.y);
-
-            if ((i + 1) % 5 === 0) {
-                this.game.draw();
-                if (this.cinematicBoss) this.drawCinematicBoss(this.cinematicBoss);
-                this.game.triggerScreenShake(3);
-                await this.sleep(80);
-            }
-        }
-
-        this.game.draw();
-        if (this.cinematicBoss) this.drawCinematicBoss(this.cinematicBoss);
-        this.game.triggerScreenShake(10);
-        if (window.audio) window.audio.breakWall?.();
-    }
-
-    async titanBossEntrance(gridSize) {
-        // Utiliser le boss cinématique existant
-        if (!this.cinematicBoss) return;
-
-        const bossStartX = this.cinematicBoss.snake[0].x;
-        const bossStartY = this.cinematicBoss.snake[0].y;
-
-        // Le boss "charge" à travers le terrain en cassant les murs
-        const chargePath = this.generateTitanChargePath(bossStartX, bossStartY, gridSize);
-
-        for (let step = 0; step < chargePath.length; step++) {
-            const pos = chargePath[step];
-
-            // Déplacer le boss
-            this.cinematicBoss.snake.unshift({ x: pos.x, y: pos.y });
-            this.cinematicBoss.snake.pop();
-
-            // Casser les murs sur le passage
-            const wallIndex = this.game.obstacles.findIndex(o =>
-                o.x === pos.x && o.y === pos.y && o.cinematicWall
-            );
-            if (wallIndex !== -1) {
-                this.game.createParticles(pos.x, pos.y, '#8B4513', 8);
-                this.game.obstacles.splice(wallIndex, 1);
-                if (window.audio) window.audio.breakWall?.();
-            }
-
-            // Dessiner le jeu + boss cinématique
-            this.game.draw();
-            this.drawCinematicBoss(this.cinematicBoss);
-            await this.sleep(60);
-        }
-
-        // Flash final
-        this.flashScreen('#8B4513', 200);
-        this.game.triggerScreenShake(15);
-    }
-
-    generateTitanChargePath(startX, startY, gridSize) {
-        const path = [];
-        let x = startX;
-        let y = startY;
-
-        // Le boss charge en diagonale vers le centre puis zigzag
-        const moves = [
-            { dx: -1, dy: 0, count: 8 },  // Gauche
-            { dx: 0, dy: 1, count: 5 },   // Bas
-            { dx: -1, dy: 0, count: 6 },  // Gauche
-            { dx: 0, dy: -1, count: 4 },  // Haut
-            { dx: -1, dy: 0, count: 5 },  // Gauche (vers centre)
-        ];
-
-        for (const move of moves) {
-            for (let i = 0; i < move.count; i++) {
-                x += move.dx;
-                y += move.dy;
-                // Wrap around
-                if (x < 0) x = gridSize - 1;
-                if (x >= gridSize) x = 0;
-                if (y < 0) y = gridSize - 1;
-                if (y >= gridSize) y = 0;
-                path.push({ x, y });
-            }
-        }
-
-        return path;
-    }
-
-    drawCinematicBoss(boss) {
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-
-        // Dessiner d'abord le jeu normal
-        this.game.draw();
-
-        // Utiliser les couleurs du skin correspondant au boss
-        const skinColors = BOSS_SKIN_COLORS[boss.name] || BOSS_SKIN_COLORS.TITAN;
-        const direction = boss.direction || 'left';
-
-        // Utiliser le renderer de skins AAA
-        drawSnakeEnhanced(ctx, boss.snake, direction, cellSize, skinColors);
-    }
-
-    // ============================================
-    // CRYO : Vagues de glace
-    // ============================================
-
-    async playCryoCinematic() {
-        logger.log('[BossFight] CRYO Cinématique: Vague de froid!');
-
-        const gridSize = this.game.GRID_SIZE;
-        const centerX = Math.floor(gridSize / 2);
-        const centerY = Math.floor(gridSize / 2);
-
-        // Phase 0: Dialogue
-        await this.showBossDialogue('CRYO', 'TU VAS GELER SUR PLACE...', '#00BFFF');
-        await this.sleep(500);
-
-        // Vagues de glace concentriques depuis le centre
-        for (let radius = 2; radius <= 12; radius += 2) {
-            await this.cryoSpawnIceRing(centerX, centerY, radius);
-            this.game.draw();
-            this.drawCryoIceZones();
-            await this.sleep(150);
-        }
-
-        // Flash de glace
-        this.flashScreen('#00BFFF', 300);
-        this.game.triggerScreenShake(10);
-
-        // Les zones disparaissent progressivement pour le combat
-        await this.sleep(500);
-
-        // Nettoyer les zones de glace cinématiques (le combat en créera de nouvelles)
-        this.cinematicIceZones = [];
-
-        logger.log('[BossFight] CRYO Cinématique terminée!');
-    }
-
-    async cryoSpawnIceRing(centerX, centerY, radius) {
-        // Créer des zones de glace en anneau
-        const zones = [];
-        const angleStep = Math.PI / 4; // 8 zones par anneau
-
-        for (let angle = 0; angle < Math.PI * 2; angle += angleStep) {
-            const x = Math.round(centerX + Math.cos(angle) * radius);
-            const y = Math.round(centerY + Math.sin(angle) * radius);
-
-            if (x >= 0 && x < this.game.GRID_SIZE && y >= 0 && y < this.game.GRID_SIZE) {
-                zones.push({
-                    x, y,
-                    radius: 2,
-                    slowFactor: 0.5,
-                    createdAt: Date.now(),
-                    duration: 10000,
-                    cinematic: true
-                });
-            }
-        }
-
-        // Stocker temporairement pour le rendu
-        if (!this.cinematicIceZones) this.cinematicIceZones = [];
-        this.cinematicIceZones.push(...zones);
-
-        if (window.audio) window.audio.powerup?.();
-    }
-
-    drawCryoIceZones() {
-        if (!this.cinematicIceZones) return;
-
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-
-        for (const zone of this.cinematicIceZones) {
-            const centerX = zone.x * cellSize + cellSize / 2;
-            const centerY = zone.y * cellSize + cellSize / 2;
-            const pixelRadius = zone.radius * cellSize;
-
-            // Gradient de glace
-            const gradient = ctx.createRadialGradient(
-                centerX, centerY, 0,
-                centerX, centerY, pixelRadius
-            );
-            gradient.addColorStop(0, 'rgba(0, 191, 255, 0.6)');
-            gradient.addColorStop(0.5, 'rgba(135, 206, 250, 0.4)');
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, pixelRadius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Flocon au centre
-            ctx.font = `${cellSize}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('❄️', centerX, centerY);
-        }
-    }
-
-    // ============================================
-    // SPECTRE : Crânes + Invisibilité
-    // ============================================
-
-    async playSpectreCinematic() {
-        logger.log('[BossFight] SPECTRE Cinématique: Invasion de crânes!');
-
-        const gridSize = this.game.GRID_SIZE;
-
-        // Phase 0: Dialogue
-        await this.showBossDialogue('SPECTRE', 'TU NE PEUX PAS TUER CE QUI EST DÉJÀ MORT...', '#9932CC');
-        await this.sleep(500);
-
-        // Phase 1: Écran s'assombrit
-        await this.spectredarkenScreen();
-
-        // Phase 2: Crânes envahissent depuis les bords
-        await this.spectreSkullInvasion(gridSize);
-
-        // Phase 3: Le boss apparaît puis disparaît
-        await this.spectreGhostAppearance(gridSize);
-
-        // Nettoyer
-        this.cinematicSkulls = [];
-
-        logger.log('[BossFight] SPECTRE Cinématique terminée!');
-    }
-
-    async spectredarkenScreen() {
-        const overlay = document.createElement('div');
-        overlay.id = 'spectre-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0);
-            pointer-events: none;
-            z-index: 9998;
-            transition: background 0.5s ease;
-        `;
-        document.body.appendChild(overlay);
-
-        await this.sleep(50);
-        overlay.style.background = 'rgba(75, 0, 130, 0.4)';
-        await this.sleep(500);
-    }
-
-    async spectreSkullInvasion(gridSize) {
-        this.cinematicSkulls = [];
-
-        // Crânes depuis les 4 côtés
-        const spawnPoints = [
-            ...Array.from({length: 8}, (_, i) => ({ x: 0, y: i * 4 })), // Gauche
-            ...Array.from({length: 8}, (_, i) => ({ x: gridSize - 1, y: i * 4 })), // Droite
-            ...Array.from({length: 8}, (_, i) => ({ x: i * 4, y: 0 })), // Haut
-            ...Array.from({length: 8}, (_, i) => ({ x: i * 4, y: gridSize - 1 })), // Bas
-        ];
-
-        for (let i = 0; i < spawnPoints.length; i++) {
-            const p = spawnPoints[i];
-            this.cinematicSkulls.push({
-                x: p.x,
-                y: p.y,
-                opacity: 1
-            });
-
-            if (i % 4 === 0) {
-                this.game.draw();
-                this.drawCinematicSkulls();
-                await this.sleep(30);
-            }
-        }
-
-        this.game.draw();
-        this.drawCinematicSkulls();
-        this.game.triggerScreenShake(8);
-
-        await this.sleep(300);
-    }
-
-    drawCinematicSkulls() {
-        if (!this.cinematicSkulls) return;
-
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-
-        for (const skull of this.cinematicSkulls) {
-            const x = skull.x * cellSize + cellSize / 2;
-            const y = skull.y * cellSize + cellSize / 2;
-
-            ctx.save();
-            ctx.globalAlpha = skull.opacity;
-            ctx.shadowColor = '#9932CC';
-            ctx.shadowBlur = 15;
-            ctx.font = `${cellSize * 1.2}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('💀', x, y);
-            ctx.restore();
-        }
-    }
-
-    async spectreGhostAppearance(gridSize) {
-        const centerX = Math.floor(gridSize / 2);
-        const centerY = Math.floor(gridSize / 2);
-
-        // Boss apparaît au centre
-        const ghostBoss = {
-            snake: [],
-            color: '#9932CC',
-            opacity: 0
-        };
-
-        for (let i = 0; i < 20; i++) {
-            ghostBoss.snake.push({ x: centerX + i, y: centerY });
-        }
-
-        // Fade in
-        for (let opacity = 0; opacity <= 1; opacity += 0.1) {
-            ghostBoss.opacity = opacity;
-            this.game.draw();
-            this.drawCinematicSkulls();
-            this.drawGhostBoss(ghostBoss);
-            await this.sleep(50);
-        }
-
-        await this.sleep(300);
-
-        // Fade out (il devient invisible)
-        for (let opacity = 1; opacity >= 0; opacity -= 0.15) {
-            ghostBoss.opacity = opacity;
-            this.game.draw();
-            this.drawCinematicSkulls();
-            this.drawGhostBoss(ghostBoss);
-            await this.sleep(40);
-        }
-
-        this.flashScreen('#9932CC', 200);
-
-        // Enlever l'overlay
-        const overlay = document.getElementById('spectre-overlay');
-        if (overlay) overlay.remove();
-    }
-
-    drawGhostBoss(boss) {
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-
-        for (let i = boss.snake.length - 1; i >= 0; i--) {
-            const segment = boss.snake[i];
-            const x = segment.x * cellSize;
-            const y = segment.y * cellSize;
-
-            ctx.save();
-            ctx.globalAlpha = boss.opacity * (0.5 + (1 - i / boss.snake.length) * 0.5);
-            ctx.shadowColor = boss.color;
-            ctx.shadowBlur = 20;
-
-            ctx.fillStyle = boss.color;
-            ctx.beginPath();
-            ctx.arc(x + cellSize/2, y + cellSize/2, (cellSize - 2)/2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-    }
-
-    // ============================================
-    // FOUDRE : Portails chaotiques
-    // ============================================
-
-    async playFoudreCinematic() {
-        logger.log('[BossFight] FOUDRE Cinématique: Chaos de portails!');
-
-        const gridSize = this.game.GRID_SIZE;
-
-        // Phase 0: Dialogue
-        await this.showBossDialogue('FOUDRE', 'JE SUIS PARTOUT... ET NULLE PART !', '#FFD700');
-        await this.sleep(500);
-
-        // Phase 1: Éclairs sur l'écran
-        await this.foudreFlashLightning();
-
-        // Phase 2: Portails s'ouvrent partout
-        await this.foudreOpenPortals(gridSize);
-
-        // Phase 3: Le boss se téléporte plusieurs fois
-        await this.foudreBossTeleports(gridSize);
-
-        // Nettoyer
-        this.cinematicPortals = [];
-
-        logger.log('[BossFight] FOUDRE Cinématique terminée!');
-    }
-
-    async foudreFlashLightning() {
-        // 3 éclairs rapides
-        for (let i = 0; i < 3; i++) {
-            this.flashScreen('#FFD700', 100);
-            this.game.triggerScreenShake(5);
-            await this.sleep(150);
-        }
-    }
-
-    async foudreOpenPortals(gridSize) {
-        this.cinematicPortals = [];
-
-        // 12 portails à des positions aléatoires
-        for (let i = 0; i < 12; i++) {
-            const x = Math.floor(Math.random() * (gridSize - 4)) + 2;
-            const y = Math.floor(Math.random() * (gridSize - 4)) + 2;
-
-            this.cinematicPortals.push({
-                x, y,
-                scale: 0,
-                rotation: Math.random() * Math.PI * 2
-            });
-
-            // Animation d'ouverture
-            for (let scale = 0; scale <= 1; scale += 0.25) {
-                this.cinematicPortals[i].scale = scale;
-                this.game.draw();
-                this.drawCinematicPortals();
-                await this.sleep(20);
-            }
-
-            if (window.audio) window.audio.powerup?.();
-        }
-
-        await this.sleep(300);
-    }
-
-    drawCinematicPortals() {
-        if (!this.cinematicPortals) return;
-
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-        const now = Date.now();
-
-        for (const portal of this.cinematicPortals) {
-            const centerX = portal.x * cellSize + cellSize / 2;
-            const centerY = portal.y * cellSize + cellSize / 2;
-            const radius = cellSize * portal.scale;
-
-            ctx.save();
-
-            // Rotation animée
-            ctx.translate(centerX, centerY);
-            ctx.rotate(portal.rotation + now / 500);
-            ctx.translate(-centerX, -centerY);
-
-            // Gradient du portail
-            const gradient = ctx.createRadialGradient(
-                centerX, centerY, 0,
-                centerX, centerY, radius
-            );
-            gradient.addColorStop(0, '#4B0082');
-            gradient.addColorStop(0.5, '#FFD700');
-            gradient.addColorStop(1, 'rgba(255, 165, 0, 0)');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Emoji vortex
-            ctx.font = `${cellSize * portal.scale}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🌀', centerX, centerY);
-
-            ctx.restore();
-        }
-    }
-
-    async foudreBossTeleports(gridSize) {
-        const bossPositions = [
-            { x: 5, y: 5 },
-            { x: gridSize - 10, y: gridSize - 10 },
-            { x: gridSize / 2, y: 5 },
-            { x: 5, y: gridSize - 10 },
-            { x: gridSize / 2, y: gridSize / 2 }
-        ];
-
-        const foudreBoss = {
-            snake: [],
-            color: '#FFD700'
-        };
-
-        for (let i = 0; i < 25; i++) {
-            foudreBoss.snake.push({ x: bossPositions[0].x + i, y: bossPositions[0].y });
-        }
-
-        for (let posIndex = 0; posIndex < bossPositions.length; posIndex++) {
-            const pos = bossPositions[posIndex];
-
-            // Téléporter le boss à cette position
-            for (let i = 0; i < foudreBoss.snake.length; i++) {
-                foudreBoss.snake[i] = { x: pos.x + i, y: pos.y };
-            }
-
-            // Flash de téléportation
-            this.flashScreen('#9932CC', 100);
-            this.game.createParticles(pos.x, pos.y, '#FFD700', 10);
-
-            // Dessiner
-            this.game.draw();
-            this.drawCinematicPortals();
-            this.drawFoudreBoss(foudreBoss);
-
-            await this.sleep(250);
-        }
-
-        // Flash final massif
-        this.flashScreen('#FFD700', 300);
-        this.game.triggerScreenShake(15);
-    }
-
-    drawFoudreBoss(boss) {
-        const ctx = this.game.ctx;
-        const cellSize = this.game.CELL_SIZE;
-        const now = Date.now();
-
-        for (let i = boss.snake.length - 1; i >= 0; i--) {
-            const segment = boss.snake[i];
-            const x = segment.x * cellSize;
-            const y = segment.y * cellSize;
-
-            const isHead = i === 0;
-
-            ctx.save();
-
-            // Effet électrique (couleur qui alterne)
-            const hue = ((now / 50) + i * 10) % 60; // Entre or et orange
-            ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-            ctx.shadowBlur = isHead ? 20 : 12;
-            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-
-            ctx.beginPath();
-            ctx.arc(x + cellSize/2, y + cellSize/2, (cellSize - 2)/2, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (isHead) {
-                // Yeux électriques
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(x + cellSize/2 - 4, y + cellSize/2 - 2, 3, 0, Math.PI * 2);
-                ctx.arc(x + cellSize/2 + 4, y + cellSize/2 - 2, 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
+        // Petit délai puis démarrage du combat
+        setTimeout(() => {
+            this.startBossFightAfterIntro(objective, levelData);
+        }, 350);
     }
 
     // ============================================
