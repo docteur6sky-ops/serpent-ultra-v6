@@ -47,6 +47,15 @@ export class BossRenderer {
         this.ctx = ctx;
         this.cellSize = cellSize;
         this.gridSize = gridSize;
+        // Cache timestamp pour éviter multiple (this._frameTime || Date.now()) par frame
+        this._frameTime = 0;
+    }
+
+    /**
+     * Met à jour le timestamp du frame (appeler 1x par frame depuis game loop)
+     */
+    setFrameTime(timestamp) {
+        this._frameTime = timestamp || Date.now();
     }
 
     /**
@@ -65,7 +74,7 @@ export class BossRenderer {
 
         const ctx = this.ctx;
         const cellSize = this.cellSize;
-        const now = Date.now();
+        const now = (this._frameTime || Date.now());
 
         // Utiliser les couleurs du skin correspondant au boss
         const skinColors = BOSS_SKIN_COLORS[boss.name] || BOSS_SKIN_COLORS.TITAN;
@@ -264,7 +273,7 @@ export class BossRenderer {
         const size = this.cellSize * 0.8;
 
         // Animation de flottement
-        const float = Math.sin(Date.now() / 200) * 3;
+        const float = Math.sin((this._frameTime || Date.now()) / 200) * 3;
 
         ctx.save();
         ctx.translate(x, y + float);
@@ -294,7 +303,7 @@ export class BossRenderer {
         const head = boss.snake[0];
 
         // Ombre légère pulsante
-        const pulse = 0.2 + Math.sin(Date.now() / 300) * 0.1;
+        const pulse = 0.2 + Math.sin((this._frameTime || Date.now()) / 300) * 0.1;
 
         ctx.save();
         ctx.globalAlpha = pulse;
@@ -318,7 +327,7 @@ export class BossRenderer {
 
         const ctx = this.ctx;
         const cellSize = this.cellSize;
-        const now = Date.now();
+        const now = (this._frameTime || Date.now());
 
         iceZones.forEach(zone => {
             const x = zone.x * cellSize + cellSize / 2;
@@ -374,7 +383,7 @@ export class BossRenderer {
 
         const ctx = this.ctx;
         const cellSize = this.cellSize;
-        const now = Date.now();
+        const now = (this._frameTime || Date.now());
 
         skulls.forEach(skull => {
             const x = skull.x * cellSize + cellSize / 2;
@@ -417,7 +426,7 @@ export class BossRenderer {
 
         const ctx = this.ctx;
         const cellSize = this.cellSize;
-        const now = Date.now();
+        const now = (this._frameTime || Date.now());
 
         teleportPortals.forEach(portal => {
             const age = now - portal.createdAt;

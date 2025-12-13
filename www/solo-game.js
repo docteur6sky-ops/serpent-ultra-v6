@@ -595,6 +595,9 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Boss
         if (this.bossSystem.isActive) {
+            // Cache timestamp pour éviter multiple Date.now() dans renderer
+            this.bossRenderer.setFrameTime(this._frameNow);
+
             // Nouveaux effets de boss
             this.bossRenderer.drawIceZones(this.bossSystem.boss?.iceZones);
             this.bossRenderer.drawSkulls(this.bossSystem.boss?.skulls);
@@ -626,7 +629,7 @@ class SoloSnakeGame extends BaseSnakeGame {
                 this.drawSprintAura();
             }
 
-            drawSnakeEnhanced(this.ctx, this.snake, getDirectionString(this.dx, this.dy), this.CELL_SIZE, skinColors);
+            drawSnakeEnhanced(this.ctx, this.snake, getDirectionString(this.dx, this.dy), this.CELL_SIZE, skinColors, this._frameNow);
         }
 
         // Particules

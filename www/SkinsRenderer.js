@@ -27,9 +27,10 @@ const animationState = {
 
 /**
  * Met à jour l'état des animations (appelé à chaque frame)
+ * @param {number} timestamp - Timestamp optionnel (évite Date.now() si fourni)
  */
-function updateAnimations() {
-    const now = Date.now();
+function updateAnimations(timestamp = null) {
+    const now = timestamp || Date.now();
     const delta = (now - animationState.lastUpdate) / 1000; // Delta en secondes
     animationState.lastUpdate = now;
 
@@ -74,9 +75,9 @@ function updateAnimations() {
  * @param {number} gridSize - Taille d'une cellule de la grille
  * @param {object} skinColors - Couleurs du skin (optionnel, utilise le skin équipé si non fourni)
  */
-export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = null) {
-    // Mettre à jour les animations
-    updateAnimations();
+export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = null, frameTimestamp = null) {
+    // Mettre à jour les animations (avec timestamp optionnel pour éviter Date.now())
+    updateAnimations(frameTimestamp);
 
     // Récupérer le skin équipé
     let equippedSkin = null;
