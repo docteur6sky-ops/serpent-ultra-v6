@@ -35,6 +35,40 @@ export class RoguelikeSystem {
 
         // Gold collecté cette run
         this.goldCollected = 0;
+
+        // ✅ PERF: Cache des éléments DOM (évite getElementById à chaque frame)
+        this._domCache = null;
+        this._lastUIUpdate = 0;
+        this._uiUpdateInterval = 100; // Update UI max 10x/sec au lieu de 60x/sec
+    }
+
+    /**
+     * ✅ PERF: Cache les éléments DOM une seule fois
+     */
+    _cacheDOMElements() {
+        if (this._domCache) return;
+
+        this._domCache = {
+            objectiveDiv: document.getElementById('roguelike-objective'),
+            levelEl: document.getElementById('rl-obj-level'),
+            currentEl: document.getElementById('rl-obj-current'),
+            targetEl: document.getElementById('rl-obj-target'),
+            hud: document.getElementById('rl-powerups-hud'),
+            livesEl: document.getElementById('rl-hud-lives'),
+            livesCount: document.getElementById('rl-hud-lives-count'),
+            shieldsEl: document.getElementById('rl-hud-shields'),
+            shieldsCount: document.getElementById('rl-hud-shields-count'),
+            sprintEl: document.getElementById('rl-hud-sprint'),
+            sprintCdProgress: document.getElementById('rl-sprint-cd-progress'),
+            passivesContainer: document.getElementById('rl-hud-passives')
+        };
+    }
+
+    /**
+     * ✅ PERF: Invalide le cache (appeler si DOM change)
+     */
+    invalidateDOMCache() {
+        this._domCache = null;
     }
 
     /**
@@ -322,37 +356,48 @@ export class RoguelikeSystem {
 
     /**
      * Met à jour l'affichage de l'objectif
+     * ✅ PERF: Utilise le cache DOM
      */
     updateObjectiveUI() {
-        const objectiveDiv = document.getElementById('roguelike-objective');
+        // ✅ PERF: Throttle - skip si update récent
+        const now = performance.now();
+        if (now - this._lastUIUpdate < this._uiUpdateInterval) return;
+        this._lastUIUpdate = now;
+
+        this._cacheDOMElements();
+        const { objectiveDiv, levelEl, currentEl, targetEl } = this._domCache;
         if (!objectiveDiv) return;
 
         if (this.isActive && this.objective) {
             objectiveDiv.classList.remove('hidden');
 
-            const levelEl = document.getElementById('rl-obj-level');
             if (levelEl) levelEl.textContent = this.levelData?.level || 1;
-
-            const currentEl = document.getElementById('rl-obj-current');
-            const targetEl = document.getElementById('rl-obj-target');
-
             if (currentEl) currentEl.textContent = this.progress;
             if (targetEl) targetEl.textContent = this.objective.count || '?';
-
-            if (this.progress > 0) {
-                objectiveDiv.classList.add('apple-eaten');
-                setTimeout(() => objectiveDiv.classList.remove('apple-eaten'), 300);
-            }
         } else {
             objectiveDiv.classList.add('hidden');
         }
     }
 
     /**
+     * Force l'animation apple-eaten (appelé uniquement quand pomme mangée)
+     */
+    triggerAppleAnimation() {
+        this._cacheDOMElements();
+        const { objectiveDiv } = this._domCache;
+        if (objectiveDiv && this.progress > 0) {
+            objectiveDiv.classList.add('apple-eaten');
+            setTimeout(() => objectiveDiv.classList.remove('apple-eaten'), 300);
+        }
+    }
+
+    /**
      * Met à jour le HUD des power-ups roguelike
+     * ✅ PERF: Utilise le cache DOM
      */
     updateHUD() {
-        const hud = document.getElementById('rl-powerups-hud');
+        this._cacheDOMElements();
+        const { hud } = this._domCache;
         if (!hud) return;
 
         if (!this.isActive || !window.roguelikeManager?.currentRun) {
@@ -372,13 +417,15 @@ export class RoguelikeSystem {
         // Sprint
         this.updateSprintUI();
 
-        // Passifs
-        this.updatePassivesUI(run);
+        // Passifs (seulement si changement - pas à chaque frame)
+        // this.updatePassivesUI(run); // ✅ PERF: Appelé uniquement au changement
     }
 
+    /**
+     * ✅ PERF: Utilise le cache DOM
+     */
     updateLivesUI(run) {
-        const livesEl = document.getElementById('rl-hud-lives');
-        const livesCount = document.getElementById('rl-hud-lives-count');
+        const { livesEl, livesCount } = this._domCache;
         if (!livesEl || !livesCount) return;
 
         const bonusLives = run.lives - 1;
@@ -390,9 +437,11 @@ export class RoguelikeSystem {
         }
     }
 
+    /**
+     * ✅ PERF: Utilise le cache DOM
+     */
     updateShieldsUI(run) {
-        const shieldsEl = document.getElementById('rl-hud-shields');
-        const shieldsCount = document.getElementById('rl-hud-shields-count');
+        const { shieldsEl, shieldsCount } = this._domCache;
         if (!shieldsEl || !shieldsCount) return;
 
         // Compter les boucliers : upgrades + bonus skin diamond
@@ -408,9 +457,11 @@ export class RoguelikeSystem {
         }
     }
 
+    /**
+     * ✅ PERF: Utilise le cache DOM
+     */
     updateSprintUI() {
-        const sprintEl = document.getElementById('rl-hud-sprint');
-        const sprintCdProgress = document.getElementById('rl-sprint-cd-progress');
+        const { sprintEl, sprintCdProgress } = this._domCache;
         if (!sprintEl) return;
 
         const hasSprint = this.modifiers?.abilities?.some(a => a.ability === 'sprint');
@@ -442,9 +493,12 @@ export class RoguelikeSystem {
         }
     }
 
+    /**
+     * ✅ PERF: Utilise le cache DOM + appelé uniquement au changement d'upgrade
+     */
     updatePassivesUI(run) {
-        const passivesEl = document.getElementById('rl-hud-passives');
-        if (!passivesEl) return;
+        const { passivesContainer } = this._domCache;
+        if (!passivesContainer) return;
 
         const upgradeCounts = {};
         run.upgrades.forEach(upgradeId => {
@@ -454,7 +508,7 @@ export class RoguelikeSystem {
 
         const { RUN_UPGRADES } = window.roguelikeUpgrades || {};
         if (!RUN_UPGRADES) {
-            passivesEl.innerHTML = '';
+            passivesContainer.innerHTML = '';
             return;
         }
 
@@ -469,19 +523,21 @@ export class RoguelikeSystem {
         }
 
         if (html) {
-            passivesEl.innerHTML = html;
-            passivesEl.style.display = 'flex';
+            passivesContainer.innerHTML = html;
+            passivesContainer.style.display = 'flex';
         } else {
-            passivesEl.innerHTML = '';
-            passivesEl.style.display = 'none';
+            passivesContainer.innerHTML = '';
+            passivesContainer.style.display = 'none';
         }
     }
 
     /**
      * Cache l'objectif
+     * ✅ PERF: Utilise le cache DOM
      */
     hideObjective() {
-        const objectiveDiv = document.getElementById('roguelike-objective');
+        this._cacheDOMElements();
+        const { objectiveDiv } = this._domCache;
         if (objectiveDiv) {
             objectiveDiv.classList.add('hidden');
         }
