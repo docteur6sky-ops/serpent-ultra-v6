@@ -3,8 +3,13 @@
 // ============================================
 
 // ✅ Fonction placeholder pour le leaderboard (à implémenter plus tard)
+import { logger } from './services/logger.js';
+import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+
 window.showLeaderboard = function() {
-    alert('🏆 Leaderboard mondial - Fonctionnalité à venir !');
+    if (window.ModalManager) {
+        window.ModalManager.info('Leaderboard mondial - Fonctionnalité à venir !', { title: 'Leaderboard' });
+    }
     // TODO : Implémenter affichage leaderboard
 };
 
@@ -17,10 +22,10 @@ class MultiplayerSnakeGame {
         }
         this.ctx = this.canvas.getContext('2d');
 
-        // Configuration
+        // Configuration - utiliser la taille réelle du canvas
         this.GRID_SIZE = 30;
-        this.CANVAS_SIZE = 360;
-        this.CELL_SIZE = 360 / 30; // 12px
+        this.CANVAS_SIZE = this.canvas.width; // 540 ou la taille définie dans HTML
+        this.CELL_SIZE = this.CANVAS_SIZE / this.GRID_SIZE; // 18px si 540/30
 
         // Client WebSocket
         this.client = new MultiplayerClient();
@@ -32,6 +37,11 @@ class MultiplayerSnakeGame {
         this.isActive = false;
         this.renderRAF = null;
         this.timerInterval = null;
+        this.gameOverShown = false; // ✅ FIX: Track si game over affiché (pour éviter retour auto lobby)
+
+        // Tracking power-ups pour trophées
+        this.powerupsCollectedThisGame = 0;
+        this.lastPowerupState = null;
 
         // Couleurs
         this.COLORS = {
@@ -51,30 +61,30 @@ class MultiplayerSnakeGame {
 
     setupCallbacks() {
         this.client.onConnected = (message) => {
+            logger.log('[MultiGame] Connecté au serveur');
         };
 
         this.client.onRoomJoined = (message) => {
-            // ✅ Envoyer le pseudo immédiatement après avoir rejoint la salle
-            const pseudo = window.getValidPseudo ? window.getValidPseudo() : null;
-            if (pseudo) {
-                this.client.sendPseudo(pseudo);
+            logger.log('[MultiGame] Room joinée, envoi du pseudo:', this.playerPseudo);
+
+            // ✅ Envoyer le pseudo stocké dans l'instance
+            if (this.playerPseudo) {
+                this.client.sendPseudo(this.playerPseudo);
+            } else {
+                logger.warn('[MultiGame] Aucun pseudo défini !');
             }
 
-            if (message.playersInRoom === 1) {
-                this.showWaitingOverlay();
-            } else {
-                this.hideWaitingOverlay();
-                setTimeout(() => this.client.sendReady(), 1000);
-            }
+            // ✅ AMÉLIORATION: Plus d'overlay "Recherche..." - Direct au lobby
+            // Le lobby affiche déjà le compteur de joueurs (1/2 ou 2/2)
         };
 
         this.client.onRoomFull = (message) => {
-            this.hideWaitingOverlay();
-            setTimeout(() => this.client.sendReady(), 1000);
+            // Overlay supprimé - le lobby gère l'affichage
+            // Les joueurs doivent cliquer manuellement sur "Prêt"
         };
 
         this.client.onGameStart = (message) => {
-            this.hideWaitingOverlay();
+            // Overlay supprimé
             this.isActive = true;
 
             if (message.gameState) {
@@ -93,16 +103,80 @@ class MultiplayerSnakeGame {
         };
 
         this.client.onGameUpdate = (gameState) => {
+            // ✅ TRACKING POWER-UPS: Détecter quand le joueur collecte un power-up
+            if (gameState?.players && this.client?.playerId) {
+                const myPlayer = gameState.players[this.client.playerId];
+                if (myPlayer?.activePowerup && myPlayer.activePowerup !== this.lastPowerupState) {
+                    // Un nouveau power-up a été collecté (via utilisation de l'item)
+                    this.powerupsCollectedThisGame++;
+                    logger.log(`[MultiGame] Power-up activé: ${myPlayer.activePowerup} (total: ${this.powerupsCollectedThisGame})`);
+                }
+                this.lastPowerupState = myPlayer?.activePowerup || null;
+
+                // 🎁 ITEM STOCKÉ - Mettre à jour le slot d'item dans le D-pad
+                const itemSlot = document.getElementById('multi-sword-slot');
+                const itemIcon = document.getElementById('multi-sword-icon');
+                if (itemSlot && itemIcon) {
+                    if (myPlayer?.storedItem) {
+                        // Item stocké - afficher l'emoji correspondant
+                        itemSlot.classList.add('has-item');
+                        itemSlot.classList.remove('has-sword');
+                        const itemEmojis = {
+                            ice: '❄️', fire: '🔥', rock: '🪨', ghost: '👻', lightning: '⚡', sword: '⚔️'
+                        };
+                        itemIcon.textContent = itemEmojis[myPlayer.storedItem] || '?';
+                    } else if (myPlayer?.hasSword) {
+                        // Épée activée (équipée) - afficher les dégâts
+                        itemSlot.classList.add('has-sword');
+                        itemSlot.classList.remove('has-item');
+                        const damage = 3 + (myPlayer.applesEatenWithSword || 0);
+                        itemIcon.textContent = `⚔️+${damage}`;
+                    } else {
+                        // Aucun item
+                        itemSlot.classList.remove('has-item', 'has-sword');
+                        itemIcon.textContent = '?';
+                    }
+                }
+            }
             this.serverState = gameState;
+        };
+
+        // 🎁 MYSTERY BOX COLLECTÉE - Animation roulette
+        this.client.onMysteryBoxCollected = (message) => {
+            logger.log(`[MultiGame] Mystery Box collectée! Item: ${message.item}`);
+            this.playRouletteAnimation(message.item);
+        };
+
+        // 🎁 ITEM UTILISÉ
+        this.client.onItemUsed = (message) => {
+            logger.log(`[MultiGame] Item utilisé: ${message.item}`);
+        };
+
+        // ⚡ BOOST ACTIVÉ
+        this.client.onBoostActivated = (message) => {
+            logger.log(`[MultiGame] Boost activé! (${message.duration}ms)`);
+            this.showBoostCooldown(message.cooldown);
+        };
+
+        // ⚔️ DÉGÂTS D'ÉPÉE REÇUS
+        this.client.onSwordDamage = (message) => {
+            logger.log(`[MultiGame] Dégâts épée: -${message.damage} HP (reste: ${message.health}/15)`);
+            this.showDamageEffect(message.damage);
         };
 
         this.client.onGameOver = (message) => {
             this.stopRenderLoop();
             this.stopTimerUpdate();
             this.showGameOver(message);
+            this.gameOverShown = true; // ✅ FIX: Marquer que game over a été affiché
         };
 
         this.client.onPlayerLeft = (message) => {
+            // ✅ FIX: Ne pas retourner au menu si game over déjà affiché (abandon)
+            if (this.gameOverShown) {
+                return;
+            }
+
             this.stopRenderLoop();
             this.stopTimerUpdate();
             this.client.showMessage('Adversaire déconnecté', 'warning');
@@ -114,9 +188,20 @@ class MultiplayerSnakeGame {
     // DÉMARRAGE & ARRÊT
     // ============================================
 
-    start() {
+    start(playerPseudo = null) {
         this.isActive = false;
         this.serverState = null;
+        this.gameOverShown = false; // ✅ FIX: Réinitialiser à chaque nouvelle partie
+        this.powerupsCollectedThisGame = 0; // ✅ Reset compteur power-ups
+        this.lastPowerupState = null;
+
+        // Stocker le pseudo du joueur
+        if (playerPseudo) {
+            this.playerPseudo = playerPseudo;
+            logger.log('[MultiGame] Pseudo défini:', this.playerPseudo);
+        } else {
+            logger.warn('[MultiGame] Aucun pseudo fourni à start()');
+        }
 
         // Connecter au serveur
         this.client.connect();
@@ -134,7 +219,13 @@ class MultiplayerSnakeGame {
     }
 
     cleanupOverlays() {
-        // Supprimer tous les overlays dynamiques du multijoueur
+        // ✅ FIX #8: Déléguer au ScreenManager qui track TOUS les overlays
+        if (window.screenManager) {
+            window.screenManager.cleanupAll();
+        }
+
+        // Double sécurité : supprimer manuellement les overlays multi connus
+        // ✅ FIX: Ne PAS supprimer countdown-overlay (élément HTML permanent réutilisable)
         const overlayIds = ['mp-waiting-overlay', 'mp-gameover-overlay', 'mp-message'];
         overlayIds.forEach(id => {
             const element = document.getElementById(id);
@@ -169,6 +260,16 @@ class MultiplayerSnakeGame {
     // RENDU (Avec RenderUtils)
     // ============================================
 
+    /**
+     * Nettoyer le canvas (fond noir uniquement)
+     * Utilisé avant le countdown pour avoir un écran propre
+     */
+    clearCanvas() {
+        if (!this.ctx) return;
+        this.ctx.fillStyle = this.COLORS.BG_DARK;
+        this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
+    }
+
     draw() {
         if (!this.serverState || !this.ctx) return;
 
@@ -199,42 +300,14 @@ class MultiplayerSnakeGame {
             );
         }
 
-        // Dessiner les power-ups
-        if (this.serverState.powerups && this.serverState.powerups.length > 0) {
-            const powerupColors = {
-                fire: '#FF5722',
-                ice: '#00A5A5',
-                ghost: '#FFFFFF',
-                rock: '#D2B48C'
-            };
-
-            const powerupEmojis = {
-                fire: '🔥',
-                ice: '❄️',
-                ghost: '👻',
-                rock: '🪨'
-            };
-
-            this.serverState.powerups.forEach(powerup => {
-                const x = powerup.x * this.CELL_SIZE;
-                const y = powerup.y * this.CELL_SIZE;
-
-                // Fond coloré avec transparence
-                this.ctx.fillStyle = powerupColors[powerup.type] || '#FFFFFF';
-                this.ctx.globalAlpha = 0.3;
-                this.ctx.fillRect(x, y, this.CELL_SIZE, this.CELL_SIZE);
-                this.ctx.globalAlpha = 1;
-
-                // Emoji au centre
-                this.ctx.font = `${this.CELL_SIZE * 0.8}px Arial`;
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(
-                    powerupEmojis[powerup.type] || '?',
-                    x + this.CELL_SIZE / 2,
-                    y + this.CELL_SIZE / 2
-                );
-            });
+        // 🎁 MYSTERY BOX - Utiliser le même rendu que solo/roguelike
+        if (this.serverState.mysteryBox) {
+            RenderUtils.drawMysteryBox(
+                this.ctx,
+                this.serverState.mysteryBox.x,
+                this.serverState.mysteryBox.y,
+                this.CELL_SIZE
+            );
         }
 
         // Dessiner le crâne (même que le solo)
@@ -268,57 +341,142 @@ class MultiplayerSnakeGame {
                 const isAlive = playerData.alive;
                 const activePowerup = playerData.activePowerup;
 
-                // Couleur du serpent (modifiée par power-up)
-                let headColor = isMe ? '#00FF87' : '#FF6B6B';
-                const deadColor = '#666666';
+                // ============================================
+                // ✨ DESSINER SERPENT AVEC SKINS
+                // ============================================
 
-                // Modifier la couleur selon le power-up actif
-                if (isAlive && activePowerup) {
-                    const powerupColors = {
-                        fire: '#FF5722',
-                        ice: '#00A5A5',
-                        ghost: '#E0E0E0',
-                        rock: '#D2B48C'
+                // Couleurs du skin (ou couleurs temporaires selon power-up)
+                let skinColors = null;
+
+                if (!isAlive) {
+                    // Serpent mort = gris
+                    skinColors = {
+                        head: { light: '#666666', dark: '#444444' },
+                        body: { from: '#666666', to: '#444444' },
+                        tail: { color: '#444444' },
+                        outline: '#222222',
+                        glow: '#666666'
                     };
-                    headColor = powerupColors[activePowerup] || headColor;
-                }
-
-                // Appliquer l'opacité pour GHOST
-                if (isAlive && activePowerup === 'ghost') {
+                } else if (activePowerup === 'ghost') {
+                    // GHOST : Blanc semi-transparent
+                    skinColors = {
+                        head: { light: '#FFFFFF', dark: '#CCCCCC' },
+                        body: { from: '#FFFFFF', to: '#999999' },
+                        tail: { color: '#999999' },
+                        outline: '#666666',
+                        glow: '#FFFFFF'
+                    };
                     this.ctx.globalAlpha = 0.6;
+                } else if (activePowerup === 'rock') {
+                    // ROCK : Tan (ROCK)
+                    skinColors = {
+                        head: { light: '#D2B48C', dark: '#A0826D' },
+                        body: { from: '#D2B48C', to: '#8B7355' },
+                        tail: { color: '#8B7355' },
+                        outline: '#654321',
+                        glow: '#D2B48C'
+                    };
+                } else if (activePowerup === 'fire') {
+                    // FIRE : Rouge/Orange (LIGHTNING équivalent)
+                    skinColors = {
+                        head: { light: '#FF5722', dark: '#E64A19' },
+                        body: { from: '#FF5722', to: '#BF360C' },
+                        tail: { color: '#BF360C' },
+                        outline: '#5D0F00',
+                        glow: '#FF5722'
+                    };
+                } else if (activePowerup === 'ice') {
+                    // ICE : Cyan
+                    skinColors = {
+                        head: { light: '#00A5A5', dark: '#008080' },
+                        body: { from: '#00A5A5', to: '#006666' },
+                        tail: { color: '#006666' },
+                        outline: '#003333',
+                        glow: '#00A5A5'
+                    };
+                } else if (activePowerup === 'lightning') {
+                    // ⚡ LIGHTNING : Jaune/Doré électrique
+                    skinColors = {
+                        head: { light: '#FFD700', dark: '#FFA500' },
+                        body: { from: '#FFD700', to: '#FF8C00' },
+                        tail: { color: '#FF8C00' },
+                        outline: '#B8860B',
+                        glow: '#FFD700'
+                    };
+                } else if (!isMe) {
+                    // Adversaire sans power-up : rouge
+                    skinColors = {
+                        head: { light: '#FF6B6B', dark: '#CC3636' },
+                        body: { from: '#FF6B6B', to: '#CC3636' },
+                        tail: { color: '#CC3636' },
+                        outline: '#8B0000',
+                        glow: '#FF6B6B'
+                    };
                 }
+                // Sinon (isMe && !activePowerup) : utiliser skin équipé (null = auto)
 
                 // Dessiner particules FIRE avant le serpent
                 if (isAlive && activePowerup === 'fire' && playerData.snake.length > 0) {
                     this.drawFireParticles(playerData.snake[0]);
                 }
 
-                // Dessiner le serpent avec RenderUtils.drawMultiplayerSnake
-                const playerNumber = isMe ? this.client.playerNumber : (this.client.playerNumber === 1 ? 2 : 1);
-                RenderUtils.drawMultiplayerSnake(
+                // Calculer la direction du serpent (dx, dy) pour drawSnakeEnhanced
+                let dx = 0, dy = 0;
+                if (playerData.snake.length >= 2) {
+                    const head = playerData.snake[0];
+                    const neck = playerData.snake[1];
+                    dx = head.x - neck.x;
+                    dy = head.y - neck.y;
+
+                    // Gérer le wrapping (si dx ou dy > 1, c'est un wrap)
+                    if (Math.abs(dx) > 1) dx = -Math.sign(dx);
+                    if (Math.abs(dy) > 1) dy = -Math.sign(dy);
+                } else {
+                    // Par défaut, direction droite
+                    dx = 1;
+                    dy = 0;
+                }
+
+                // Convertir la direction en string
+                const directionString = getDirectionString(dx, dy);
+
+                // Dessiner le serpent avec skins
+                drawSnakeEnhanced(
                     this.ctx,
                     playerData.snake,
+                    directionString,
                     this.CELL_SIZE,
-                    isAlive ? headColor : deadColor,
-                    playerNumber,
-                    isAlive
+                    skinColors
                 );
+
+                // ⚔️ ÉPÉE - Indicateur visuel si le joueur a l'épée
+                if (playerData.hasSword && playerData.snake.length > 0) {
+                    const head = playerData.snake[0];
+                    const headX = head.x * this.CELL_SIZE + this.CELL_SIZE / 2;
+                    const headY = head.y * this.CELL_SIZE - 5; // Au-dessus de la tête
+
+                    // Épée flottante au-dessus de la tête
+                    this.ctx.save();
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = '#FFD700';
+                    this.ctx.font = `${this.CELL_SIZE * 0.6}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'bottom';
+                    this.ctx.fillText('⚔️', headX, headY);
+
+                    // Afficher le bonus de dégâts (3 + pommes)
+                    const damage = 3 + (playerData.applesEatenWithSword || 0);
+                    this.ctx.font = `bold ${this.CELL_SIZE * 0.4}px Arial`;
+                    this.ctx.fillStyle = '#FFD700';
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeText(`+${damage}`, headX, headY + this.CELL_SIZE + 5);
+                    this.ctx.fillText(`+${damage}`, headX, headY + this.CELL_SIZE + 5);
+                    this.ctx.restore();
+                }
 
                 // Restaurer l'opacité normale
                 this.ctx.globalAlpha = 1;
-
-                // Dessiner indicateur ROCK (bordure épaisse)
-                if (isAlive && activePowerup === 'rock' && playerData.snake.length > 0) {
-                    const head = playerData.snake[0];
-                    this.ctx.strokeStyle = '#8B4513';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.strokeRect(
-                        head.x * this.CELL_SIZE,
-                        head.y * this.CELL_SIZE,
-                        this.CELL_SIZE,
-                        this.CELL_SIZE
-                    );
-                }
 
                 // ❌ SUPPRIMÉ - Pseudo maintenant affiché dans le tableau de scores
             }
@@ -421,6 +579,9 @@ class MultiplayerSnakeGame {
     // ============================================
 
     startTimerUpdate() {
+        // ✅ FIX #3: Nettoyer l'ancien interval AVANT d'en créer un nouveau
+        this.stopTimerUpdate();
+
         this.timerInterval = setInterval(() => {
             if (!this.isActive || !this.serverState) {
                 this.stopTimerUpdate();
@@ -484,20 +645,95 @@ class MultiplayerSnakeGame {
         if (p2Name) p2Name.textContent = players[p2Id]?.pseudo || 'Joueur 2';
 
         // ═══════════════════════════════════════════════════════════
-        // SEGMENTS
-        // ═══════════════════════════════════════════════════════════
-        const segments = this.serverState.segments || {};
-        const p1Segments = document.getElementById('multi-player1-segments');
-        const p2Segments = document.getElementById('multi-player2-segments');
-
-        if (p1Segments) p1Segments.textContent = segments[p1Id] || 1;
-        if (p2Segments) p2Segments.textContent = segments[p2Id] || 1;
-
-        // ═══════════════════════════════════════════════════════════
         // POWER-UPS (MINI-BARRES)
         // ═══════════════════════════════════════════════════════════
         this.updatePlayerPowerup('multi-player1-powerup', players[p1Id]);
         this.updatePlayerPowerup('multi-player2-powerup', players[p2Id]);
+
+        // ═══════════════════════════════════════════════════════════
+        // ❤️ BARRES DE VIE (15 segments)
+        // ═══════════════════════════════════════════════════════════
+        this.updateHealthBar('multi-player1-health', players[p1Id]?.health ?? 15);
+        this.updateHealthBar('multi-player2-health', players[p2Id]?.health ?? 15);
+
+        // ═══════════════════════════════════════════════════════════
+        // ⚔️ CHARGE ÉPÉE (bordure slot)
+        // ═══════════════════════════════════════════════════════════
+        const myPlayer = players[this.client.playerId];
+        this.updateSwordSlotCharge(myPlayer);
+    }
+
+    // ❤️ Mettre à jour une barre de vie
+    updateHealthBar(barId, health) {
+        const bar = document.getElementById(barId);
+        if (!bar) return;
+
+        const segments = bar.querySelectorAll('.mp-health-segment');
+        segments.forEach((seg, index) => {
+            if (index < health) {
+                seg.classList.remove('empty');
+            } else {
+                seg.classList.add('empty');
+            }
+        });
+
+        // Classes de couleur selon niveau de vie
+        bar.classList.remove('low', 'critical');
+        if (health <= 3) {
+            bar.classList.add('critical');
+        } else if (health <= 7) {
+            bar.classList.add('low');
+        }
+    }
+
+    // ⚔️ Mettre à jour la bordure du slot épée selon la charge
+    updateSwordSlotCharge(playerData) {
+        const slot = document.getElementById('multi-sword-slot');
+        if (!slot) return;
+
+        // Seulement si l'épée est stockée
+        if (playerData?.storedItem !== 'sword') {
+            slot.style.borderColor = '';
+            slot.style.boxShadow = '';
+            slot.removeAttribute('data-charge');
+            return;
+        }
+
+        const charge = playerData?.swordCharge ?? 0;
+        slot.setAttribute('data-charge', charge);
+
+        // Bordure grise (0) → verte progressive (15)
+        slot.style.boxShadow = ''; // Reset
+        if (charge === 0) {
+            slot.style.borderColor = '#6b7280'; // Gris
+        } else if (charge < 5) {
+            slot.style.borderColor = '#84cc16'; // Vert lime clair
+        } else if (charge < 10) {
+            slot.style.borderColor = '#22c55e'; // Vert
+        } else if (charge < 15) {
+            slot.style.borderColor = '#10b981'; // Vert émeraude
+        } else {
+            slot.style.borderColor = '#00ff88'; // Full charge - vert brillant
+            slot.style.boxShadow = '0 0 15px #00ff88, 0 0 30px #00ff88';
+        }
+    }
+
+    // ⚔️ Effet visuel de dégâts (flash rouge)
+    showDamageEffect(damage) {
+        const canvas = document.getElementById('multi-game-canvas');
+        if (!canvas) return;
+
+        // Flash rouge sur le canvas
+        canvas.style.boxShadow = `inset 0 0 100px rgba(255, 0, 0, 0.5), 0 0 50px rgba(255, 0, 0, 0.3)`;
+        canvas.style.animation = 'damageShake 0.3s ease-out';
+
+        setTimeout(() => {
+            canvas.style.boxShadow = '';
+            canvas.style.animation = '';
+        }, 300);
+
+        // Notification de dégâts
+        this.client.showMessage(`⚔️ -${damage} HP!`, 'error');
     }
 
     updatePlayerPowerup(containerId, playerData) {
@@ -516,7 +752,8 @@ class MultiplayerSnakeGame {
             ice: '❄️',
             fire: '🔥',
             rock: '🪨',
-            ghost: '👻'
+            ghost: '👻',
+            lightning: '⚡'
         };
 
         if (powerupType && powerupEndTime) {
@@ -588,11 +825,19 @@ class MultiplayerSnakeGame {
 
         const myId = this.client.playerId;
         const scores = message.scores || {};
+        const players = message.players || {}; // ✅ FIX: Récupérer les infos des joueurs
         const mySegments = scores[myId] || 0;
         const opponentId = Object.keys(scores).find(id => id !== myId);
         const opponentSegments = opponentId ? scores[opponentId] : 0;
 
-        const isWinner = message.winner === myId;
+        // ✅ FIX: Récupérer les pseudos réels
+        const myPseudo = players[myId]?.pseudo || 'Vous';
+        const opponentPseudo = opponentId ? (players[opponentId]?.pseudo || 'Adversaire') : 'Adversaire';
+
+        // ✅ FIX ABANDON: Gérer winner booléen (abandon) ou ID (collision)
+        const isWinner = typeof message.winner === 'boolean'
+            ? message.winner
+            : message.winner === myId;
 
         // ✅ TRACKING VICTOIRES MULTIJOUEUR (pour trophées)
         this.trackMultiplayerVictory(isWinner);
@@ -607,7 +852,9 @@ class MultiplayerSnakeGame {
             ? '⏰ Temps écoulé !'
             : message.reason === 'opponent_died'
                 ? '💀 Adversaire éliminé !'
-                : '💀 Les deux sont morts !';
+                : message.reason === 'abandon'
+                    ? '🏳️ Adversaire a abandonné !'
+                    : '💀 Les deux sont morts !';
 
         // Créer l'overlay de game over (styles dans snake.css)
         const gameOverOverlay = document.createElement('div');
@@ -620,11 +867,11 @@ class MultiplayerSnakeGame {
 
                 <div class="mp-gameover-stats">
                     <div class="mp-stat">
-                        <div class="mp-stat-label">Vous</div>
+                        <div class="mp-stat-label">${myPseudo}</div>
                         <div class="mp-stat-value">${mySegments}</div>
                     </div>
                     <div class="mp-stat">
-                        <div class="mp-stat-label">Adversaire</div>
+                        <div class="mp-stat-label">${opponentPseudo}</div>
                         <div class="mp-stat-value">${opponentSegments}</div>
                     </div>
                 </div>
@@ -645,7 +892,14 @@ class MultiplayerSnakeGame {
         // Attacher les événements
         document.getElementById('mp-replay-btn').onclick = () => {
             gameOverOverlay.remove();
-            this.replay();
+
+            // ✅ FIX MUSIQUE: Forcer l'arrêt de la musique actuelle
+            if (window.audioManager) {
+                window.audioManager.stopAll();
+            }
+
+            // ✅ FIX BUG REJOUER: Retourner au lobby au lieu de disconnect/reconnect
+            window.screenManager.show('lobby-screen');
         };
 
         document.getElementById('mp-leaderboard-btn').onclick = () => {
@@ -666,17 +920,40 @@ class MultiplayerSnakeGame {
         // Sécurité: attendre que snake.js soit chargé
         if (!window.load || !window.save || !window.checkTrophy) return;
 
+        // ✅ Réinitialiser les trophées de session
+        window.sessionTrophies = [];
+
         let career = window.load('career', {});
 
         // Initialiser les variables multi si besoin
         if (typeof career.multiWins === 'undefined') career.multiWins = 0;
         if (typeof career.currentStreak === 'undefined') career.currentStreak = 0;
         if (typeof career.bestStreak === 'undefined') career.bestStreak = 0;
+        if (typeof career.phoenixRisesMulti === 'undefined') career.phoenixRisesMulti = 0;
+        if (typeof career.lastMultiResult === 'undefined') career.lastMultiResult = null;
+        if (typeof career.multiPowerups === 'undefined') career.multiPowerups = 0;
+        if (typeof career.totalMultiGames === 'undefined') career.totalMultiGames = 0;
+        if (typeof career.multiCompleted === 'undefined') career.multiCompleted = 0;
+
+        // ✅ TRACKING: Incrémenter compteur parties multi (toujours)
+        career.totalMultiGames++;
+        career.multiCompleted++; // On considère que finir = pas d'abandon
+        logger.log(`[MultiGame] Parties multi: ${career.totalMultiGames}, Complétées: ${career.multiCompleted}`);
+
+        // ✅ TRACKING POWER-UPS: Ajouter les power-ups collectés cette partie
+        career.multiPowerups += this.powerupsCollectedThisGame || 0;
+        logger.log(`[MultiGame] Power-ups collectés cette partie: ${this.powerupsCollectedThisGame}, Total carrière: ${career.multiPowerups}`);
 
         // Mettre à jour selon le résultat
         if (isWinner) {
             career.multiWins++;
             career.currentStreak++;
+
+            // PHOENIX: Victoire immédiatement après une défaite en multi
+            if (career.lastMultiResult === 'loss') {
+                career.phoenixRisesMulti++;
+            }
+            career.lastMultiResult = 'win';
 
             // Mettre à jour le meilleur streak
             if (career.currentStreak > career.bestStreak) {
@@ -685,6 +962,12 @@ class MultiplayerSnakeGame {
         } else {
             // Défaite ou match nul - réinitialiser le streak
             career.currentStreak = 0;
+            career.lastMultiResult = 'loss';
+        }
+
+        // ✅ SYNC: Mettre à jour window.career pour que TROPHIES.check() voit les changements
+        if (window.career) {
+            Object.assign(window.career, career);
         }
 
         // Sauvegarder et vérifier les trophées
@@ -698,12 +981,126 @@ class MultiplayerSnakeGame {
         setTimeout(() => this.start(), 500);
     }
 
+    // 🎁 ANIMATION ROULETTE - Jouer l'animation quand on collecte une mystery box
+    async playRouletteAnimation(finalItem) {
+        const itemSlot = document.getElementById('multi-sword-slot');
+        const itemIcon = document.getElementById('multi-sword-icon');
+
+        if (!itemSlot || !itemIcon) return;
+
+        // Ajouter classe d'animation
+        itemSlot.classList.add('revealing');
+
+        const emojis = ['❄️', '🔥', '🪨', '👻', '⚡', '⚔️'];
+
+        // Animation roulette rapide (600ms)
+        for (let i = 0; i < 12; i++) {
+            itemIcon.textContent = emojis[i % emojis.length];
+            await new Promise(r => setTimeout(r, 30 + i * 8));
+        }
+
+        // Révéler l'item final
+        const itemEmojis = {
+            ice: '❄️', fire: '🔥', rock: '🪨', ghost: '👻', lightning: '⚡', sword: '⚔️'
+        };
+        itemIcon.textContent = itemEmojis[finalItem] || '?';
+
+        // Retirer animation et ajouter effet de révélation
+        itemSlot.classList.remove('revealing');
+        itemSlot.classList.add('has-item', 'item-revealed');
+
+        setTimeout(() => {
+            itemSlot.classList.remove('item-revealed');
+        }, 500);
+
+        logger.log(`[MultiGame] Roulette terminée: ${finalItem}`);
+    }
+
+    // 🎁 UTILISER L'ITEM STOCKÉ
+    useStoredItem() {
+        if (!this.client || !this.client.connected) {
+            logger.warn('[MultiGame] Non connecté pour utiliser l\'item');
+            return false;
+        }
+
+        // Vérifier si le joueur a un item stocké
+        if (this.serverState?.players && this.client.playerId) {
+            const myPlayer = this.serverState.players[this.client.playerId];
+            if (!myPlayer?.storedItem) {
+                logger.log('[MultiGame] Aucun item stocké');
+                return false;
+            }
+        }
+
+        this.client.sendUseItem();
+        return true;
+    }
+
+    // ⚡ BOOST - Activer le boost de vitesse
+    activateBoost() {
+        if (!this.client?.connected) {
+            logger.log('[MultiGame] Non connecté, impossible d\'activer le boost');
+            return false;
+        }
+
+        // Vérifier si on est en jeu
+        if (!this.serverState?.players || !this.client.playerId) {
+            logger.log('[MultiGame] Pas de partie en cours');
+            return false;
+        }
+
+        // Vérifier le cooldown côté client (le serveur le vérifiera aussi)
+        const myPlayer = this.serverState.players[this.client.playerId];
+        if (myPlayer?.boostCooldownEnd && Date.now() < myPlayer.boostCooldownEnd) {
+            const remaining = Math.ceil((myPlayer.boostCooldownEnd - Date.now()) / 1000);
+            logger.log(`[MultiGame] Boost en cooldown (${remaining}s)`);
+            return false;
+        }
+
+        this.client.sendBoost();
+        return true;
+    }
+
+    // ⚡ BOOST - Afficher le cooldown sur le bouton
+    showBoostCooldown(cooldownMs) {
+        const boostBtn = document.getElementById('multi-boost-btn');
+        if (!boostBtn) return;
+
+        // Ajouter classe cooldown (même classe que mode solo)
+        boostBtn.classList.add('boost-cooldown');
+        boostBtn.disabled = true;
+
+        // Timer visuel
+        const startTime = Date.now();
+        const endTime = startTime + cooldownMs;
+
+        const updateCooldown = () => {
+            const remaining = Math.max(0, endTime - Date.now());
+            if (remaining > 0) {
+                const seconds = Math.ceil(remaining / 1000);
+                boostBtn.setAttribute('data-cooldown', `${seconds}s`);
+                requestAnimationFrame(updateCooldown);
+            } else {
+                boostBtn.classList.remove('boost-cooldown');
+                boostBtn.disabled = false;
+                boostBtn.removeAttribute('data-cooldown');
+            }
+        };
+
+        updateCooldown();
+    }
+
     returnToMenu() {
         // Arrêter le jeu (cleanup des overlays inclus)
         this.stop();
 
         // Le ScreenManager s'occupe de tout (cleanup + affichage)
-        window.screenManager.show('menu');
+        window.screenManager.show('hub');
+
+        // Rafraîchir le hub
+        if (window.initHub) {
+            setTimeout(() => window.initHub(), 100);
+        }
     }
 }
 
@@ -712,3 +1109,11 @@ class MultiplayerSnakeGame {
 // ============================================
 
 window.MultiplayerSnakeGame = MultiplayerSnakeGame;
+
+// ⚡ BOOST - Fonction globale pour le bouton boost multi
+window.multiBoost = function() {
+    if (window.multiGame) {
+        return window.multiGame.activateBoost();
+    }
+    return false;
+};

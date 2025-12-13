@@ -256,6 +256,18 @@
                 </button>
             </div>
 
+            <!-- Boosters XP disponibles -->
+            <div class="hub-boosters-row" id="hub-boosters">
+                <div class="hub-booster-item" id="hub-booster-25" onclick="window.activateBooster(25)" title="Activer Boost +25% XP">
+                    <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25%" class="hub-booster-icon">
+                    <span class="hub-booster-count" id="hub-booster-25-count">0</span>
+                </div>
+                <div class="hub-booster-item" id="hub-booster-50" onclick="window.activateBooster(50)" title="Activer Boost +50% XP">
+                    <img src="assets/items_chess_pictures/xp_boost_epic2.webp" alt="+50%" class="hub-booster-icon">
+                    <span class="hub-booster-count" id="hub-booster-50-count">0</span>
+                </div>
+            </div>
+
             <!-- SPACER - Pousse les boutons vers le bas -->
             <div style="flex: 1;"></div>
 
@@ -800,31 +812,18 @@
         <!-- 📦 MA BOX - COLLECTION D'ITEMS -->
         <!-- ============================================ -->
         <div class="screen hidden" id="box-screen">
-            <!-- Header -->
+            <!-- Header AAA -->
             <div class="box-header">
-                <!-- Zone gauche: Coins + Boosters -->
-                <div class="box-header-left">
-                    <div class="box-coins">
-                        <span class="coins-icon">💰</span>
-                        <span class="coins-value" id="box-coins-value">0</span>
-                    </div>
-                    <!-- Boosters -->
-                    <div class="box-boosters">
-                        <div class="box-booster-item" id="box-booster-25" onclick="window.activateBooster(25)">
-                            <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25%" class="box-booster-icon">
-                            <span class="box-booster-count" id="box-booster-25-count">0</span>
-                        </div>
-                        <div class="box-booster-item" id="box-booster-50" onclick="window.activateBooster(50)">
-                            <img src="assets/items_chess_pictures/xp_boost_epic2.webp" alt="+50%" class="box-booster-icon">
-                            <span class="box-booster-count" id="box-booster-50-count">0</span>
-                        </div>
-                    </div>
+                <!-- Gold AAA à gauche -->
+                <div class="box-gold-display">
+                    <div class="box-gold-icon">💰</div>
+                    <div class="box-gold-value" id="box-coins-value">0</div>
                 </div>
 
-                <!-- Titre centré avec image -->
-                <div class="box-title-center">
+                <!-- Progress centré avec image -->
+                <div class="box-progress-center">
                     <img src="assets/hub_pictures/hub_boxe.webp" alt="Box" class="box-title-icon">
-                    <div class="box-progress">
+                    <div class="box-progress-info">
                         <span class="box-count" id="box-count">0</span>
                         <span class="box-separator">/</span>
                         <span class="box-total" id="box-total">16</span>
@@ -950,14 +949,14 @@
                                 <circle class="boost-cd-progress" id="boost-cd-progress" cx="50" cy="50" r="45" fill="none" stroke-width="8"/>
                             </svg>
                         </button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.soloGame?.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.soloGame?.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
                         <!-- SLOT ITEM (case haut-droite) -->
                         <button id="stored-item-slot" class="dpad-btn item-slot" ontouchstart="window.useStoredItem();event.preventDefault()" onclick="window.useStoredItem()" aria-label="Utiliser l'item stocké">
                             <span id="stored-item-icon"></span>
                         </button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.soloGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.soloGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.soloGame?.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.soloGame?.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.soloGame?.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.soloGame?.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.soloGame?.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.soloGame?.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
                     </div>
                     <div class="game-controls">
                         <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.pauseSolo()" aria-label="Mettre le jeu en pause">
@@ -1001,15 +1000,27 @@
                             <div class="mp-name" id="multi-player2-name">Joueur 2</div>
                         </div>
 
-                        <!-- LIGNE 2 : Scores + Timer -->
+                        <!-- LIGNE 2 : Barres de vie + Timer -->
                         <div class="mp-cell player-1">
-                            <div class="mp-score" id="multi-player1-segments">1</div>
+                            <div class="mp-health-bar" id="multi-player1-health">
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                            </div>
                         </div>
                         <div class="mp-cell center">
                             <div class="mp-timer" id="multi-timer">5:00</div>
                         </div>
                         <div class="mp-cell player-2">
-                            <div class="mp-score" id="multi-player2-segments">1</div>
+                            <div class="mp-health-bar" id="multi-player2-health">
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                                <div class="mp-health-segment"></div><div class="mp-health-segment"></div><div class="mp-health-segment"></div>
+                            </div>
                         </div>
 
                         <!-- LIGNE 3 : Power-ups -->
@@ -1033,12 +1044,22 @@
                     <canvas id="canvas-multi" width="540" height="540" aria-label="Zone de jeu Snake Ultra Multijoueur"></canvas>
 
                     <div class="dpad" id="multi-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
-                        <div class="dpad-btn dpad-empty"></div>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
-                        <div class="dpad-btn dpad-empty"></div>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.multiGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.multiGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
+                        <!-- BOOST (haut-gauche) -->
+                        <button id="multi-boost-btn" class="dpad-btn boost-btn" ontouchstart="window.multiBoost?.();event.preventDefault()" onclick="window.multiBoost?.()" aria-label="Activer le boost">
+                            <span class="boost-icon">⚡</span>
+                            <svg class="boost-cooldown-ring" viewBox="0 0 100 100">
+                                <circle class="boost-cd-bg" cx="50" cy="50" r="45" fill="none" stroke-width="8"/>
+                                <circle class="boost-cd-progress" id="multi-boost-cd-progress" cx="50" cy="50" r="45" fill="none" stroke-width="8"/>
+                            </svg>
+                        </button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.multiGame?.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.multiGame?.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
+                        <!-- 🎁 SLOT ITEM (haut-droite) - roulette mystère -->
+                        <button id="multi-sword-slot" class="dpad-btn item-slot" ontouchstart="window.multiGame?.useStoredItem();event.preventDefault()" onclick="window.multiGame?.useStoredItem()" aria-label="Utiliser l'item stocké">
+                            <span id="multi-sword-icon">?</span>
+                        </button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.multiGame?.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.multiGame?.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.multiGame?.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.multiGame?.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.multiGame?.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.multiGame?.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
                     </div>
 
                     <div class="game-controls" style="margin-top: 16px; display: flex; justify-content: center;">
@@ -1089,11 +1110,11 @@
 
                     <div class="dpad" id="ai-dpad" role="group" aria-label="Contrôles de direction" style="margin-top: 16px;">
                         <div class="dpad-btn dpad-empty"></div>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.aiGame?.changeDirection(0,-1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.aiGame?.changeDirection(0,-1)" aria-label="Déplacer vers le haut">⬆️</button>
                         <div class="dpad-btn dpad-empty"></div>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
-                        <button class="dpad-btn" ontouchstart="window.audio.dpadClick();window.aiGame.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio.dpadClick();window.aiGame.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.aiGame?.changeDirection(-1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.aiGame?.changeDirection(-1,0)" aria-label="Déplacer vers la gauche">⬅️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.aiGame?.changeDirection(0,1);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.aiGame?.changeDirection(0,1)" aria-label="Déplacer vers le bas">⬇️</button>
+                        <button class="dpad-btn" ontouchstart="window.audio?.dpadClick();window.aiGame?.changeDirection(1,0);event.preventDefault()" ontouchend="event.preventDefault()" onclick="window.audio?.dpadClick();window.aiGame?.changeDirection(1,0)" aria-label="Déplacer vers la droite">➡️</button>
                     </div>
 
                     <div class="game-controls" style="margin-top: 16px;">

@@ -1643,6 +1643,22 @@ canvas {
     box-shadow: 0 0 15px #FF4500;
 }
 
+#powerup-bar-container.active.ghost #powerup-fill {
+    background: linear-gradient(90deg, #9370DB, #BA55D3);
+    box-shadow: 0 0 15px #9370DB;
+}
+
+#powerup-bar-container.active.lightning #powerup-fill {
+    background: linear-gradient(90deg, #FFD700, #FFFF00);
+    box-shadow: 0 0 15px #FFD700;
+    animation: lightning-flash 0.2s ease-in-out infinite alternate;
+}
+
+@keyframes lightning-flash {
+    from { box-shadow: 0 0 15px #FFD700; }
+    to { box-shadow: 0 0 25px #FFFF00; }
+}
+
 /* Cacher l'ancien indicateur power-up en bas à droite */
 #solo-powerup-status {
     display: none !important;
@@ -1685,6 +1701,93 @@ canvas {
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }
 
+/* ⚔️ ÉPÉE MULTI - Slot d'épée dans le D-pad multi */
+#multi-sword-slot.item-slot {
+    background: linear-gradient(145deg, #1a1a2e, #0f0f23) !important;
+    border: 3px solid rgba(255, 255, 255, 0.15) !important;
+    position: relative;
+}
+
+#multi-sword-slot.item-slot.has-sword {
+    background: linear-gradient(145deg, #2a2a1e, #1f1f13) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.1);
+    animation: swordPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes swordPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.1);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(255, 215, 0, 0.9), inset 0 0 25px rgba(255, 215, 0, 0.3);
+        transform: scale(1.05);
+    }
+}
+
+#multi-sword-icon {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#multi-sword-slot.has-sword #multi-sword-icon {
+    font-size: 22px;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+/* 🎁 ITEM STOCKÉ - Slot avec item */
+#multi-sword-slot.item-slot.has-item {
+    background: linear-gradient(145deg, #1e2a1e, #132013) !important;
+    border-color: #00ff88 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.1);
+    animation: itemReady 2s ease-in-out infinite;
+}
+
+@keyframes itemReady {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(0, 255, 136, 0.7), inset 0 0 15px rgba(0, 255, 136, 0.2);
+    }
+}
+
+#multi-sword-slot.has-item #multi-sword-icon {
+    font-size: 28px;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+}
+
+/* 🎁 ROULETTE - Animation pendant révélation */
+#multi-sword-slot.item-slot.revealing {
+    animation: multiSlotSpin 0.1s linear infinite !important;
+    border-color: #00ffff !important;
+    box-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff !important;
+}
+
+@keyframes multiSlotSpin {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+/* Flash de révélation */
+#multi-sword-slot.item-slot.item-revealed {
+    animation: multiRevealFlash 0.5s ease-out !important;
+}
+
+@keyframes multiRevealFlash {
+    0% {
+        transform: scale(1.15);
+        box-shadow: 0 0 40px #FFD700, 0 0 80px #FFD700;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    }
+}
+
 #stored-item-icon {
     font-size: 50px;
     position: absolute;
@@ -1724,7 +1827,7 @@ canvas {
 /* ============================================
    BOUTON BOOST (intégré dans le D-pad)
    ============================================ */
-#boost-btn.boost-btn {
+.boost-btn {
     background: linear-gradient(145deg, #1a2a3e, #0f1a28) !important;
     border: 3px solid rgba(0, 200, 255, 0.3) !important;
     position: relative;
@@ -1760,7 +1863,7 @@ canvas {
 }
 
 /* État PRÊT - pulse cyan */
-#boost-btn.boost-btn:not(.boost-cooldown):not(.boost-active) {
+.boost-btn:not(.boost-cooldown):not(.boost-active) {
     animation: boostReady 2s ease-in-out infinite;
     border-color: rgba(0, 212, 255, 0.5) !important;
 }
@@ -1801,8 +1904,33 @@ canvas {
     filter: grayscale(100%);
 }
 
+/* ⚡ MULTI BOOST - Cooldown pour le mode multi */
+#multi-boost-btn.boost-cooldown {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a) !important;
+    border-color: rgba(100, 100, 100, 0.5) !important;
+    box-shadow: none !important;
+    animation: none !important;
+}
+
+#multi-boost-btn.boost-cooldown .boost-icon {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+
+/* Compteur cooldown (affiché via data-cooldown) */
+.boost-btn[data-cooldown]::after {
+    content: attr(data-cooldown);
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ff6b6b;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
 /* Feedback tactile */
-#boost-btn.boost-btn:not(.boost-cooldown):active {
+.boost-btn:not(.boost-cooldown):active {
     transform: scale(0.9) !important;
 }
 
@@ -6392,6 +6520,55 @@ body.dark-mode .game-over-progression {
     text-align: center;
 }
 
+/* ❤️ BARRE DE VIE (15 segments) - Remplace le compteur de segments */
+.mp-health-bar {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.mp-health-segment {
+    width: 8px;
+    height: 10px;
+    background: linear-gradient(180deg, #4ade80, #22c55e);
+    border-radius: 2px;
+    box-shadow: 0 0 4px rgba(74, 222, 128, 0.5);
+    transition: all 0.3s ease;
+}
+
+.mp-health-segment.empty {
+    background: linear-gradient(180deg, #374151, #1f2937);
+    box-shadow: none;
+    opacity: 0.5;
+}
+
+/* Couleur selon health restante */
+.mp-health-bar.low .mp-health-segment:not(.empty) {
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    box-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+}
+
+.mp-health-bar.critical .mp-health-segment:not(.empty) {
+    background: linear-gradient(180deg, #ef4444, #dc2626);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+    animation: healthPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes healthPulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
+@keyframes damageShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
 .mp-chrono-emoji {
     font-size: 20px;
     filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.5));
@@ -6488,6 +6665,17 @@ body.dark-mode .game-over-progression {
 .mp-powerup-inline.ghost .mp-pw-fill {
     background: linear-gradient(90deg, #9370DB, #BA55D3);
     box-shadow: 0 0 6px rgba(186, 85, 211, 0.5);
+}
+
+.mp-powerup-inline.lightning .mp-pw-fill {
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+    animation: lightning-pulse 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes lightning-pulse {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -7499,6 +7687,73 @@ body.dark-mode .hub-level-number {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   HUB BOOSTERS - Indicateurs XP dans le header
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Ligne de boosters sous le header */
+.hub-boosters-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
+}
+
+.hub-booster-item {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.3));
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hub-booster-item:hover {
+    transform: scale(1.1);
+    border-color: #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.hub-booster-item:active {
+    transform: scale(0.95);
+}
+
+.hub-booster-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.hub-booster-count {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #e94560, #c73550);
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Cacher si count = 0 */
+.hub-booster-item[data-count="0"] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    STATS ZONE - Coffre + Ma Box (50px fixe)
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -8409,120 +8664,119 @@ body.dark-mode .hub-chest-timer {
     z-index: 100;
 }
 
-/* Header */
+/* Header AAA */
 .box-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.6);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 100%);
     backdrop-filter: blur(20px);
-    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+    border-bottom: 2px solid rgba(255, 215, 0, 0.4);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Zone gauche: Coins + Boosters */
-.box-header-left {
+/* Gold AAA à gauche */
+.box-gold-display {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.25));
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    box-shadow:
+        0 0 15px rgba(255, 215, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Coins à gauche */
-.box-header .box-coins {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 215, 0, 0.5);
+.box-gold-icon {
+    font-size: 20px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-/* Boosters dans le header Ma Box */
-.box-boosters {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+.box-gold-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    letter-spacing: 0.5px;
 }
 
-.box-booster-item {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(156, 39, 176, 0.2);
-    border: 1px solid rgba(156, 39, 176, 0.5);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.box-booster-item:hover {
-    transform: scale(1.1);
-    border-color: rgba(156, 39, 176, 0.8);
-    box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
-}
-
-.box-booster-item.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.box-booster-item.disabled:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.box-booster-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-}
-
-.box-booster-count {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-    min-width: 16px;
-    height: 16px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* Booster actif - effet lumineux */
-.box-booster-item.active-glow {
-    animation: booster-glow-pulse 1.5s infinite;
-    border-color: #E040FB;
-    box-shadow: 0 0 15px rgba(224, 64, 251, 0.7);
-}
-
-@keyframes booster-glow-pulse {
-    0%, 100% {
-        box-shadow: 0 0 10px rgba(224, 64, 251, 0.5);
-    }
-    50% {
-        box-shadow: 0 0 20px rgba(224, 64, 251, 0.9);
-    }
-}
-
-/* Titre centré */
-.box-title-center {
+/* Progress centré */
+.box-progress-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.2rem;
+    gap: 2px;
 }
 
+.box-progress-center .box-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.box-progress-info {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 217, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+}
+
+.box-progress-info .box-count {
+    font-size: 16px;
+    font-weight: 800;
+    color: #00D9FF;
+}
+
+.box-progress-info .box-separator {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 2px;
+}
+
+.box-progress-info .box-total {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.box-progress-info .box-percentage {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-left: 4px;
+}
+
+/* Bouton fermer */
+.box-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.box-close:hover {
+    background: rgba(233, 69, 96, 0.3);
+    border-color: #e94560;
+    transform: scale(1.1);
+}
+
+/* LEGACY - garder pour compatibilité */
 .box-title-icon {
     width: 55px;
     height: 55px;

@@ -30,6 +30,10 @@ const CONFIG = {
     BASE_TICK_RATE: 275,         // ✅ Vitesse normale (275ms)
     FIRE_TICK_RATE: 140,         // ✅ FIRE: x2 vitesse (275/2)
     ICE_TICK_RATE: 550,          // ✅ ICE: ÷2 vitesse (275*2)
+    LIGHTNING_TICK_RATE: 140,    // ✅ LIGHTNING: x2 vitesse (comme fire) + contrôles inversés
+    BOOST_TICK_RATE: 140,        // ⚡ BOOST: x2 vitesse temporaire
+    BOOST_DURATION: 3000,        // ⚡ BOOST: 3 secondes
+    BOOST_COOLDOWN: 10000,       // ⚡ BOOST: 10 secondes de cooldown
     MAX_PLAYERS_PER_ROOM: 2,
     ROOM_TIMEOUT: 300000,
     MATCH_DURATION: 300000       // 5 minutes
@@ -62,7 +66,15 @@ const POWERUP_TYPES = {
         duration: 8000,      // 8 secondes
         color: '#D2B48C',    // Beige tan
         symbol: '🪨',
-        spawnChance: 0.25
+        spawnChance: 0.20
+    },
+    LIGHTNING: {
+        id: 'lightning',
+        duration: 6000,      // 6 secondes
+        color: '#FFD700',    // Or/Jaune
+        symbol: '⚡',
+        spawnChance: 0.20,
+        invertControls: true // Contrôles inversés
     }
 };
 
@@ -112,7 +124,7 @@ class Room {
         this.players = new Map();
         this.gameState = {
             food: null,
-            powerups: [], // ✅ NOUVEAU pour les power-ups
+            mysteryBox: null,  // 🎁 MYSTERY BOX - position {x, y} ou null
             scores: {},
             segments: {},
             gameStarted: false,
@@ -139,15 +151,8 @@ class Room {
         return food;
     }
 
-    generatePowerUp() {
-        // Choisir un type aléatoire
-        const types = ['fire', 'ice', 'ghost', 'rock'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
-
-        // Créer le power-up
-        const powerup = new PowerUp(randomType);
-
-        // Trouver une position libre
+    // 🎁 MYSTERY BOX - Générer une mystery box sur la grille
+    generateMysteryBox() {
         let attempts = 0;
         let x, y;
         do {
@@ -157,19 +162,29 @@ class Room {
             if (attempts > 200) break;
         } while (this.isPositionOccupied(x, y));
 
-        powerup.setPosition(x, y);
+        logger.info('GAME', `🎁 Mystery Box générée en (${x}, ${y})`);
+        return { x, y };
+    }
 
-        logger.debug('GAME', `Power-up généré`, {
-            type: randomType,
-            position: { x, y }
-        });
-
-        return powerup;
+    // 🎁 Déterminer l'item aléatoire dans la mystery box
+    // Inclut: ice, fire, rock, ghost, lightning, sword
+    // ⚔️ ÉPÉE: 50% de chance, autres: 10% chacun
+    getRandomMysteryItem() {
+        const roll = Math.random();
+        if (roll < 0.5) {
+            return 'sword';  // 50% épée
+        }
+        // 50% restants répartis entre ice, fire, rock, ghost, lightning
+        const otherItems = ['ice', 'fire', 'rock', 'ghost', 'lightning'];
+        return otherItems[Math.floor(Math.random() * otherItems.length)];
     }
 
     isPositionOccupied(x, y) {
         // Vérifier si une position est occupée
         if (this.gameState.food && this.gameState.food.x === x && this.gameState.food.y === y) return true;
+
+        // 🎁 Vérifier mystery box
+        if (this.gameState.mysteryBox && this.gameState.mysteryBox.x === x && this.gameState.mysteryBox.y === y) return true;
 
         for (let player of this.players.values()) {
             if (player.snake.isAt(x, y)) return true;
@@ -221,11 +236,18 @@ class Room {
             victimInvincible: false,    // ✅ NOUVEAU - Invincibilité après perte de segments
             victimInvincibleUntil: 0,   // ✅ NOUVEAU - Timestamp fin invincibilité victime
             headToHeadProcessed: false, // ✅ NOUVEAU - Flag pour éviter double traitement tête-à-tête
+            storedItem: null,           // 🎁 ROULETTE - Item stocké (ice/fire/rock/ghost/lightning/sword)
+            health: 15,                 // ❤️ VIE - Barre de vie (15 segments max)
+            swordCharge: 0,             // ⚔️ ÉPÉE - Charge de l'épée (pommes mangées avec épée stockée, max 15)
+            boostActive: false,         // ⚡ BOOST - Boost actif?
+            boostEndTime: 0,            // ⚡ BOOST - Timestamp fin boost
+            boostCooldownEnd: 0,        // ⚡ BOOST - Timestamp fin cooldown
             stats: {                    // 📊 Stats de la partie
                 powerupsCollected: 0,
                 segmentsEaten: 0,
                 segmentsLost: 0,
-                headToHeadCollisions: 0
+                headToHeadCollisions: 0,
+                swordAttacks: 0         // ⚔️ Stats attaques épée
             }
         });
 
@@ -410,20 +432,35 @@ class Room {
     }
 
     getCurrentTickRate(player) {
+        const now = Date.now();
+
+        // ⚡ BOOST - Priorité maximale sur la vitesse
+        if (player.boostActive && now < player.boostEndTime) {
+            return CONFIG.BOOST_TICK_RATE;  // 140ms - x2 vitesse
+        }
+
+        // Boost expiré
+        if (player.boostActive && now >= player.boostEndTime) {
+            player.boostActive = false;
+            logger.debug('GAME', `⚡ Boost expiré pour player ${player.number}`);
+        }
+
         // Vérifier si le power-up est toujours actif
-        if (player.activePowerup && Date.now() < player.powerupEndTime) {
+        if (player.activePowerup && now < player.powerupEndTime) {
             switch (player.activePowerup) {
                 case 'fire':
-                    return CONFIG.FIRE_TICK_RATE;  // 140ms - x2 vitesse
+                    return CONFIG.FIRE_TICK_RATE;      // 140ms - x2 vitesse
                 case 'ice':
-                    return CONFIG.ICE_TICK_RATE;   // 550ms - ÷2 vitesse
+                    return CONFIG.ICE_TICK_RATE;       // 550ms - ÷2 vitesse
+                case 'lightning':
+                    return CONFIG.LIGHTNING_TICK_RATE; // 140ms - x2 vitesse + contrôles inversés
                 default:
-                    return CONFIG.BASE_TICK_RATE;  // 275ms - normal
+                    return CONFIG.BASE_TICK_RATE;      // 275ms - normal
             }
         }
 
         // Power-up expiré ou aucun
-        if (player.activePowerup && Date.now() >= player.powerupEndTime) {
+        if (player.activePowerup && now >= player.powerupEndTime) {
             player.activePowerup = null;
             player.powerupEndTime = 0;
             logger.debug('GAME', `⏱️ Power-up expiré pour player ${player.number}`);
@@ -443,11 +480,13 @@ class Room {
         if (player1.snake.length < player2.snake.length) {
             player1.snake.shrink(1);
             player1.stats.segmentsLost++;
+            player1.swordCharge = 0; // ⚔️ Reset charge épée
             this.gameState.segments[player1.id] = player1.snake.length;
             logger.debug('GAME', `Player ${player1.number} perd 1 segment (plus petit)`);
         } else if (player2.snake.length < player1.snake.length) {
             player2.snake.shrink(1);
             player2.stats.segmentsLost++;
+            player2.swordCharge = 0; // ⚔️ Reset charge épée
             this.gameState.segments[player2.id] = player2.snake.length;
             logger.debug('GAME', `Player ${player2.number} perd 1 segment (plus petit)`);
         }
@@ -527,6 +566,7 @@ class Room {
                 attacker.bodyContact.stolenCount++;
                 attacker.stats.segmentsEaten++;
                 defender.stats.segmentsLost++;
+                defender.swordCharge = 0; // ⚔️ Reset charge épée
 
                 // ✅ Mettre à jour le tableau de scores
                 this.gameState.segments[attacker.id] = attacker.snake.length;
@@ -574,6 +614,7 @@ class Room {
 
             attacker.stats.segmentsEaten++;
             defender.stats.segmentsLost++;
+            defender.swordCharge = 0; // ⚔️ Reset charge épée
 
             // ✅ Mettre à jour le tableau de scores
             this.gameState.segments[attacker.id] = attacker.snake.length;
@@ -685,10 +726,16 @@ class Room {
         // ⭐ Générer étoile uniquement
         this.gameState.food = this.generateFood();
 
-        // 🎮 Générer 2 power-ups au début
-        this.gameState.powerups = [];
-        for (let i = 0; i < 2; i++) {
-            this.gameState.powerups.push(this.generatePowerUp());
+        // 🎁 MYSTERY BOX - Générer une mystery box au début
+        this.gameState.mysteryBox = this.generateMysteryBox();
+
+        // Réinitialiser état des joueurs
+        for (let player of this.players.values()) {
+            player.storedItem = null;
+            player.hasSword = false;
+            player.applesEatenWithSword = 0;
+            player.activePowerup = null;
+            player.powerupEndTime = 0;
         }
 
         this.notifyPlayers({
@@ -863,7 +910,7 @@ class Room {
         // Réinitialiser l'état du jeu
         this.gameState = {
             food: null,
-            powerups: [],
+            mysteryBox: null,  // 🎁 MYSTERY BOX
             scores: {},
             segments: {},
             gameStarted: false,
@@ -1034,24 +1081,42 @@ class Room {
                 this.gameState.segments[player.id] = player.snake.length;
                 this.gameState.food = this.generateFood();
 
+                // ⚔️ CHARGE ÉPÉE - Si épée stockée, charger (max 15)
+                if (player.storedItem === 'sword' && player.swordCharge < 15) {
+                    player.swordCharge++;
+                    logger.debug('GAME', `⚔️ Player ${player.number} charge épée: ${player.swordCharge}/15`);
+                }
+
                 logger.debug('GAME', `⭐ Player ${player.number} mange (score: ${player.snake.score})`);
             }
 
-            // Ramasser power-ups
-            for (let i = this.gameState.powerups.length - 1; i >= 0; i--) {
-                const powerup = this.gameState.powerups[i];
-                if (player.snake.headAt(powerup.x, powerup.y)) {
-                    player.activePowerup = powerup.type;
-                    player.powerupEndTime = now + POWERUP_TYPES[powerup.type.toUpperCase()].duration;
-                    player.stats.powerupsCollected++;
+            // 🎁 MYSTERY BOX - Ramasser la mystery box
+            if (this.gameState.mysteryBox && player.snake.headAt(this.gameState.mysteryBox.x, this.gameState.mysteryBox.y)) {
+                // Le joueur ramasse la mystery box - déterminer l'item aléatoire
+                const newItem = this.getRandomMysteryItem();
+                player.storedItem = newItem;
+                player.stats.powerupsCollected++;
 
-                    const symbol = POWERUP_TYPES[powerup.type.toUpperCase()].symbol;
-                    logger.info('GAME', `${symbol} Player ${player.number} active ${powerup.type.toUpperCase()}`);
+                logger.info('GAME', `🎁 Player ${player.number} ramasse Mystery Box → ${newItem}`);
 
-                    this.gameState.powerups.splice(i, 1);
-                    this.gameState.powerups.push(this.generatePowerUp());
-                    break;
+                // Retirer la mystery box de la grille
+                this.gameState.mysteryBox = null;
+
+                // Envoyer notification de collecte au client (pour animation roulette)
+                if (player.ws && player.ws.readyState === 1) { // WebSocket.OPEN
+                    player.ws.send(JSON.stringify({
+                        type: 'mystery_box_collected',
+                        item: newItem
+                    }));
                 }
+
+                // Respawn mystery box après 5 secondes
+                setTimeout(() => {
+                    if (this.running && this.gameState.gameStarted) {
+                        this.gameState.mysteryBox = this.generateMysteryBox();
+                        logger.info('GAME', `🎁 Mystery Box réapparaît!`);
+                    }
+                }, 5000);
             }
         }
 
@@ -1079,9 +1144,8 @@ class Room {
                 const bodyCollision = player.snake.collidesWithSnake(opponent.snake);
 
                 if (bodyCollision) {
-                    logger.debug('COLLISION', `${player.id} touche corps de ${opponent.id} - MaT te(${myHead.x},${myHead.y}) dir(${player.snake.direction.dx},${player.snake.direction.dy}) vs OpponentTête(${opponentHead.x},${opponentHead.y}) dir(${opponent.snake.direction.dx},${opponent.snake.direction.dy})`);
+                    logger.debug('COLLISION', `${player.id} touche corps de ${opponent.id} - MaTête(${myHead.x},${myHead.y}) vs Opponent(${opponentHead.x},${opponentHead.y})`);
 
-                    // Appliquer effet selon power-up actif
                     if (player.activePowerup === 'rock') {
                         // ROCK : Mange 2 segments
                         opponent.snake.shrink(2);
@@ -1089,6 +1153,7 @@ class Room {
                         player.snake.grow();
                         player.stats.segmentsEaten += 2;
                         opponent.stats.segmentsLost += 2;
+                        opponent.swordCharge = 0; // ⚔️ Reset charge épée
 
                         // ✅ Mettre à jour le tableau de scores
                         this.gameState.segments[player.id] = player.snake.length;
@@ -1221,8 +1286,123 @@ class Room {
                 return;
         }
 
+        // ⚡ LIGHTNING : Inverser les contrôles
+        if (player.activePowerup === 'lightning' && Date.now() < player.powerupEndTime) {
+            newDirection = { dx: -newDirection.dx, dy: -newDirection.dy };
+            logger.debug('INPUT', `⚡ Contrôles inversés pour Player ${player.number}`);
+        }
+
         // Le Snake gère la validation anti-retour
         player.snake.changeDirection(newDirection);
+    }
+
+    // 🎁 UTILISER L'ITEM STOCKÉ
+    handleUseItem(playerId) {
+        const player = this.players.get(playerId);
+        if (!player || !player.snake.alive) return;
+        if (!player.storedItem) return; // Pas d'item stocké
+
+        const item = player.storedItem;
+        const now = Date.now();
+
+        logger.info('GAME', `🎁 Player ${player.number} utilise l'item: ${item}`);
+
+        if (item === 'sword') {
+            // ⚔️ ÉPÉE - ATTAQUE INSTANTANÉE basée sur la charge
+            const damage = player.swordCharge; // Dégâts = pommes mangées (max 15)
+
+            if (damage === 0) {
+                logger.info('GAME', `⚔️ Player ${player.number} utilise l'ÉPÉE sans charge (0 dégâts)!`);
+            } else {
+                // Trouver l'adversaire
+                let opponent = null;
+                for (let [id, p] of this.players) {
+                    if (id !== playerId && p.snake.alive) {
+                        opponent = p;
+                        break;
+                    }
+                }
+
+                if (opponent) {
+                    // Infliger les dégâts sur la health
+                    opponent.health = Math.max(0, opponent.health - damage);
+                    opponent.swordCharge = 0; // Reset charge adversaire quand il prend des dégâts
+                    player.stats.swordAttacks++;
+
+                    logger.info('GAME', `⚔️ ATTAQUE ÉPÉE! Player ${player.number} inflige ${damage} dégâts à Player ${opponent.number} (health: ${opponent.health}/15)`);
+
+                    // Notifier l'adversaire des dégâts
+                    if (opponent.ws && opponent.ws.readyState === 1) {
+                        opponent.ws.send(JSON.stringify({
+                            type: 'sword_damage',
+                            damage: damage,
+                            health: opponent.health,
+                            attackerId: playerId
+                        }));
+                    }
+
+                    // Vérifier la mort
+                    if (opponent.health <= 0) {
+                        opponent.snake.kill();
+                        logger.info('GAME', `💀 Player ${opponent.number} ÉLIMINÉ par ÉPÉE!`);
+                        this.endGame(`player${player.number}_wins`);
+                    }
+                }
+            }
+
+            // Reset la charge de l'épée après utilisation
+            player.swordCharge = 0;
+        } else {
+            // POWER-UP - Activer le power-up
+            const duration = POWERUP_TYPES[item.toUpperCase()]?.duration || 6000;
+            player.activePowerup = item;
+            player.powerupEndTime = now + duration;
+
+            const symbol = POWERUP_TYPES[item.toUpperCase()]?.symbol || '?';
+            logger.info('GAME', `${symbol} Player ${player.number} active ${item.toUpperCase()}`);
+        }
+
+        // Vider le slot d'item
+        player.storedItem = null;
+
+        // Notifier le joueur que l'item a été utilisé
+        if (player.ws && player.ws.readyState === 1) {
+            player.ws.send(JSON.stringify({
+                type: 'item_used',
+                item: item
+            }));
+        }
+    }
+
+    // ⚡ BOOST - Activer le boost de vitesse
+    handleBoost(playerId) {
+        const player = this.players.get(playerId);
+        if (!player || !player.snake.alive) return;
+
+        const now = Date.now();
+
+        // Vérifier cooldown
+        if (now < player.boostCooldownEnd) {
+            const remaining = Math.ceil((player.boostCooldownEnd - now) / 1000);
+            logger.debug('GAME', `⚡ Boost en cooldown pour Player ${player.number} (${remaining}s)`);
+            return;
+        }
+
+        // Activer le boost
+        player.boostActive = true;
+        player.boostEndTime = now + CONFIG.BOOST_DURATION;
+        player.boostCooldownEnd = now + CONFIG.BOOST_COOLDOWN;
+
+        logger.info('GAME', `⚡ Player ${player.number} active le BOOST!`);
+
+        // Notifier le joueur
+        if (player.ws && player.ws.readyState === 1) {
+            player.ws.send(JSON.stringify({
+                type: 'boost_activated',
+                duration: CONFIG.BOOST_DURATION,
+                cooldown: CONFIG.BOOST_COOLDOWN
+            }));
+        }
     }
 
     getGameStateForClients() {
@@ -1234,14 +1414,19 @@ class Room {
                 pseudo: player.pseudo,              // ✅ NOUVEAU - Pseudo du joueur
                 number: player.number,              // Ajouter le numéro du joueur
                 activePowerup: player.activePowerup,    // ✅ Power-up actif
-                powerupEndTime: player.powerupEndTime   // ✅ Temps de fin du power-up
+                powerupEndTime: player.powerupEndTime,  // ✅ Temps de fin du power-up
+                storedItem: player.storedItem,          // 🎁 Item stocké (roulette)
+                health: player.health,                  // ❤️ VIE - Points de vie (max 15)
+                swordCharge: player.swordCharge,        // ⚔️ ÉPÉE - Charge (pommes mangées, max 15)
+                boostActive: player.boostActive,        // ⚡ BOOST - Actif?
+                boostCooldownEnd: player.boostCooldownEnd // ⚡ BOOST - Fin cooldown
             };
         }
 
         return {
             players: players,
             food: this.gameState.food,
-            powerups: this.gameState.powerups.map(p => p.toJSON()), // ✅ Power-ups avec toJSON()
+            mysteryBox: this.gameState.mysteryBox,  // 🎁 Mystery Box - Position ou null
             scores: this.gameState.scores,
             segments: this.gameState.segments,
             gameStarted: this.gameState.gameStarted,
@@ -1705,6 +1890,16 @@ wss.on('connection', (ws, req) => {
 
                     // Input valide, l'appliquer
                     room.handleInput(playerId, message.direction);
+                    break;
+
+                case 'use_item':
+                    // 🎁 UTILISER L'ITEM STOCKÉ
+                    room.handleUseItem(playerId);
+                    break;
+
+                case 'boost':
+                    // ⚡ BOOST - Activation du boost de vitesse
+                    room.handleBoost(playerId);
                     break;
 
                 case 'ping':

@@ -3,6 +3,8 @@
 // Avec tableau J1 | Timer | J2 et écran calé
 // ============================================
 
+import { logger } from './services/logger.js';
+import { SERVER_CONFIG } from './config/constants.js';
 class MultiplayerClient {
     constructor() {
         this.ws = null;
@@ -14,6 +16,7 @@ class MultiplayerClient {
         this.opponents = {};
         this.serverUrl = this.detectServerUrl();
         this.pingInterval = null;
+        this.reconnectTimeout = null; // ✅ FIX: Track timeout pour éviter race condition
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.wasKicked = false; // ✅ Nouveau: Tracker si le joueur a été kické
@@ -29,17 +32,29 @@ class MultiplayerClient {
     }
 
     detectServerUrl() {
-        return 'ws://localhost:3000';
+        // Mode production activé dans constants.js
+        if (SERVER_CONFIG.USE_PRODUCTION) {
+            return SERVER_CONFIG.PRODUCTION_URL;
+        }
+
+        // Détection automatique pour app native (Capacitor)
+        if (window.Capacitor?.isNativePlatform()) {
+            logger.warn('⚠️ App native détectée mais USE_PRODUCTION est false. Configurez SERVER_CONFIG dans constants.js');
+            return SERVER_CONFIG.PRODUCTION_URL;
+        }
+
+        // Mode développement
+        return SERVER_CONFIG.DEV_URL;
     }
 
     connect(customUrl = null) {
         if (this.connected) {
-            console.log('✅ Déjà connecté');
+            logger.log('✅ Déjà connecté');
             return;
         }
 
         const url = customUrl || this.serverUrl;
-        console.log(`🔌 Connexion: ${url}`);
+        logger.log(`🔌 Connexion: ${url}`);
         
         this.showMessage('Connexion...', 'info');
 
@@ -47,7 +62,7 @@ class MultiplayerClient {
             this.ws = new WebSocket(url);
             this.setupWebSocketHandlers();
         } catch (error) {
-            console.error('❌ Erreur:', error);
+            logger.error('❌ Erreur:', error);
             this.showMessage('Impossible de se connecter', 'error');
             if (this.onError) this.onError(error);
         }
@@ -55,10 +70,10 @@ class MultiplayerClient {
 
     setupWebSocketHandlers() {
         this.ws.onopen = () => {
-            console.log('✅ Connecté');
+            logger.log('✅ Connecté');
             this.connected = true;
             this.reconnectAttempts = 0;
-            this.showMessage('Recherche adversaire...', 'success');
+            // Message supprimé : on arrive directement au lobby
             this.startPing();
         };
 
@@ -67,24 +82,24 @@ class MultiplayerClient {
                 const message = JSON.parse(event.data);
                 this.handleMessage(message);
             } catch (error) {
-                console.error('❌ Erreur parsing:', error);
+                logger.error('❌ Erreur parsing:', error);
             }
         };
 
         this.ws.onerror = (error) => {
-            console.error('❌ Erreur WebSocket:', error);
+            logger.error('❌ Erreur WebSocket:', error);
             this.showMessage('Erreur de connexion', 'error');
             if (this.onError) this.onError(error);
         };
 
         this.ws.onclose = () => {
-            console.log('❌ Connexion fermée');
+            logger.log('❌ Connexion fermée');
             this.connected = false;
             this.stopPing();
 
             // Si kické, ne pas reconnecter
             if (this.wasKicked) {
-                console.log('🚫 Reconnexion désactivée (kické)');
+                logger.log('🚫 Reconnexion désactivée (kické)');
                 return;
             }
 
@@ -99,19 +114,76 @@ class MultiplayerClient {
         switch (message.type) {
             case 'connected':
                 this.playerId = message.playerId;
-                console.log(`🆔 ID: ${this.playerId}`);
+                logger.log(`🆔 ID: ${this.playerId}`);
                 if (this.onConnected) this.onConnected(message);
+                break;
+
+            case 'lobby_ready':
+                // ✅ LOBBY PRINCIPAL - Serveur prêt, on est dans le lobby principal
+                logger.log('🏠 Lobby principal prêt');
+                // Connecter mainLobby au client WebSocket
+                if (window.mainLobby) {
+                    window.mainLobby.client = this;
+                }
+                break;
+
+            case 'room_list':
+                // ✅ LOBBY PRINCIPAL - Liste des salons reçue
+                logger.log('📋 Liste des salons reçue', message.rooms);
+                if (window.mainLobby) {
+                    window.mainLobby.displayRoomList(message.rooms);
+                }
+                break;
+
+            case 'room_created':
+                // ✅ LOBBY PRINCIPAL - Salon créé et rejoint
+                logger.log('✅ Salon créé avec succès', message);
+                this.roomId = message.roomId;
+                this.playerNumber = message.playerNumber;
+
+                // ✅ FIX PSEUDO: Envoyer le pseudo depuis localStorage
+                const savedPseudoCreate = localStorage.getItem('snakeultra_pseudo');
+                if (savedPseudoCreate) {
+                    this.sendPseudo(savedPseudoCreate);
+                    logger.log(`👤 Pseudo envoyé au serveur: "${savedPseudoCreate}"`);
+                }
+
+                // Aller au lobby de la room
+                if (window.screenManager) {
+                    window.screenManager.show('lobby-screen');
+                }
+
+                this.updateLobby({
+                    roomId: this.roomId,
+                    playerCount: message.playersInRoom,
+                    myNumber: this.playerNumber
+                });
+                break;
+
+            case 'join_error':
+                // ✅ LOBBY PRINCIPAL - Erreur lors de la tentative de rejoindre
+                logger.error('❌ Impossible de rejoindre le salon:', message.error);
+                if (window.ModalManager) {
+                    window.ModalManager.error(`Impossible de rejoindre le salon:\n${message.error}`);
+                }
                 break;
 
             case 'room_joined':
                 this.roomId = message.roomId;
                 this.playerNumber = message.playerNumber;
 
+                // ✅ FIX PSEUDO: Envoyer le pseudo depuis localStorage
+                const savedPseudoJoin = localStorage.getItem('snakeultra_pseudo');
+                if (savedPseudoJoin) {
+                    this.sendPseudo(savedPseudoJoin);
+                    logger.log(`👤 Pseudo envoyé au serveur: "${savedPseudoJoin}"`);
+                }
+
                 // Afficher le lobby
                 if (window.screenManager) {
                     window.screenManager.show('lobby-screen');
                 } else {
-                    console.error('❌ ScreenManager introuvable!');
+                    logger.error('❌ ScreenManager introuvable!');
                 }
 
                 // Mettre à jour les infos du lobby
@@ -134,7 +206,7 @@ class MultiplayerClient {
                 break;
 
             case 'game_starting':
-                console.log('🎮 Transition vers le jeu...');
+                logger.log('🎮 Transition vers le jeu...');
 
                 // Cacher le lobby et afficher l'écran de jeu
                 if (window.screenManager) {
@@ -151,7 +223,7 @@ class MultiplayerClient {
                 break;
 
             case 'game_start':
-                console.log('🎮 Démarrage');
+                logger.log('🎮 Démarrage');
                 this.gameActive = true;
                 if (this.onGameStart) this.onGameStart(message);
                 break;
@@ -161,10 +233,52 @@ class MultiplayerClient {
                 break;
 
             case 'game_over':
-                console.log('🏁 Fin');
+                logger.log('🏁 Fin');
                 this.gameActive = false;
                 this.showMessage(message.message, 'info');
                 if (this.onGameOver) this.onGameOver(message);
+                break;
+
+            case 'mystery_box_collected':
+                // 🎁 Mystery box collectée - déclencher animation roulette
+                logger.log(`🎁 Mystery Box → ${message.item}`);
+                if (this.onMysteryBoxCollected) this.onMysteryBoxCollected(message);
+                break;
+
+            case 'item_used':
+                // 🎁 Item utilisé
+                logger.log(`🎁 Item utilisé: ${message.item}`);
+                if (this.onItemUsed) this.onItemUsed(message);
+                break;
+
+            case 'boost_activated':
+                // ⚡ BOOST activé
+                logger.log(`⚡ Boost activé (${message.duration}ms, cooldown: ${message.cooldown}ms)`);
+                if (this.onBoostActivated) this.onBoostActivated(message);
+                break;
+
+            case 'sword_damage':
+                // ⚔️ Dégâts d'épée reçus
+                logger.log(`⚔️ Dégâts épée reçus: ${message.damage} (health: ${message.health}/15)`);
+                if (this.onSwordDamage) this.onSwordDamage(message);
+                break;
+
+            case 'opponent_abandoned':
+                // 🏳️ L'adversaire a abandonné, vous gagnez !
+                logger.log('🏳️ Adversaire abandonné - Victoire !');
+                this.gameActive = false;
+
+                // Afficher un message de victoire
+                this.showMessage('🏆 Victoire ! Votre adversaire a abandonné', 'success');
+
+                // Déclencher le game over avec victoire
+                if (this.onGameOver) {
+                    this.onGameOver({
+                        winner: true,
+                        reason: 'abandon',
+                        message: 'Victoire par abandon de l\'adversaire'
+                    });
+                }
                 break;
 
             case 'player_left':
@@ -173,12 +287,12 @@ class MultiplayerClient {
                 break;
 
             case 'pseudo_updated':
-                console.log(`👤 Pseudo mis à jour: ${message.playerId} → "${message.pseudo}"`);
+                logger.log(`👤 Pseudo mis à jour: ${message.playerId} → "${message.pseudo}"`);
                 // Le pseudo sera automatiquement affiché via le gameState
                 break;
 
             case 'pseudo_taken':
-                console.error('❌ Pseudo déjà pris dans cette salle');
+                logger.error('❌ Pseudo déjà pris dans cette salle');
 
                 // Afficher dans l'input d'erreur
                 const errorSpan = document.getElementById('pseudo-error');
@@ -188,7 +302,9 @@ class MultiplayerClient {
                 }
 
                 // Notification visible
-                alert('⚠️ Ce pseudo est déjà pris dans cette salle. Veuillez en choisir un autre.');
+                if (window.ModalManager) {
+                    window.ModalManager.warning('Ce pseudo est déjà pris dans cette salle. Veuillez en choisir un autre.');
+                }
 
                 // Déconnecter proprement
                 this.disconnect();
@@ -201,15 +317,15 @@ class MultiplayerClient {
 
             case 'pseudo_response':
                 if (message.success) {
-                    console.log(`✅ Pseudo accepté: "${message.pseudo}"`);
+                    logger.log(`✅ Pseudo accepté: "${message.pseudo}"`);
                 } else {
-                    console.warn(`⚠️ Pseudo refusé: ${message.error}`);
+                    logger.warn(`⚠️ Pseudo refusé: ${message.error}`);
                     this.showMessage(message.error, 'error');
                 }
                 break;
 
             case 'lobby_update':
-                console.log('🔄 Lobby update:', message);
+                logger.log('🔄 Lobby update:', message);
 
                 message.players.forEach(player => {
                     this.updatePlayerInLobby(
@@ -218,6 +334,19 @@ class MultiplayerClient {
                         player.ready ? '✅ PRÊT' : '⏳ En attente...'
                     );
                 });
+
+                // ✅ FIX BUG REJOUER: Réactiver le bouton si JE ne suis pas ready
+                const myPlayer = message.players.find(p => p.playerId === this.playerId);
+
+                if (myPlayer && !myPlayer.ready) {
+                    const btnReady = document.getElementById('btn-ready');
+                    if (btnReady) {
+                        btnReady.disabled = false;
+                        btnReady.textContent = '✅ PRÊT';
+                        btnReady.style.opacity = '1';
+                        logger.log('✅ Bouton PRÊT réactivé (lobby_update)');
+                    }
+                }
 
                 // Mettre à jour le compteur
                 const countSpan = document.getElementById('lobby-player-count');
@@ -249,7 +378,7 @@ class MultiplayerClient {
                 break;
 
             case 'error':
-                console.error('⚠️  Erreur:', message.message);
+                logger.error('⚠️  Erreur:', message.message);
                 this.showMessage(message.message, 'error');
                 break;
 
@@ -257,13 +386,18 @@ class MultiplayerClient {
                 break;
 
             case 'kicked':
-                console.error('🚨 EXPULSÉ:', message.reason);
+                logger.error('🚨 EXPULSÉ:', message.reason);
 
                 // Marquer comme kické pour éviter la reconnexion
                 this.wasKicked = true;
 
                 // Afficher message
-                alert(`⚠️ EXPULSÉ\n\nRaison: ${message.reason}\n\nVous avez été expulsé pour comportement suspect.\nSi vous pensez qu'il s'agit d'une erreur, contactez le support.`);
+                if (window.ModalManager) {
+                    window.ModalManager.error(
+                        `Raison: ${message.reason}\n\nVous avez été expulsé pour comportement suspect.\nSi vous pensez qu'il s'agit d'une erreur, contactez le support.`,
+                        { title: 'Expulsé' }
+                    );
+                }
 
                 // Déconnecter SANS reconnexion
                 this.disconnect();
@@ -275,10 +409,15 @@ class MultiplayerClient {
                 break;
 
             case 'opponent_kicked':
-                console.log('🎉 VICTOIRE - Adversaire expulsé');
+                logger.log('🎉 VICTOIRE - Adversaire expulsé');
 
                 // Afficher message de victoire
-                alert(`🎉 VICTOIRE !\n\nVotre adversaire a été expulsé pour triche.\n\n+${message.bonusPoints || 500} points bonus !`);
+                if (window.ModalManager) {
+                    window.ModalManager.success(
+                        `Votre adversaire a été expulsé pour triche.\n\n+${message.bonusPoints || 500} points bonus !`,
+                        { title: 'Victoire !' }
+                    );
+                }
 
                 // Déconnecter proprement
                 this.disconnect();
@@ -290,19 +429,19 @@ class MultiplayerClient {
                 break;
 
             default:
-                console.log('📨 Message:', message);
+                logger.log('📨 Message:', message);
         }
     }
 
     sendInput(direction) {
-        console.log(`📡 MultiplayerClient.sendInput()`, {
+        logger.log(`📡 MultiplayerClient.sendInput()`, {
             direction,
             connected: this.connected,
             wsReady: this.ws?.readyState === WebSocket.OPEN
         });
 
         if (!this.connected || !this.ws) {
-            console.log('   ❌ Envoi bloqué: client non connecté ou ws null');
+            logger.log('   ❌ Envoi bloqué: client non connecté ou ws null');
             return;
         }
 
@@ -310,33 +449,59 @@ class MultiplayerClient {
             type: 'input',
             direction: direction
         };
-        console.log('   ✅ Envoi message WebSocket:', message);
+        logger.log('   ✅ Envoi message WebSocket:', message);
         this.ws.send(JSON.stringify(message));
     }
 
     sendReady() {
         if (!this.connected || !this.ws) return;
-        console.log('✅ Prêt');
-        this.ws.send(JSON.stringify({ type: 'ready' }));
+        logger.log('✅ Prêt');
+        this.ws.send(JSON.stringify({ type: 'player_ready' }));
     }
 
     sendPseudo(pseudo) {
         if (!this.connected || !this.ws) {
-            console.warn('⚠️ Impossible d\'envoyer le pseudo: non connecté');
+            logger.warn('⚠️ Impossible d\'envoyer le pseudo: non connecté');
             return;
         }
-        console.log(`👤 Envoi pseudo: "${pseudo}"`);
+        logger.log(`👤 Envoi pseudo: "${pseudo}"`);
         this.ws.send(JSON.stringify({
             type: 'set_pseudo',
             pseudo: pseudo
         }));
     }
 
+    // 🎁 UTILISER L'ITEM STOCKÉ
+    sendUseItem() {
+        if (!this.connected || !this.ws) {
+            logger.warn('⚠️ Impossible d\'utiliser l\'item: non connecté');
+            return;
+        }
+        logger.log('🎁 Utilisation de l\'item stocké');
+        this.ws.send(JSON.stringify({ type: 'use_item' }));
+    }
+
+    // ⚡ BOOST - Activer le boost de vitesse
+    sendBoost() {
+        if (!this.connected || !this.ws) {
+            logger.warn('⚠️ Impossible d\'activer le boost: non connecté');
+            return;
+        }
+        logger.log('⚡ Activation du boost');
+        this.ws.send(JSON.stringify({ type: 'boost' }));
+    }
+
     startPing() {
+        // ✅ FIX #4: Nettoyer l'ancien ping AVANT d'en créer un nouveau
+        this.stopPing();
+
         this.pingInterval = setInterval(() => {
-            if (this.connected && this.ws.readyState === WebSocket.OPEN) {
-                this.ws.send(JSON.stringify({ type: 'ping' }));
+            // ✅ FIX #4: Auto-cleanup si état invalide
+            if (!this.connected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                this.stopPing();
+                return;
             }
+            this.ws.send(JSON.stringify({ type: 'ping' }));
         }, 30000);
     }
 
@@ -353,28 +518,43 @@ class MultiplayerClient {
             return;
         }
 
+        // ✅ FIX: Clear ancien timeout pour éviter double reconnection
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+
         this.reconnectAttempts++;
-        console.log(`🔄 Reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-        
-        setTimeout(() => this.connect(), 2000);
+        logger.log(`🔄 Reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+
+        this.reconnectTimeout = setTimeout(() => {
+            this.reconnectTimeout = null;
+            this.connect();
+        }, 2000);
     }
 
     disconnect() {
-        console.log('🔌 Déconnexion du serveur');
+        logger.log('🔌 Déconnexion du serveur');
 
         this.connected = false;
         this.gameActive = false;
 
-        // Arrêter le ping
-        if (this.pingInterval) {
-            clearInterval(this.pingInterval);
-            this.pingInterval = null;
+        // ✅ FIX: Annuler tout timeout de reconnection en cours
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
         }
+
+        // ✅ FIX #4: Arrêter le ping UNE SEULE FOIS (pas de double cleanup)
         this.stopPing();
 
         // Fermer le WebSocket
         if (this.ws) {
-            this.ws.close();
+            try {
+                this.ws.close();
+            } catch (e) {
+                logger.warn('Erreur fermeture WebSocket:', e);
+            }
             this.ws = null;
         }
 
@@ -384,7 +564,7 @@ class MultiplayerClient {
     }
 
     showMessage(text, type = 'info') {
-        console.log(`[${type.toUpperCase()}] ${text}`);
+        logger.log(`[${type.toUpperCase()}] ${text}`);
         
         const existing = document.getElementById('mp-message');
         if (existing) existing.remove();
@@ -429,7 +609,7 @@ class MultiplayerClient {
      * Mettre à jour l'affichage du lobby
      */
     updateLobby(data) {
-        console.log('🔄 Mise à jour lobby:', data);
+        logger.log('🔄 Mise à jour lobby:', data);
 
         // Room ID
         const roomIdSpan = document.getElementById('lobby-room-id');
@@ -453,6 +633,15 @@ class MultiplayerClient {
         const myStatus = document.getElementById(`lobby-player${data.myNumber}-status`);
         if (myStatus) {
             myStatus.textContent = '✅ Connecté';
+        }
+
+        // ✅ FIX BUG REJOUER: Réinitialiser le bouton PRÊT
+        const btnReady = document.getElementById('btn-ready');
+        if (btnReady) {
+            btnReady.disabled = false;
+            btnReady.textContent = '✅ PRÊT';
+            btnReady.style.opacity = '1';
+            logger.log('✅ Bouton PRÊT réinitialisé');
         }
 
         // Message
@@ -491,6 +680,11 @@ class MultiplayerClient {
 
         if (!overlay || !numberElem) return;
 
+        // ✅ AMÉLIORATION: Nettoyer le canvas au début du countdown (nombre = 5)
+        if (number === 5 && window.multiGame) {
+            window.multiGame.clearCanvas();
+        }
+
         // Afficher l'overlay
         overlay.classList.remove('hidden');
 
@@ -504,10 +698,8 @@ class MultiplayerClient {
             numberElem.style.animation = 'countdownPulse 1s ease-in-out';
         }, 10);
 
-        // Enregistrer l'overlay dans le ScreenManager
-        if (window.screenManager) {
-            window.screenManager.registerOverlay('countdown-overlay');
-        }
+        // ✅ FIX: Ne PAS enregistrer countdown-overlay (élément HTML permanent)
+        // Le countdown doit rester dans le DOM pour être réutilisé
     }
 
     /**
@@ -533,7 +725,7 @@ class MultiplayerClient {
         if (window.audioManager) {
             window.audioManager.setAudio('game-multi');
         } else {
-            console.warn('⚠️ AudioManager introuvable pour lancer la musique');
+            logger.warn('⚠️ AudioManager introuvable pour lancer la musique');
         }
 
         // Cacher après 1 seconde
@@ -572,28 +764,9 @@ function validatePseudo(pseudo) {
     return { valid: true, pseudo: trimmed };
 }
 
-/**
- * Charge le pseudo sauvegardé depuis localStorage
- */
-function loadSavedPseudo() {
-    const saved = localStorage.getItem('playerPseudo');
-    if (saved) {
-        const input = document.getElementById('pseudo-input');
-        if (input) {
-            input.value = saved;
-            console.log('✅ Pseudo chargé:', saved);
-        }
-    }
-    return saved;
-}
-
-/**
- * Sauvegarde le pseudo dans localStorage
- */
-function savePseudo(pseudo) {
-    localStorage.setItem('playerPseudo', pseudo);
-    console.log('💾 Pseudo sauvegardé:', pseudo);
-}
+// ⚠️ loadSavedPseudo() et savePseudo() ont été déplacés dans navigation.js
+// Les nouvelles versions gèrent l'affichage des 2 vues (pseudo existant / saisie pseudo)
+// et utilisent la clé 'snakeultra_pseudo' au lieu de 'playerPseudo'
 
 /**
  * Affiche un message d'erreur pour le pseudo
@@ -618,8 +791,18 @@ function initPseudoInput() {
     const input = document.getElementById('pseudo-input');
     if (!input) return;
 
-    // Charger le pseudo sauvegardé
-    loadSavedPseudo();
+    // Charger le pseudo sauvegardé (avec migration des anciennes clés)
+    let savedPseudo = localStorage.getItem('snakeultra_pseudo');
+    if (!savedPseudo) {
+        savedPseudo = localStorage.getItem('playerPseudo') || localStorage.getItem('snakeUltraPseudo');
+        if (savedPseudo) {
+            localStorage.setItem('snakeultra_pseudo', savedPseudo);
+        }
+    }
+    if (savedPseudo) {
+        input.value = savedPseudo;
+        logger.log('✅ Pseudo chargé:', savedPseudo);
+    }
 
     // Validation en temps réel
     input.addEventListener('input', (e) => {
@@ -642,13 +825,17 @@ function initPseudoInput() {
         if (value.length > 0) {
             const result = validatePseudo(value);
             if (result.valid) {
-                savePseudo(result.pseudo);
+                // Sauvegarder dans toutes les clés pour compatibilité
+                localStorage.setItem('snakeultra_pseudo', result.pseudo);
+                localStorage.setItem('playerPseudo', result.pseudo);
+                localStorage.setItem('snakeUltraPseudo', result.pseudo);
                 input.value = result.pseudo; // Normaliser (trim)
+                logger.log('💾 Pseudo sauvegardé:', result.pseudo);
             }
         }
     });
 
-    console.log('✅ Input pseudo initialisé');
+    logger.log('✅ Input pseudo initialisé');
 }
 
 /**
@@ -675,9 +862,8 @@ function getValidPseudo() {
 
 window.MultiplayerClient = MultiplayerClient;
 window.validatePseudo = validatePseudo;
-window.loadSavedPseudo = loadSavedPseudo;
-window.savePseudo = savePseudo;
+// window.loadSavedPseudo et window.savePseudo sont définis dans navigation.js
 window.initPseudoInput = initPseudoInput;
 window.getValidPseudo = getValidPseudo;
 
-console.log('✅ MultiplayerClient chargé');
+logger.log('✅ MultiplayerClient chargé');
