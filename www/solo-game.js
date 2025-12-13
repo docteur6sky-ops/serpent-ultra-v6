@@ -40,6 +40,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.food = null;
         this.bad = null;
         this.powerup = null;
+        this.scissors = null;  // Ciseaux (bonus roguelike)
         this.obstacles = [];
 
         // Scores et stats
@@ -185,6 +186,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Éléments
         this.obstacles = [];
         this.powerup = null;
+        this.scissors = null;
 
         // Tracking
         this.firstDirectionChangeTime = null;
@@ -322,14 +324,20 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.hasTeleported = true;
         }
 
+        // Collision ciseaux (bonus roguelike)
+        if (this.scissors && head.x === this.scissors.x && head.y === this.scissors.y) {
+            this.eatScissors(head);
+            return;
+        }
+
         // Collisions nourriture
-        if (head.x === this.food.x && head.y === this.food.y) {
+        if (this.food && head.x === this.food.x && head.y === this.food.y) {
             this.eatFood(head);
             return;
         }
 
         // Collision crâne
-        if (head.x === this.bad.x && head.y === this.bad.y) {
+        if (this.bad && head.x === this.bad.x && head.y === this.bad.y) {
             this.eatSkull(head);
             return;
         }
@@ -444,6 +452,17 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.snake.unshift(head);
         this.syncCombo();
 
+        // Bonus Combo Master : +15 combo à la première pomme (consommable)
+        const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
+        if (run?.upgrades?.includes('combo_master')) {
+            this.combo += 15;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+            this.createParticles(head.x, head.y, '#ffd700', 12); // Particules dorées
+            // Consommer le bonus (retirer de la liste)
+            const idx = run.upgrades.indexOf('combo_master');
+            if (idx !== -1) run.upgrades.splice(idx, 1);
+        }
+
         if (this.snake.length > this.maxSnakeLength) {
             this.maxSnakeLength = this.snake.length;
         }
@@ -464,7 +483,19 @@ class SoloSnakeGame extends BaseSnakeGame {
         const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
         const skullImmunity = run?.skullImmunity || false;
 
-        if (skullImmunity) {
+        // Vérifier bonus Vampire (segment_steal) + mode Ghost actif
+        const hasVampire = run?.upgrades?.includes('segment_steal') || false;
+        const isGhostActive = this.powerUpSystem.isGhostActive;
+
+        if (hasVampire && isGhostActive) {
+            // VAMPIRE : Vole +1 segment au crâne, +1 combo (comme une pomme)
+            if (this.audio) this.audio.eatSound();
+            this.createParticles(head.x, head.y, '#9932CC', 10); // Particules violettes vampire
+            this.snake.unshift(head);
+            // Ne pas faire pop() = +1 segment
+            this.combo++;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        } else if (skullImmunity) {
             // Immunité : juste respawn le crâne, pas de dégâts
             if (this.audio) this.audio.powerup(); // Son positif
             this.createParticles(head.x, head.y, '#39FF14', 8); // Particules vertes
@@ -493,6 +524,27 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.updateUI();
     }
 
+    eatScissors(head) {
+        // Son et effet visuel
+        if (this.audio) this.audio.powerup();
+        this.createParticles(head.x, head.y, '#FF69B4', 12); // Particules roses
+
+        // Appliquer l'effet des ciseaux (divise longueur par 2, combo préservé)
+        this.roguelikeSystem.executeScissors();
+
+        // Retirer les ciseaux de la grille
+        this.scissors = null;
+
+        // Déplacement normal (pas de croissance)
+        this.snake.unshift(head);
+        this.snake.pop();
+
+        // Spawn la pomme maintenant que les ciseaux sont mangés
+        this.spawnSystem.spawnFood();
+
+        this.updateUI();
+    }
+
     eatPowerup(head) {
         this.powerUpSystem.activate(this.powerup.t);
         this.powerup = null;
@@ -508,6 +560,17 @@ class SoloSnakeGame extends BaseSnakeGame {
     // ============================================
 
     syncCombo() {
+        // Exception ciseaux : après les ciseaux, chaque pomme = +1 combo (pas de sync)
+        if (this.roguelikeSystem?.scissorsJustUsed) {
+            this.combo++;
+            if (this.combo > this.maxCombo) {
+                this.maxCombo = this.combo;
+                achievementManager.onComboUpdate(this.combo);
+            }
+            return;
+        }
+
+        // Comportement normal : sync combo avec longueur serpent
         const oldCombo = this.combo;
         this.combo = Math.max(1, this.snake.length - 2);
 
@@ -562,6 +625,16 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Nourriture
         if (this.food) RenderUtils.drawStar(this.ctx, this.food.x, this.food.y, this.CELL_SIZE);
+
+        // Ciseaux (bonus roguelike)
+        if (this.scissors) {
+            const x = this.scissors.x * this.CELL_SIZE + this.CELL_SIZE / 2;
+            const y = this.scissors.y * this.CELL_SIZE + this.CELL_SIZE / 2;
+            this.ctx.font = `${this.CELL_SIZE * 0.8}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('✂️', x, y);
+        }
 
         // Crâne
         if (this.bad) RenderUtils.drawSkull(this.ctx, this.bad.x, this.bad.y, this.CELL_SIZE);

@@ -569,8 +569,10 @@ export class PowerUpSystem {
         // Vérifier si le jeu est en cours
         if (!this.game.running || this.game.paused) return false;
 
-        // Vérifier cooldown
-        if (this.boostCooldownRemaining > 0 || this.boostActive) return false;
+        // Vérifier cooldown (FEU = ignore le cooldown)
+        const fireActive = this.effects.double;
+        if (this.boostActive) return false;
+        if (this.boostCooldownRemaining > 0 && !fireActive) return false;
 
         logger.log('[PowerUp] BOOST activé!');
         this.boostActive = true;
@@ -630,14 +632,17 @@ export class PowerUpSystem {
 
         if (!btn) return;
 
+        // FEU actif = ignore visuellement le cooldown
+        const fireActive = this.effects.double;
+
         // État actif
         if (this.boostActive) {
             btn.classList.add('boost-active');
-            btn.classList.remove('boost-cooldown');
+            btn.classList.remove('boost-cooldown', 'boost-fire-ready');
         }
-        // État cooldown
-        else if (this.boostCooldownRemaining > 0) {
-            btn.classList.remove('boost-active');
+        // État cooldown (mais FEU = prêt visuellement)
+        else if (this.boostCooldownRemaining > 0 && !fireActive) {
+            btn.classList.remove('boost-active', 'boost-fire-ready');
             btn.classList.add('boost-cooldown');
 
             // Mettre à jour le cercle de progression
@@ -649,9 +654,14 @@ export class PowerUpSystem {
                 progress.style.strokeDashoffset = offset;
             }
         }
-        // État prêt
+        // État prêt (ou FEU actif)
         else {
             btn.classList.remove('boost-active', 'boost-cooldown');
+            if (fireActive && this.boostCooldownRemaining > 0) {
+                btn.classList.add('boost-fire-ready'); // Visuel spécial feu
+            } else {
+                btn.classList.remove('boost-fire-ready');
+            }
             if (progress) {
                 progress.style.strokeDashoffset = 0;
             }
@@ -671,6 +681,8 @@ export class PowerUpSystem {
      * Getter pour savoir si le boost est prêt
      */
     get isBoostReady() {
+        // FEU actif = toujours prêt (ignore cooldown)
+        if (this.effects.double) return !this.boostActive;
         return !this.boostActive && this.boostCooldownRemaining <= 0;
     }
 }

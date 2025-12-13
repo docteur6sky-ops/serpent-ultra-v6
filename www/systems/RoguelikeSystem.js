@@ -36,6 +36,12 @@ export class RoguelikeSystem {
         // Gold collecté cette run
         this.goldCollected = 0;
 
+        // Ciseaux en attente (spawn sur grille au lieu de pomme)
+        this.scissorsPending = false;
+
+        // Flag pour empêcher syncCombo après les ciseaux
+        this.scissorsJustUsed = false;
+
         // ✅ PERF: Cache des éléments DOM (évite getElementById à chaque frame)
         this._domCache = null;
         this._lastUIUpdate = 0;
@@ -97,6 +103,7 @@ export class RoguelikeSystem {
         this.modifiers = modifiers || {};
         this.objective = levelData.objective;
         this.progress = 0;
+        this.scissorsJustUsed = false;  // Reset au début de chaque stage
 
         // Difficulté basée sur le monde
         const worldDifficulty = Math.min(2, levelData.world - 1);
@@ -184,7 +191,7 @@ export class RoguelikeSystem {
     }
 
     /**
-     * Applique l'upgrade Ciseaux (divise longueur par 2)
+     * Vérifie si l'upgrade Ciseaux est actif et spawn un ✂️ sur la grille
      */
     applyScissors() {
         if (!this.modifiers?.passives) return;
@@ -192,9 +199,19 @@ export class RoguelikeSystem {
         const scissorsUpgrade = this.modifiers.passives.find(p => p.type === 'scissors');
         if (!scissorsUpgrade) return;
 
+        // Marquer qu'il faut spawn des ciseaux au lieu de la première pomme
+        this.scissorsPending = true;
+        logger.log('[Roguelike] ✂️ Ciseaux en attente - apparaîtra sur la grille');
+    }
+
+    /**
+     * Applique l'effet des ciseaux quand le joueur les mange
+     */
+    executeScissors() {
         if (this.game.snake.length <= 3) return;
 
-        const savedCombo = this.game.combo;
+        const oldLength = this.game.snake.length;
+        const savedCombo = this.game.combo;  // Préserver le combo
         const targetLength = Math.max(3, Math.floor(this.game.snake.length / 2));
         const segmentsToRemove = this.game.snake.length - targetLength;
 
@@ -202,10 +219,19 @@ export class RoguelikeSystem {
             this.game.snake.pop();
         }
 
-        // Préserver le combo
+        // Restaurer le combo (inchangé)
         this.game.combo = savedCombo;
 
-        logger.log(`[Roguelike] ✂️ Ciseaux! Longueur: ${this.game.snake.length + segmentsToRemove} → ${this.game.snake.length}`);
+        // Retirer le bonus de la liste (consommé)
+        const run = window.roguelikeManager?.currentRun;
+        if (run?.upgrades) {
+            const idx = run.upgrades.indexOf('scissors');
+            if (idx !== -1) run.upgrades.splice(idx, 1);
+        }
+
+        this.scissorsPending = false;
+        this.scissorsJustUsed = true;  // Empêcher syncCombo à la prochaine pomme
+        logger.log(`[Roguelike] ✂️ Ciseaux mangés! Longueur: ${oldLength} → ${this.game.snake.length}, Combo préservé: ${savedCombo}`);
     }
 
     /**
@@ -505,7 +531,7 @@ export class RoguelikeSystem {
 
         const upgradeCounts = {};
         run.upgrades.forEach(upgradeId => {
-            if (['extra_life', 'shield', 'burst_speed'].includes(upgradeId)) return;
+            if (['extra_life', 'shield', 'scissors'].includes(upgradeId)) return;
             upgradeCounts[upgradeId] = (upgradeCounts[upgradeId] || 0) + 1;
         });
 

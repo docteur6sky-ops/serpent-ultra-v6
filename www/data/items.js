@@ -151,6 +151,32 @@ export const ITEMS = {
             }
         },
 
+        rock: {
+            id: 'rock',
+            name: 'Roche',
+            emoji: '🪨',
+            image: 'assets/skins/skin_rock.webp',
+            type: 'skin',
+            rarity: 'rare',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            colors: {
+                head: { light: '#A0826D', dark: '#8B7355' },
+                body: { from: '#A0826D', to: '#6B5344' },
+                tail: { color: '#5D4037' },
+                outline: '#3E2723',
+                glow: '#D2B48C'
+            },
+            description: 'Solide comme la pierre, inébranlable',
+            roguelikeBonus: {
+                type: 'starting_upgrade',
+                upgradeId: 'rock_duration',
+                bonusName: 'Roche Prolongée',
+                bonusDesc: 'Le power-up Roche dure 2x plus longtemps'
+            }
+        },
+
         // ============================================
         // TIER 3 - RARE (2500 gold)
         // ============================================

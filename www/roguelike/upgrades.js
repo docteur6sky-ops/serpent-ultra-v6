@@ -5,24 +5,6 @@
 
 // ========== UPGRADES DE RUN (temporaires, perdus à la mort) ==========
 export const RUN_UPGRADES = {
-    // ===== CATÉGORIE : VITESSE =====
-    burst_speed: {
-        id: "burst_speed",
-        name: "Sprint",
-        description: "Double-tap pour boost temporaire",
-        icon: "💨",
-        category: "speed",
-        rarity: "rare",
-        weight: 5,
-        effect: {
-            type: "ability",
-            ability: "sprint",
-            duration: 2,
-            cooldown: 10
-        },
-        stackable: false
-    },
-
     // ===== CATÉGORIE : SURVIE =====
     extra_life: {
         id: "extra_life",
@@ -153,10 +135,10 @@ export const RUN_UPGRADES = {
         id: "apple_value",
         name: "Gourmandise",
         description: "1 pomme mangée = 2 pommes (objectif x2)",
-        icon: "🍎",
+        icon: "🍏",
         category: "score",
-        rarity: "rare",
-        weight: 5,
+        rarity: "legendary",
+        weight: 1,
         effect: {
             type: "apple_double",
             multiplier: 2
@@ -182,13 +164,14 @@ export const RUN_UPGRADES = {
     combo_master: {
         id: "combo_master",
         name: "Combo Master",
-        description: "Double le combo au début du prochain stage",
-        icon: "🔥",
+        description: "+15 combo à la prochaine pomme mangée",
+        icon: "🌟",
         category: "score",
         rarity: "epic",
         weight: 3,
         effect: {
-            type: "combo_double_next_stage"
+            type: "combo_boost_next_apple",
+            value: 15
         },
         stackable: false,
         consumedOnUse: true  // Disparaît après utilisation
@@ -198,7 +181,7 @@ export const RUN_UPGRADES = {
     scissors: {
         id: "scissors",
         name: "Ciseaux",
-        description: "Longueur ÷2 au début du stage, combo inchangé",
+        description: "Longueur ÷2, combo inchangé (item à manger)",
         icon: "✂️",
         category: "segments",
         rarity: "rare",
@@ -212,7 +195,7 @@ export const RUN_UPGRADES = {
     segment_steal: {
         id: "segment_steal",
         name: "Vampire",
-        description: "Voler 1 segment aux crânes touchés (mode Ghost)",
+        description: "En mode Ghost : crânes = +1 segment et +1 combo",
         icon: "🧛",
         category: "segments",
         rarity: "legendary",
@@ -252,8 +235,7 @@ export const RUN_UPGRADES = {
             powerup: "lightning",
             multiplier: 2
         },
-        stackable: true,
-        maxStacks: 2
+        stackable: false
     },
     random_upgrade: {
         id: "random_upgrade",
@@ -274,15 +256,6 @@ export const RUN_UPGRADES = {
 // ========== UPGRADES PERMANENTS (méta-progression) ==========
 export const PERMANENT_UPGRADES = {
     // Déblocables avec XP accumulé
-    unlock_sprint: {
-        id: "unlock_sprint",
-        name: "Débloquer Sprint",
-        description: "Sprint peut apparaître dans les choix",
-        icon: "💨",
-        cost: 500,
-        requires: null,
-        unlocks: "burst_speed"
-    },
     unlock_shield: {
         id: "unlock_shield",
         name: "Débloquer Bouclier",

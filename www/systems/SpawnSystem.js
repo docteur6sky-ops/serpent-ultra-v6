@@ -51,6 +51,11 @@ export class SpawnSystem {
             return false;
         }
 
+        // Vérifier collision avec les ciseaux
+        if (this.game.scissors && x === this.game.scissors.x && y === this.game.scissors.y) {
+            return false;
+        }
+
         // Vérifier collision avec le boss
         if (this.game.bossSystem?.boss?.snake.some(s => s.x === x && s.y === y)) {
             return false;
@@ -122,12 +127,26 @@ export class SpawnSystem {
     }
 
     /**
-     * Spawn la nourriture (pomme)
+     * Spawn la nourriture (pomme) ou ciseaux si bonus actif
      */
     spawnFood() {
-        const position = this.findFreePosition();
-        if (position) {
-            this.game.food = position;
+        // Vérifier si des ciseaux doivent spawn à la place de la pomme
+        if (this.game.roguelikeSystem?.scissorsPending && !this.game.scissors) {
+            const position = this.findFreePosition();
+            if (position) {
+                this.game.scissors = position;
+                this.game.food = null;  // Pas de pomme tant que ciseaux pas mangés
+                logger.log('[SpawnSystem] ✂️ Ciseaux spawnés à', position);
+            }
+            return;
+        }
+
+        // Spawn normal de pomme (seulement si pas de ciseaux)
+        if (!this.game.scissors) {
+            const position = this.findFreePosition();
+            if (position) {
+                this.game.food = position;
+            }
         }
     }
 

@@ -2487,3 +2487,23 @@ function gracefulShutdown(signal) {
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// ============================================
+// GESTION DES ERREURS NON CAPTURÉES (anti-crash)
+// ============================================
+
+process.on('uncaughtException', (error) => {
+    logger.error('SERVER', '🔥 UNCAUGHT EXCEPTION (serveur maintenu)', {
+        message: error.message,
+        stack: error.stack
+    });
+    // Ne pas crasher, juste logger
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('SERVER', '🔥 UNHANDLED REJECTION (serveur maintenu)', {
+        reason: reason?.message || reason,
+        stack: reason?.stack
+    });
+    // Ne pas crasher, juste logger
+});

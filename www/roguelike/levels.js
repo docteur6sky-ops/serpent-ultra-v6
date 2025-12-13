@@ -2,24 +2,24 @@
  * SNAKE ROGUELIKE - Définition des niveaux
  *
  * Structure:
- * - Stage 1-4: 5 pommes chacun
- * - Stage 5: BOSS (120s, 15 segments)
+ * - Stage 1-4: 6 pommes chacun
+ * - Stage 5: BOSS (240s, 15 segments)
  * - Stage 6-9: 10 pommes chacun
- * - Stage 10: BOSS (90s, 20 segments)
- * - Stage 11-14: 15 pommes chacun
- * - Stage 15: BOSS (75s, 25 segments)
+ * - Stage 10: BOSS (180s, 20 segments)
+ * - Stage 11-14: 16 pommes chacun
+ * - Stage 15: BOSS (150s, 25 segments)
  * - Stage 16-19: 20 pommes chacun
- * - Stage 20: BOSS FINAL (60s, 30 segments) - FIN DU JEU
+ * - Stage 20: BOSS FINAL (180s, 30 segments) - FIN DU JEU
  */
 
 export const ROGUELIKE_LEVELS = [
-    // ========== STAGES 1-4 : INITIATION (5 pommes) ==========
+    // ========== STAGES 1-4 : INITIATION (6 pommes) ==========
     {
         level: 1,
         world: 1,
         name: "Éveil",
         description: "Le serpent s'éveille...",
-        objective: { type: "apples", count: 5 },
+        objective: { type: "apples", count: 6 },
         obstacles: [],
         modifiers: {
             speedMultiplier: 1.5,
@@ -34,7 +34,7 @@ export const ROGUELIKE_LEVELS = [
         world: 1,
         name: "Premiers pas",
         description: "Les murs apparaissent...",
-        objective: { type: "apples", count: 5 },
+        objective: { type: "apples", count: 6 },
         obstacles: [
             { type: "wall_static", count: 2, pattern: "random" }
         ],
@@ -51,7 +51,7 @@ export const ROGUELIKE_LEVELS = [
         world: 1,
         name: "Progression",
         description: "Continue ton chemin...",
-        objective: { type: "apples", count: 5 },
+        objective: { type: "apples", count: 6 },
         obstacles: [
             { type: "wall_static", count: 3, pattern: "random" }
         ],
@@ -68,7 +68,7 @@ export const ROGUELIKE_LEVELS = [
         world: 1,
         name: "Préparation",
         description: "Le boss approche...",
-        objective: { type: "apples", count: 5 },
+        objective: { type: "apples", count: 6 },
         obstacles: [
             { type: "wall_static", count: 4, pattern: "random" }
         ],
@@ -303,13 +303,13 @@ export const ROGUELIKE_LEVELS = [
         ]
     },
 
-    // ========== STAGES 11-14 : CHAOS (15 pommes) ==========
+    // ========== STAGES 11-14 : CHAOS (16 pommes) ==========
     {
         level: 11,
         world: 3,
         name: "Fournaise",
         description: "La chaleur monte...",
-        objective: { type: "apples", count: 15 },
+        objective: { type: "apples", count: 16 },
         obstacles: [
             { type: "wall_static", count: 6, pattern: "random" }
         ],
@@ -326,7 +326,7 @@ export const ROGUELIKE_LEVELS = [
         world: 3,
         name: "Eruption",
         description: "Évite les coulées...",
-        objective: { type: "apples", count: 15 },
+        objective: { type: "apples", count: 16 },
         obstacles: [
             { type: "wall_static", count: 7, pattern: "random" }
         ],
@@ -343,7 +343,7 @@ export const ROGUELIKE_LEVELS = [
         world: 3,
         name: "Brasier",
         description: "Tout brûle...",
-        objective: { type: "apples", count: 15 },
+        objective: { type: "apples", count: 16 },
         obstacles: [
             { type: "wall_static", count: 8, pattern: "random" }
         ],
@@ -360,7 +360,7 @@ export const ROGUELIKE_LEVELS = [
         world: 3,
         name: "Inferno",
         description: "Le boss approche...",
-        objective: { type: "apples", count: 15 },
+        objective: { type: "apples", count: 16 },
         obstacles: [
             { type: "wall_static", count: 8, pattern: "random" }
         ],
