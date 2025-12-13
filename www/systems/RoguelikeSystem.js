@@ -79,6 +79,9 @@ export class RoguelikeSystem {
     startLevel(levelData, modifiers) {
         logger.log(`[Roguelike] Démarrage niveau ${levelData.level}: ${levelData.name}`);
 
+        // Invalider le cache DOM car l'écran peut avoir changé
+        this.invalidateDOMCache();
+
         const isNewRun = !this.isActive || levelData.level === 1;
         const previousSnakeLength = isNewRun ? 0 : this.game.snake.length;
         const previousScore = isNewRun ? 0 : this.game.score;
@@ -151,6 +154,11 @@ export class RoguelikeSystem {
         // Stages 1-5: roche, 6-10: glace, 11-15: ghost, 16-20: foudre
         if (window.backgroundManager) {
             window.backgroundManager.setStageBackground(levelData.level, 'roguelike');
+        }
+
+        // Mettre à jour l'UI des passifs (APRÈS screenManager pour que le DOM soit visible)
+        if (window.roguelikeManager?.currentRun) {
+            this.updatePassivesUI(window.roguelikeManager.currentRun);
         }
 
         // Démarrer boucle
