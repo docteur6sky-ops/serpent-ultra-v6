@@ -8,6 +8,7 @@
 
 // 1. Services de base (pas de dépendances)
 import { logger } from './services/logger.js';
+import { state } from './services/StateManager.js';
 
 // ============================================
 // PHASE 1: Initialisation SecurityManager + Storage
@@ -83,6 +84,9 @@ await import('./AppLifecycle.js');
 // PHASE 6: Initialisation principale
 // ============================================
 await import('./snake.js');
+
+// Initialiser StateManager
+state.init();
 
 // Log de démarrage
 logger.log('🐍 Snake Ultra - Deluxe Edition');

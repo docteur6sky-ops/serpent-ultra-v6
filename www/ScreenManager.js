@@ -1,5 +1,7 @@
 import { logger } from './services/logger.js';
 import { SnakeUltra } from './SnakeUltra.js';
+import { state } from './services/StateManager.js';
+import { CleanupManager } from './managers/CleanupManager.js';
 
 /**
  * ScreenManager - Gestionnaire centralisé pour tous les écrans
@@ -31,7 +33,9 @@ class ScreenManager {
             'game-ai',  // ✅ MODE CONTRE IA
             'game-multi',
             'over',
-            'over-ai'  // ✅ GAME OVER MODE IA
+            'over-ai',  // ✅ GAME OVER MODE IA
+            'menu-boss-rush',  // ✅ BOSS RUSH - Menu
+            'over-boss-rush'   // ✅ BOSS RUSH - Game Over
         ];
 
         logger.log('🖥️ [ScreenManager] ScreenManager initialisé');
@@ -47,6 +51,28 @@ class ScreenManager {
         // ✅ CLEANUP HUB - Nettoyer le timer du coffre si on quitte le hub
         if (this.currentScreen === 'hub' && screenId !== 'hub' && window.cleanupChestTimer) {
             window.cleanupChestTimer();
+        }
+
+        // ✅ CLEANUP JEUX - Nettoyer les timers des jeux en cours (via StateManager)
+        if (this.currentScreen === 'game-solo' && screenId !== 'game-solo') {
+            if (state.soloGame?.cleanupAllTimers) {
+                state.soloGame.cleanupAllTimers();
+            }
+            CleanupManager.cleanup('solo-game');
+        }
+
+        if (this.currentScreen === 'game-multi' && screenId !== 'game-multi') {
+            if (state.multiGame?.cleanup) {
+                state.multiGame.cleanup();
+            }
+            CleanupManager.cleanup('multi-game');
+        }
+
+        if (this.currentScreen === 'game-ai' && screenId !== 'game-ai') {
+            if (state.aiGame?.cleanup) {
+                state.aiGame.cleanup();
+            }
+            CleanupManager.cleanup('ai-game');
         }
 
         // Nettoyer d'abord
@@ -69,7 +95,9 @@ class ScreenManager {
         const screen = document.getElementById(screenId);
         if (screen) {
             screen.classList.remove('hidden');
-            screen.style.display = '';
+            // Écrans avec display: flex pour centrage
+            const flexScreens = ['over-boss-rush', 'menu-boss-rush'];
+            screen.style.display = flexScreens.includes(screenId) ? 'flex' : '';
             screen.style.visibility = 'visible';
             screen.style.opacity = '1';
             screen.style.zIndex = '1';
