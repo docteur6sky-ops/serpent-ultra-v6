@@ -203,13 +203,24 @@ class TrophyManager {
         // Compter achievements roguelike
         for (const achievement of ACHIEVEMENTS) {
             const isUnlocked = achievementManager.isUnlocked(achievement.id);
+            const isSecret = achievement.category === 'secret';
 
             counts.all.total++;
-            counts.roguelike.total++;
+
+            // Les secrets roguelike vont dans 'secret', les autres dans 'roguelike'
+            if (isSecret) {
+                counts.secret.total++;
+            } else {
+                counts.roguelike.total++;
+            }
 
             if (isUnlocked) {
                 counts.all.unlocked++;
-                counts.roguelike.unlocked++;
+                if (isSecret) {
+                    counts.secret.unlocked++;
+                } else {
+                    counts.roguelike.unlocked++;
+                }
             }
         }
 
@@ -341,10 +352,15 @@ class TrophyManager {
         }
 
         // Ajouter achievements roguelike
-        if (category === 'all' || category === 'roguelike') {
+        if (category === 'all' || category === 'roguelike' || category === 'secret') {
             for (const achievement of ACHIEVEMENTS) {
-                // Filtrer les secrets roguelike pour la catégorie secret classique
+                // Pour 'roguelike': exclure les secrets (ils vont dans l'onglet 🔒)
+                if (category === 'roguelike' && achievement.category === 'secret') continue;
+
+                // Pour 'secret': n'inclure QUE les secrets roguelike
                 if (category === 'secret' && achievement.category !== 'secret') continue;
+
+                // Pour 'all': inclure tout
 
                 items.push({
                     type: 'roguelike',

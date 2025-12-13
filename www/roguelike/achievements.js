@@ -23,149 +23,139 @@ export const ACHIEVEMENTS = [
         category: 'progression',
         rarity: 'common',
         condition: { type: 'level_complete', value: 1 },
-        xpReward: 50
+        xpReward: 50  // Common = 50
     },
     {
         id: 'world_1_clear',
-        name: 'Forêt Conquise',
-        description: 'Terminer le monde 1 (niveau 5)',
-        icon: '🌲',
+        name: 'Explorateur des Grottes',
+        description: 'Terminer le monde 1 - Grotte (niveau 5)',
+        icon: '🦇',
         category: 'progression',
         rarity: 'common',
         condition: { type: 'level_complete', value: 5 },
-        xpReward: 100
+        xpReward: 50  // Common = 50
     },
     {
         id: 'world_2_clear',
-        name: 'Marais Traversé',
-        description: 'Terminer le monde 2 (niveau 10)',
-        icon: '🐸',
+        name: 'Alpiniste Glacé',
+        description: 'Terminer le monde 2 - Pic Enneigé (niveau 10)',
+        icon: '🏔️',
         category: 'progression',
         rarity: 'rare',
         condition: { type: 'level_complete', value: 10 },
-        xpReward: 200
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'world_3_clear',
-        name: 'Volcan Dompté',
-        description: 'Terminer le monde 3 (niveau 15)',
-        icon: '🌋',
+        name: 'Fossoyeur',
+        description: 'Terminer le monde 3 - Cimetière (niveau 15)',
+        icon: '⚰️',
         category: 'progression',
-        rarity: 'rare',
+        rarity: 'epic',
         condition: { type: 'level_complete', value: 15 },
-        xpReward: 300
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'world_4_clear',
-        name: 'Conquérant du Néant',
-        description: 'Terminer le jeu (niveau 20)',
-        icon: '👑',
+        name: 'Court-Circuit',
+        description: 'Terminer le monde 4 - Centrale Électrique (niveau 20)',
+        icon: '🔌',
         category: 'progression',
         rarity: 'legendary',
         condition: { type: 'level_complete', value: 20 },
-        xpReward: 1000
+        xpReward: 750  // Legendary = 750
     },
     {
-        id: 'runs_10',
+        id: 'runs_5',
         name: 'Persévérant',
-        description: 'Faire 10 runs',
+        description: 'Faire 5 runs',
         icon: '🔄',
         category: 'progression',
         rarity: 'common',
-        condition: { type: 'total_runs', value: 10 },
-        xpReward: 100
+        condition: { type: 'total_runs', value: 5 },
+        xpReward: 50  // Common = 50
     },
     {
-        id: 'runs_50',
+        id: 'runs_15',
         name: 'Vétéran',
-        description: 'Faire 50 runs',
+        description: 'Faire 15 runs',
         icon: '🎖️',
         category: 'progression',
         rarity: 'rare',
-        condition: { type: 'total_runs', value: 50 },
-        xpReward: 300
+        condition: { type: 'total_runs', value: 15 },
+        xpReward: 150  // Rare = 150
     },
     {
-        id: 'runs_100',
-        name: 'Légende',
-        description: 'Faire 100 runs',
+        id: 'runs_50',
+        name: 'Graine de Champion',
+        description: 'Faire 50 runs',
         icon: '🏆',
         category: 'progression',
         rarity: 'epic',
-        condition: { type: 'total_runs', value: 100 },
-        xpReward: 500
+        condition: { type: 'total_runs', value: 50 },
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'endless_25',
         name: 'Sans Limites',
-        description: 'Atteindre le niveau 25 (mode endless)',
+        description: 'Atteindre le niveau 25',
         icon: '♾️',
         category: 'progression',
         rarity: 'epic',
         condition: { type: 'level_complete', value: 25 },
-        xpReward: 500
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'endless_30',
         name: 'Immortel',
-        description: 'Atteindre le niveau 30 (mode endless)',
+        description: 'Atteindre le niveau 30',
         icon: '⭐',
         category: 'progression',
         rarity: 'legendary',
         condition: { type: 'level_complete', value: 30 },
-        xpReward: 1000
+        xpReward: 750  // Legendary = 750
     },
 
-    // ===== COMBAT (10) =====
-    {
-        id: 'first_boss',
-        name: 'Chasseur de Boss',
-        description: 'Vaincre ton premier boss',
-        icon: '⚔️',
-        category: 'combat',
-        rarity: 'common',
-        condition: { type: 'boss_killed', value: 1 },
-        xpReward: 100
-    },
+    // ===== COMBAT (9) =====
     {
         id: 'boss_titan',
         name: 'Titan Terrassé',
-        description: 'Vaincre TITAN (Boss 1 - Murs)',
+        description: 'Vaincre TITAN (Boss Grotte)',
         icon: '🗿',
         category: 'combat',
         rarity: 'common',
         condition: { type: 'specific_boss', value: 'TITAN' },
-        xpReward: 100
+        xpReward: 50  // Common = 50
     },
     {
         id: 'boss_cryo',
         name: 'Briseur de Glace',
-        description: 'Vaincre CRYO (Boss 2 - Glace)',
+        description: 'Vaincre CRYO (Boss Pic Enneigé)',
         icon: '❄️',
         category: 'combat',
         rarity: 'rare',
         condition: { type: 'specific_boss', value: 'CRYO' },
-        xpReward: 200
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'boss_spectre',
         name: 'Chasseur de Fantômes',
-        description: 'Vaincre SPECTRE (Boss 3 - Fantôme)',
+        description: 'Vaincre SPECTRE (Boss Cimetière)',
         icon: '👻',
         category: 'combat',
-        rarity: 'rare',
+        rarity: 'epic',
         condition: { type: 'specific_boss', value: 'SPECTRE' },
-        xpReward: 300
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'boss_foudre',
         name: 'Maître de la Foudre',
-        description: 'Vaincre FOUDRE (Boss Final)',
+        description: 'Vaincre FOUDRE (Boss Centrale)',
         icon: '⚡',
         category: 'combat',
         rarity: 'legendary',
         condition: { type: 'specific_boss', value: 'FOUDRE' },
-        xpReward: 500
+        xpReward: 750  // Legendary = 750
     },
     {
         id: 'boss_flawless',
@@ -175,37 +165,37 @@ export const ACHIEVEMENTS = [
         category: 'combat',
         rarity: 'epic',
         condition: { type: 'boss_flawless', value: 1 },
-        xpReward: 400
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'boss_speedrun',
-        name: 'Speed Demon',
-        description: 'Vaincre un boss en moins de 30 secondes',
-        icon: '⚡',
+        name: 'Tueur à Gage',
+        description: 'Vaincre un boss en moins de 1 minute',
+        icon: '🏎️',
         category: 'combat',
         rarity: 'epic',
-        condition: { type: 'boss_speedrun', value: 30 },
-        xpReward: 400
+        condition: { type: 'boss_speedrun', value: 60 },
+        xpReward: 350  // Epic = 350
     },
     {
-        id: 'steal_20',
+        id: 'steal_5_single',
         name: 'Voleur de Segments',
-        description: 'Voler 20 segments aux boss en une run',
+        description: 'Voler 5 segments en un seul coup',
         icon: '🗡️',
         category: 'combat',
         rarity: 'rare',
-        condition: { type: 'segments_stolen_run', value: 20 },
-        xpReward: 200
+        condition: { type: 'max_single_hit', value: 5 },
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'sword_master',
         name: 'Maître de l\'Épée',
-        description: 'Ramasser 10 épées en une run',
+        description: 'Ramasser 5 épées contre le même boss',
         icon: '🤺',
         category: 'combat',
         rarity: 'rare',
-        condition: { type: 'swords_collected_run', value: 10 },
-        xpReward: 200
+        condition: { type: 'swords_per_boss', value: 5 },
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'boss_all',
@@ -215,69 +205,69 @@ export const ACHIEVEMENTS = [
         category: 'combat',
         rarity: 'legendary',
         condition: { type: 'all_bosses', value: 4 },
-        xpReward: 750
+        xpReward: 750  // Legendary = 750
     },
 
     // ===== COLLECTION (10) =====
     {
-        id: 'apples_100',
+        id: 'apples_50',
         name: 'Cueilleur',
-        description: 'Manger 100 pommes au total',
+        description: 'Manger 50 pommes au total',
         icon: '🍎',
         category: 'collection',
         rarity: 'common',
-        condition: { type: 'total_apples', value: 100 },
-        xpReward: 50
+        condition: { type: 'total_apples', value: 50 },
+        xpReward: 50  // Common = 50
     },
     {
-        id: 'apples_500',
+        id: 'apples_250',
         name: 'Gourmand',
-        description: 'Manger 500 pommes au total',
+        description: 'Manger 250 pommes au total',
         icon: '🍏',
         category: 'collection',
         rarity: 'rare',
-        condition: { type: 'total_apples', value: 500 },
-        xpReward: 150
+        condition: { type: 'total_apples', value: 250 },
+        xpReward: 150  // Rare = 150
     },
     {
-        id: 'apples_1000',
+        id: 'apples_500',
         name: 'Insatiable',
-        description: 'Manger 1000 pommes au total',
+        description: 'Manger 500 pommes au total',
         icon: '🥧',
         category: 'collection',
         rarity: 'epic',
-        condition: { type: 'total_apples', value: 1000 },
-        xpReward: 300
+        condition: { type: 'total_apples', value: 500 },
+        xpReward: 350  // Epic = 350
     },
     {
-        id: 'score_10000',
+        id: 'xp_5000_run',
         name: 'Scorer',
-        description: 'Atteindre 10 000 points en une run',
+        description: 'Gagner 5 000 XP en une run',
         icon: '📊',
         category: 'collection',
         rarity: 'common',
-        condition: { type: 'score_run', value: 10000 },
-        xpReward: 100
+        condition: { type: 'xp_run', value: 5000 },
+        xpReward: 50  // Common = 50
     },
     {
-        id: 'score_50000',
+        id: 'xp_10000_run',
         name: 'High Scorer',
-        description: 'Atteindre 50 000 points en une run',
+        description: 'Gagner 10 000 XP en une run',
         icon: '📈',
         category: 'collection',
         rarity: 'rare',
-        condition: { type: 'score_run', value: 50000 },
-        xpReward: 250
+        condition: { type: 'xp_run', value: 10000 },
+        xpReward: 150  // Rare = 150
     },
     {
-        id: 'score_100000',
+        id: 'xp_30000_run',
         name: 'Score Legend',
-        description: 'Atteindre 100 000 points en une run',
+        description: 'Gagner 30 000 XP en une run',
         icon: '💯',
         category: 'collection',
         rarity: 'epic',
-        condition: { type: 'score_run', value: 100000 },
-        xpReward: 500
+        condition: { type: 'xp_run', value: 30000 },
+        xpReward: 350  // Epic = 350
     },
     {
         id: 'upgrades_10',
@@ -287,59 +277,59 @@ export const ACHIEVEMENTS = [
         category: 'collection',
         rarity: 'common',
         condition: { type: 'upgrades_run', value: 10 },
-        xpReward: 100
+        xpReward: 50  // Common = 50
     },
     {
         id: 'upgrades_legendary',
         name: 'Chanceux',
         description: 'Obtenir un upgrade légendaire',
-        icon: '🌟',
+        icon: '🎰',
         category: 'collection',
         rarity: 'rare',
         condition: { type: 'legendary_upgrade', value: 1 },
-        xpReward: 200
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'powerups_50',
         name: 'Power Hungry',
         description: 'Ramasser 50 power-ups au total',
-        icon: '⚡',
+        icon: '🎁',
         category: 'collection',
         rarity: 'rare',
         condition: { type: 'total_powerups', value: 50 },
-        xpReward: 150
+        xpReward: 150  // Rare = 150
     },
     {
-        id: 'xp_10000',
+        id: 'xp_500000',
         name: 'Expérimenté',
-        description: 'Accumuler 10 000 XP au total',
+        description: 'Accumuler 500 000 XP au total',
         icon: '✨',
         category: 'collection',
-        rarity: 'rare',
-        condition: { type: 'total_xp', value: 10000 },
-        xpReward: 200
+        rarity: 'legendary',
+        condition: { type: 'total_xp', value: 500000 },
+        xpReward: 750  // Legendary = 750
     },
 
-    // ===== MAÎTRISE (10) =====
+    // ===== MAÎTRISE (11) =====
     {
         id: 'no_hit_level',
         name: 'Intouchable',
         description: 'Terminer un niveau sans prendre de dégât',
         icon: '🛡️',
         category: 'mastery',
-        rarity: 'rare',
+        rarity: 'common',
         condition: { type: 'no_hit_level', value: 1 },
-        xpReward: 200
+        xpReward: 50  // Common = 50
     },
     {
         id: 'long_snake',
         name: 'Long Serpent',
-        description: 'Avoir 30 segments en même temps',
+        description: 'Avoir 25 segments en même temps',
         icon: '🐍',
         category: 'mastery',
         rarity: 'rare',
-        condition: { type: 'max_segments', value: 30 },
-        xpReward: 200
+        condition: { type: 'max_segments', value: 25 },
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'giant_snake',
@@ -349,27 +339,27 @@ export const ACHIEVEMENTS = [
         category: 'mastery',
         rarity: 'epic',
         condition: { type: 'max_segments', value: 50 },
-        xpReward: 400
+        xpReward: 350  // Epic = 350
     },
     {
-        id: 'combo_10',
+        id: 'combo_25',
         name: 'Combo King',
-        description: 'Atteindre un combo x10',
-        icon: '🔥',
+        description: 'Atteindre un combo x25',
+        icon: '💥',
         category: 'mastery',
         rarity: 'rare',
-        condition: { type: 'max_combo', value: 10 },
-        xpReward: 200
+        condition: { type: 'max_combo', value: 25 },
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'ghost_master',
         name: 'Fantôme',
         description: 'Traverser 20 murs en mode ghost',
-        icon: '👻',
+        icon: '🌫️',
         category: 'mastery',
         rarity: 'rare',
         condition: { type: 'walls_ghosted', value: 20 },
-        xpReward: 150
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'fire_destroyer',
@@ -379,17 +369,17 @@ export const ACHIEVEMENTS = [
         category: 'mastery',
         rarity: 'rare',
         condition: { type: 'walls_destroyed', value: 30 },
-        xpReward: 150
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'ice_master',
         name: 'Cryomancien',
         description: 'Geler des ennemis 20 fois',
-        icon: '❄️',
+        icon: '🧊',
         category: 'mastery',
         rarity: 'rare',
         condition: { type: 'enemies_frozen', value: 20 },
-        xpReward: 150
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'survivor',
@@ -399,7 +389,7 @@ export const ACHIEVEMENTS = [
         category: 'mastery',
         rarity: 'common',
         condition: { type: 'survival_time', value: 300 },
-        xpReward: 100
+        xpReward: 50  // Common = 50
     },
     {
         id: 'marathon',
@@ -409,102 +399,53 @@ export const ACHIEVEMENTS = [
         category: 'mastery',
         rarity: 'rare',
         condition: { type: 'survival_time', value: 600 },
-        xpReward: 250
+        xpReward: 150  // Rare = 150
     },
     {
         id: 'perfect_run',
         name: 'Run Parfaite',
-        description: 'Terminer 5 niveaux sans mourir',
+        description: 'Terminer 5 niveaux sans prendre de dégât',
         icon: '💫',
         category: 'mastery',
         rarity: 'epic',
         condition: { type: 'levels_no_death', value: 5 },
-        xpReward: 400
+        xpReward: 350  // Epic = 350
     },
 
-    // ===== CARRIÈRE GLOBALE (7) =====
-    // Ces achievements trackent la progression globale (tous modes confondus)
-    {
-        id: 'career_silver',
-        name: 'Ver de Terre',
-        description: 'Atteindre le niveau 11 (Rang Argent)',
-        icon: '🪱',
-        category: 'career',
-        rarity: 'common',
-        condition: { type: 'career_level', value: 11 },
-        xpReward: 200
-    },
-    {
-        id: 'career_gold',
-        name: 'Roi des Reptiles',
-        description: 'Atteindre le niveau 26 (Rang Or)',
-        icon: '👑',
-        category: 'career',
-        rarity: 'rare',
-        condition: { type: 'career_level', value: 26 },
-        xpReward: 500
-    },
-    {
-        id: 'career_platinum',
-        name: 'Dieu Serpent',
-        description: 'Atteindre le niveau 60 (Rang Platine)',
-        icon: '🌟',
-        category: 'career',
-        rarity: 'epic',
-        condition: { type: 'career_level', value: 60 },
-        xpReward: 1000
-    },
-    {
-        id: 'career_elite',
-        name: 'Ouroboros',
-        description: 'Atteindre le niveau 85 (Rang Élite)',
-        icon: '🐍',
-        category: 'career',
-        rarity: 'legendary',
-        condition: { type: 'career_level', value: 85 },
-        xpReward: 2000
-    },
-    {
-        id: 'career_legend',
-        name: 'Try Harder',
-        description: 'Atteindre le niveau 100 (Rang Légende)',
-        icon: '💪',
-        category: 'career',
-        rarity: 'legendary',
-        condition: { type: 'career_level', value: 100 },
-        xpReward: 5000
-    },
+    // ===== DIVERS (2) =====
+    // Achievements uniques roguelike
     {
         id: 'first_teleport',
-        name: 'Première Téléportation',
-        description: 'Traverser un bord de l\'écran',
-        icon: '🌀',
-        category: 'career',
+        name: 'À Travers l\'Écran',
+        description: 'Traverser un bord de l\'écran pour la première fois',
+        icon: '🧱',
+        category: 'mastery',
         rarity: 'common',
         condition: { type: 'first_teleport', value: 1 },
-        xpReward: 150
+        xpReward: 50
     },
     {
         id: 'kamikaze',
         name: 'Kamikaze',
         description: 'Mourir en moins de 30 secondes',
-        icon: '💥',
-        category: 'career',
-        rarity: 'common',
+        icon: '💀',
+        category: 'secret',
+        rarity: 'legendary',
         condition: { type: 'quick_death', value: 1 },
-        xpReward: 200
+        xpReward: 750,  // Legendary = 750
+        hidden: true
     },
 
-    // ===== SECRETS (5) =====
+    // ===== SECRETS (6) =====
     {
         id: 'secret_ice',
         name: 'Sang Froid',
         description: 'Vaincre CRYO sans jamais être ralenti',
-        icon: '🧊',
+        icon: '🥶',
         category: 'secret',
         rarity: 'legendary',
         condition: { type: 'cryo_no_slow', value: 1 },
-        xpReward: 500,
+        xpReward: 750,  // Legendary = 750
         hidden: true
     },
     {
@@ -513,31 +454,31 @@ export const ACHIEVEMENTS = [
         description: 'Détruire 10 murs du TITAN en une run',
         icon: '🧱',
         category: 'secret',
-        rarity: 'epic',
+        rarity: 'legendary',
         condition: { type: 'titan_walls_destroyed', value: 10 },
-        xpReward: 400,
+        xpReward: 750,  // Legendary = 750
         hidden: true
     },
     {
         id: 'secret_ghost',
         name: 'Exorciste',
-        description: 'Vaincre SPECTRE en phase Néant sans prendre de dégâts',
-        icon: '👻',
+        description: 'Vaincre SPECTRE en phase Néant sans dégâts',
+        icon: '☠️',
         category: 'secret',
         rarity: 'legendary',
         condition: { type: 'spectre_neant_flawless', value: 1 },
-        xpReward: 500,
+        xpReward: 750,  // Legendary = 750
         hidden: true
     },
     {
         id: 'secret_skip',
         name: 'Minimaliste',
-        description: 'Terminer une run en skippant tous les upgrades',
+        description: 'Terminer une run sans prendre aucun upgrade',
         icon: '🚫',
         category: 'secret',
         rarity: 'legendary',
         condition: { type: 'no_upgrades_run', value: 1 },
-        xpReward: 750,
+        xpReward: 750,  // Legendary = 750
         hidden: true
     },
     {
@@ -548,7 +489,7 @@ export const ACHIEVEMENTS = [
         category: 'secret',
         rarity: 'legendary',
         condition: { type: 'first_run_win', value: 1 },
-        xpReward: 1000,
+        xpReward: 750,  // Legendary = 750
         hidden: true
     }
 ];
@@ -593,6 +534,10 @@ class AchievementManager {
             enemiesFrozen: 0,
             longestSurvivalTime: 0,
 
+            // Secrets
+            cryoNoSlowKill: 0,        // Nombre de fois CRYO battu sans ralentissement
+            spectreNeantFlawless: 0,  // Nombre de fois SPECTRE battu en Néant sans dégâts
+
             // Run actuelle (reset à chaque run)
             currentRun: this.getDefaultRunStats()
         };
@@ -615,7 +560,16 @@ class AchievementManager {
             poisonHits: 0,
             chargesDodged: 0,
             hadLegendaryUpgrade: false,
-            isFirstRun: false
+            isFirstRun: false,
+            // XP tracking
+            xpEarned: 0,                // XP gagnée cette run
+            // Combat tracking
+            maxSingleHitDamage: 0,      // Max dégâts en un seul coup
+            swordsThisBoss: 0,          // Épées ramassées contre le boss actuel
+            // Secrets tracking
+            titanWallsDestroyed: 0,     // Murs du TITAN détruits cette run
+            wasSlowedByCryo: false,     // A été ralenti par CRYO?
+            spectreNeantDamage: 0       // Dégâts pris en phase Néant
         };
     }
 
@@ -750,13 +704,23 @@ class AchievementManager {
     onSegmentsStolen(count) {
         this.stats.segmentsStolenTotal += count;
         this.stats.currentRun.segmentsStolen += count;
+        // Track max single hit damage
+        if (count > this.stats.currentRun.maxSingleHitDamage) {
+            this.stats.currentRun.maxSingleHitDamage = count;
+        }
         this.checkAchievements();
     }
 
     onSwordCollected() {
         this.stats.swordsCollectedTotal++;
         this.stats.currentRun.swordsCollected++;
+        this.stats.currentRun.swordsThisBoss++;
         this.checkAchievements();
+    }
+
+    onBossFightStart() {
+        // Reset compteur épées pour ce boss
+        this.stats.currentRun.swordsThisBoss = 0;
     }
 
     onPowerupCollected() {
@@ -809,7 +773,39 @@ class AchievementManager {
 
     onXPEarned(xp) {
         this.stats.totalXP += xp;
+        this.stats.currentRun.xpEarned += xp;
         this.checkAchievements();
+    }
+
+    // ===== TRACKING SECRETS =====
+
+    onTitanWallDestroyed() {
+        this.stats.currentRun.titanWallsDestroyed++;
+        this.checkAchievements();
+    }
+
+    onSlowedByCryo() {
+        this.stats.currentRun.wasSlowedByCryo = true;
+    }
+
+    onSpectreNeantDamage() {
+        this.stats.currentRun.spectreNeantDamage++;
+    }
+
+    onCryoKilled() {
+        // Si pas ralenti pendant le combat, achievement secret!
+        if (!this.stats.currentRun.wasSlowedByCryo) {
+            this.stats.cryoNoSlowKill++;
+            this.checkAchievements();
+        }
+    }
+
+    onSpectreKilled() {
+        // Si pas de dégâts en phase Néant, achievement secret!
+        if (this.stats.currentRun.spectreNeantDamage === 0) {
+            this.stats.spectreNeantFlawless++;
+            this.checkAchievements();
+        }
     }
 
     // ===== VÉRIFICATION DES ACHIEVEMENTS =====
@@ -881,11 +877,20 @@ class AchievementManager {
             case 'swords_collected_run':
                 return run.swordsCollected >= value;
 
+            case 'max_single_hit':
+                return run.maxSingleHitDamage >= value;
+
+            case 'swords_per_boss':
+                return run.swordsThisBoss >= value;
+
             case 'total_apples':
                 return this.stats.totalApples >= value;
 
             case 'score_run':
                 return run.score >= value;
+
+            case 'xp_run':
+                return run.xpEarned >= value;
 
             case 'upgrades_run':
                 return run.upgrades >= value;
@@ -936,6 +941,27 @@ class AchievementManager {
 
             case 'quick_death':
                 return (window.career?.quickDeaths || 0) >= value;
+
+            // ===== CONDITIONS SECRÈTES =====
+            case 'cryo_no_slow':
+                // Vérifié lors du boss kill - stats.cryoNoSlowKill
+                return this.stats.cryoNoSlowKill >= value;
+
+            case 'titan_walls_destroyed':
+                // Murs du TITAN détruits pendant la run
+                return run.titanWallsDestroyed >= value;
+
+            case 'spectre_neant_flawless':
+                // Vérifié lors du boss kill - stats.spectreNeantFlawless
+                return this.stats.spectreNeantFlawless >= value;
+
+            case 'no_upgrades_run':
+                // Vérifié dans checkRunAchievements
+                return false;  // Géré séparément
+
+            case 'first_run_win':
+                // Vérifié dans checkRunAchievements
+                return false;  // Géré séparément
 
             default:
                 return false;
