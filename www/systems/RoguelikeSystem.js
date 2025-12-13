@@ -356,14 +356,9 @@ export class RoguelikeSystem {
 
     /**
      * Met à jour l'affichage de l'objectif
-     * ✅ PERF: Utilise le cache DOM
+     * ✅ PERF: Utilise le cache DOM (sans throttle pour éviter bug compteur)
      */
     updateObjectiveUI() {
-        // ✅ PERF: Throttle - skip si update récent
-        const now = performance.now();
-        if (now - this._lastUIUpdate < this._uiUpdateInterval) return;
-        this._lastUIUpdate = now;
-
         this._cacheDOMElements();
         const { objectiveDiv, levelEl, currentEl, targetEl } = this._domCache;
         if (!objectiveDiv) return;
