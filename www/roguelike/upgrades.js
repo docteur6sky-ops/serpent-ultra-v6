@@ -75,8 +75,8 @@ export const RUN_UPGRADES = {
         description: "Feu dure 2x plus longtemps (boost infini)",
         icon: "🔥",
         category: "powerup",
-        rarity: "rare",
-        weight: 6,
+        rarity: "common",
+        weight: 8,
         effect: {
             type: "powerup_duration",
             powerup: "fire",
@@ -90,8 +90,8 @@ export const RUN_UPGRADES = {
         description: "Roche dure 2x plus longtemps (détruit murs)",
         icon: "🪨",
         category: "powerup",
-        rarity: "rare",
-        weight: 6,
+        rarity: "common",
+        weight: 8,
         effect: {
             type: "powerup_duration",
             powerup: "rock",
@@ -105,8 +105,8 @@ export const RUN_UPGRADES = {
         description: "Ghost dure 2x plus longtemps",
         icon: "👻",
         category: "powerup",
-        rarity: "rare",
-        weight: 5,
+        rarity: "common",
+        weight: 8,
         effect: {
             type: "powerup_duration",
             powerup: "ghost",
@@ -184,8 +184,8 @@ export const RUN_UPGRADES = {
         description: "Longueur ÷2, combo inchangé (item à manger)",
         icon: "✂️",
         category: "segments",
-        rarity: "rare",
-        weight: 5,
+        rarity: "epic",
+        weight: 3,
         effect: {
             type: "scissors",
             divisor: 2
@@ -268,9 +268,9 @@ export const RUN_UPGRADES = {
     // ===== CATÉGORIE : SPÉCIAL =====
     teleport: {
         id: "teleport",
-        name: "Téléportation",
+        name: "Passe Muraille",
         description: "Supprime les murs de bordure, traverse l'écran",
-        icon: "🌀",
+        icon: "🧱",
         category: "special",
         rarity: "rare",
         weight: 5,
@@ -286,8 +286,8 @@ export const RUN_UPGRADES = {
         description: "Foudre dure 2x plus longtemps (contrôles inversés)",
         icon: "⚡",
         category: "powerup",
-        rarity: "rare",
-        weight: 5,
+        rarity: "common",
+        weight: 8,
         effect: {
             type: "powerup_duration",
             powerup: "lightning",
