@@ -223,6 +223,10 @@ class SoloSnakeGame extends BaseSnakeGame {
             return;
         }
 
+        // Cacher le timestamp pour éviter les appels Date.now() multiples
+        this._frameTimestamp = timestamp;
+        this._frameNow = Date.now();
+
         // Calculer vitesse
         let speed = this.calculateSpeed();
         if (this.powerUpSystem.isSlowActive) speed *= 1.5;
@@ -241,7 +245,10 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Update power-ups
         this.powerUpSystem.update();
 
-        // Update particules
+        // Update particules (limiter à 100 max)
+        if (this.particles && this.particles.length > 100) {
+            this.particles = this.particles.slice(-100);
+        }
         this.updateParticles();
 
         // Dessiner
@@ -251,9 +258,9 @@ class SoloSnakeGame extends BaseSnakeGame {
     }
 
     calculateSpeed() {
-        // Mode Roguelike : vitesse fixe 100ms (10 mouvements/sec)
+        // Mode Roguelike : vitesse fixe 150ms (6.7 mouvements/sec)
         if (this.roguelikeSystem.isActive) {
-            let speed = 100;
+            let speed = 150;
 
             // Boost universel (priorité sur sprint)
             if (this.powerUpSystem.boostActive) {
@@ -567,7 +574,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.goldSystem.draw();
 
         // Obstacles
-        const now = Date.now();
+        const now = this._frameNow || Date.now();
         for (let obs of this.obstacles) {
             // Vérifier si l'obstacle est en preview (skin Scanner)
             if (obs.previewUntil && now < obs.previewUntil) {
@@ -603,7 +610,7 @@ class SoloSnakeGame extends BaseSnakeGame {
             let skinColors = this.powerUpSystem.getSkinColors();
 
             if (this.isFlashing) {
-                const shouldBeRed = Math.floor(Date.now() / 80) % 2 === 0;
+                const shouldBeRed = Math.floor((this._frameNow || Date.now()) / 80) % 2 === 0;
                 if (shouldBeRed) {
                     skinColors = {
                         head: { light: '#FF0000', dark: '#CC0000' },
