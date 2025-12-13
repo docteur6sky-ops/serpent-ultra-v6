@@ -42,6 +42,12 @@ export class RoguelikeSystem {
         // Flag pour empêcher syncCombo après les ciseaux
         this.scissorsJustUsed = false;
 
+        // Combo Master en attente (spawn sur grille au lieu de pomme)
+        this.comboMasterPending = false;
+
+        // Flag pour +1 combo après Combo Master (pas de sync)
+        this.comboMasterJustUsed = false;
+
         // ✅ PERF: Cache des éléments DOM (évite getElementById à chaque frame)
         this._domCache = null;
         this._lastUIUpdate = 0;
@@ -103,7 +109,8 @@ export class RoguelikeSystem {
         this.modifiers = modifiers || {};
         this.objective = levelData.objective;
         this.progress = 0;
-        this.scissorsJustUsed = false;  // Reset au début de chaque stage
+        this.scissorsJustUsed = false;      // Reset au début de chaque stage
+        this.comboMasterJustUsed = false;   // Reset au début de chaque stage
 
         // Difficulté basée sur le monde
         const worldDifficulty = Math.min(2, levelData.world - 1);
@@ -235,33 +242,41 @@ export class RoguelikeSystem {
     }
 
     /**
-     * Applique l'upgrade Combo Master (double les segments)
+     * Vérifie si l'upgrade Combo Master est actif et spawn un 🌟 sur la grille
      */
     applyComboMaster() {
         if (!this.modifiers?.passives) return;
-        if (!window.roguelikeManager?.currentRun) return;
 
-        const comboMaster = this.modifiers.passives.find(p => p.type === 'combo_double_next_stage');
+        const comboMaster = this.modifiers.passives.find(p => p.type === 'combo_boost_next_apple');
         if (!comboMaster) return;
 
-        const currentSegments = this.game.snake.length;
-        const segmentsToAdd = currentSegments;
+        // Marquer qu'il faut spawn une étoile au lieu de la première pomme
+        this.comboMasterPending = true;
+        logger.log('[Roguelike] 🌟 Combo Master en attente - apparaîtra sur la grille');
+    }
 
-        for (let i = 0; i < segmentsToAdd; i++) {
-            this.game.snake.push({ ...this.game.snake[this.game.snake.length - 1] });
+    /**
+     * Applique l'effet du Combo Master quand le joueur mange l'étoile (+15 combo)
+     */
+    executeComboMaster() {
+        const comboBoost = 15;
+        this.game.combo += comboBoost;
+
+        if (this.game.combo > this.game.maxCombo) {
+            this.game.maxCombo = this.game.combo;
+            achievementManager.onComboUpdate(this.game.combo);
         }
 
-        this.game.syncCombo();
-        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ff4444', 15);
-
-        // Consommer l'upgrade
-        const run = window.roguelikeManager.currentRun;
-        const upgradeIndex = run.upgrades.indexOf('combo_master');
-        if (upgradeIndex !== -1) {
-            run.upgrades.splice(upgradeIndex, 1);
+        // Retirer le bonus de la liste (consommé)
+        const run = window.roguelikeManager?.currentRun;
+        if (run?.upgrades) {
+            const idx = run.upgrades.indexOf('combo_master');
+            if (idx !== -1) run.upgrades.splice(idx, 1);
         }
 
-        logger.log(`[Roguelike] 🔥 Combo Master! ${currentSegments} → ${currentSegments * 2} segments`);
+        this.comboMasterPending = false;
+        this.comboMasterJustUsed = true;  // Empêcher syncCombo, juste +1 par pomme après
+        logger.log(`[Roguelike] 🌟 Combo Master mangé! Combo +${comboBoost} = ${this.game.combo}`);
     }
 
     /**
@@ -531,7 +546,7 @@ export class RoguelikeSystem {
 
         const upgradeCounts = {};
         run.upgrades.forEach(upgradeId => {
-            if (['extra_life', 'shield', 'scissors'].includes(upgradeId)) return;
+            if (['extra_life', 'shield', 'scissors', 'combo_master'].includes(upgradeId)) return;
             upgradeCounts[upgradeId] = (upgradeCounts[upgradeId] || 0) + 1;
         });
 

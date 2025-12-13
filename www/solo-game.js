@@ -41,6 +41,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.bad = null;
         this.powerup = null;
         this.scissors = null;  // Ciseaux (bonus roguelike)
+        this.comboMaster = null;  // Étoile Combo Master (bonus roguelike)
         this.obstacles = [];
 
         // Scores et stats
@@ -187,6 +188,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.obstacles = [];
         this.powerup = null;
         this.scissors = null;
+        this.comboMaster = null;
 
         // Tracking
         this.firstDirectionChangeTime = null;
@@ -330,6 +332,12 @@ class SoloSnakeGame extends BaseSnakeGame {
             return;
         }
 
+        // Collision Combo Master (bonus roguelike)
+        if (this.comboMaster && head.x === this.comboMaster.x && head.y === this.comboMaster.y) {
+            this.eatComboMaster(head);
+            return;
+        }
+
         // Collisions nourriture
         if (this.food && head.x === this.food.x && head.y === this.food.y) {
             this.eatFood(head);
@@ -452,17 +460,6 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.snake.unshift(head);
         this.syncCombo();
 
-        // Bonus Combo Master : +15 combo à la première pomme (consommable)
-        const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
-        if (run?.upgrades?.includes('combo_master')) {
-            this.combo += 15;
-            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-            this.createParticles(head.x, head.y, '#ffd700', 12); // Particules dorées
-            // Consommer le bonus (retirer de la liste)
-            const idx = run.upgrades.indexOf('combo_master');
-            if (idx !== -1) run.upgrades.splice(idx, 1);
-        }
-
         if (this.snake.length > this.maxSnakeLength) {
             this.maxSnakeLength = this.snake.length;
         }
@@ -545,6 +542,27 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.updateUI();
     }
 
+    eatComboMaster(head) {
+        // Son et effet visuel
+        if (this.audio) this.audio.powerup();
+        this.createParticles(head.x, head.y, '#ffd700', 15); // Particules dorées
+
+        // Appliquer l'effet du Combo Master (+15 combo)
+        this.roguelikeSystem.executeComboMaster();
+
+        // Retirer l'étoile de la grille
+        this.comboMaster = null;
+
+        // Déplacement normal (pas de croissance)
+        this.snake.unshift(head);
+        this.snake.pop();
+
+        // Spawn la pomme maintenant que le combo master est mangé
+        this.spawnSystem.spawnFood();
+
+        this.updateUI();
+    }
+
     eatPowerup(head) {
         this.powerUpSystem.activate(this.powerup.t);
         this.powerup = null;
@@ -560,8 +578,8 @@ class SoloSnakeGame extends BaseSnakeGame {
     // ============================================
 
     syncCombo() {
-        // Exception ciseaux : après les ciseaux, chaque pomme = +1 combo (pas de sync)
-        if (this.roguelikeSystem?.scissorsJustUsed) {
+        // Exception ciseaux/combo master : après ces bonus, chaque pomme = +1 combo (pas de sync)
+        if (this.roguelikeSystem?.scissorsJustUsed || this.roguelikeSystem?.comboMasterJustUsed) {
             this.combo++;
             if (this.combo > this.maxCombo) {
                 this.maxCombo = this.combo;
@@ -623,8 +641,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         const borderColor = isDarkMode ? '#00A5A5' : '#d8d800ff';
         RenderUtils.drawGrid(this.ctx, this.GRID_SIZE, this.CELL_SIZE, this.CANVAS_SIZE, { grid: '#404060', border: borderColor });
 
-        // Nourriture
-        if (this.food) RenderUtils.drawStar(this.ctx, this.food.x, this.food.y, this.CELL_SIZE);
+        // Nourriture (verte si Gourmandise actif)
+        if (this.food) {
+            const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
+            const hasGourmandise = run?.upgrades?.includes('apple_value') || false;
+            RenderUtils.drawStar(this.ctx, this.food.x, this.food.y, this.CELL_SIZE, hasGourmandise);
+        }
 
         // Ciseaux (bonus roguelike)
         if (this.scissors) {
@@ -634,6 +656,25 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText('✂️', x, y);
+        }
+
+        // Combo Master (étoile dorée - bonus roguelike)
+        if (this.comboMaster) {
+            const x = this.comboMaster.x * this.CELL_SIZE + this.CELL_SIZE / 2;
+            const y = this.comboMaster.y * this.CELL_SIZE + this.CELL_SIZE / 2;
+            // Animation de pulsation
+            const scale = 1 + 0.1 * Math.sin((this._frameNow || performance.now()) / 200);
+            this.ctx.save();
+            this.ctx.translate(x, y);
+            this.ctx.scale(scale, scale);
+            this.ctx.font = `${this.CELL_SIZE * 0.8}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = '#ffd700';
+            this.ctx.fillText('🌟', 0, 0);
+            this.ctx.shadowBlur = 0;
+            this.ctx.restore();
         }
 
         // Crâne

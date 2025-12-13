@@ -56,6 +56,11 @@ export class SpawnSystem {
             return false;
         }
 
+        // Vérifier collision avec le Combo Master (étoile)
+        if (this.game.comboMaster && x === this.game.comboMaster.x && y === this.game.comboMaster.y) {
+            return false;
+        }
+
         // Vérifier collision avec le boss
         if (this.game.bossSystem?.boss?.snake.some(s => s.x === x && s.y === y)) {
             return false;
@@ -127,7 +132,7 @@ export class SpawnSystem {
     }
 
     /**
-     * Spawn la nourriture (pomme) ou ciseaux si bonus actif
+     * Spawn la nourriture (pomme), ciseaux ou étoile combo master si bonus actif
      */
     spawnFood() {
         // Vérifier si des ciseaux doivent spawn à la place de la pomme
@@ -141,8 +146,19 @@ export class SpawnSystem {
             return;
         }
 
-        // Spawn normal de pomme (seulement si pas de ciseaux)
-        if (!this.game.scissors) {
+        // Vérifier si Combo Master doit spawn à la place de la pomme
+        if (this.game.roguelikeSystem?.comboMasterPending && !this.game.comboMaster) {
+            const position = this.findFreePosition();
+            if (position) {
+                this.game.comboMaster = position;
+                this.game.food = null;  // Pas de pomme tant que combo master pas mangé
+                logger.log('[SpawnSystem] 🌟 Combo Master spawné à', position);
+            }
+            return;
+        }
+
+        // Spawn normal de pomme (seulement si pas de ciseaux ni combo master)
+        if (!this.game.scissors && !this.game.comboMaster) {
             const position = this.findFreePosition();
             if (position) {
                 this.game.food = position;
