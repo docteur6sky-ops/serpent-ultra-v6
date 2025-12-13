@@ -58,6 +58,54 @@ let currentDifficulty = 0; // 0 = Facile, 1 = Normal, 2 = Difficile
 window.currentDifficulty = currentDifficulty;
 
 // ============================================
+// HELPERS - OVERLAYS
+// ============================================
+
+/**
+ * Cache DOM pour les overlays (évite getElementById répétés)
+ */
+const _overlayCache = {};
+
+/**
+ * Récupère un overlay avec cache
+ */
+function getOverlay(id) {
+    if (!_overlayCache[id]) {
+        _overlayCache[id] = document.getElementById(id);
+    }
+    return _overlayCache[id];
+}
+
+/**
+ * Affiche un overlay
+ */
+function showOverlay(id) {
+    const overlay = getOverlay(id);
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.style.display = 'flex';
+    }
+}
+
+/**
+ * Cache un overlay
+ */
+function hideOverlay(id) {
+    const overlay = getOverlay(id);
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+    }
+}
+
+/**
+ * Récupère l'instance de jeu active (Solo ou Roguelike)
+ */
+function getActiveGameInstance() {
+    return soloGameInstance || window.soloGame;
+}
+
+// ============================================
 // FONCTIONS DE NAVIGATION
 // ============================================
 
@@ -112,30 +160,17 @@ window.start = function() {
  * Met en pause / reprend le jeu solo
  */
 window.pauseSolo = function() {
-    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
-    const gameInstance = soloGameInstance || window.soloGame;
+    const gameInstance = getActiveGameInstance();
 
     if (gameInstance) {
-        // Vérifier l'état AVANT de toggler
         const wasPaused = gameInstance.paused;
-
-        // Toggle pause
         gameInstance.pause();
 
-        // Son de pause
-        if (window.audio && window.audio.buttonClick) {
-            window.audio.buttonClick();
-        }
+        window.audio?.buttonClick?.();
 
         // Gérer la musique selon le nouvel état
         if (window.audioManager) {
-            if (wasPaused) {
-                // Le jeu était en pause, on reprend
-                window.audioManager.resume();
-            } else {
-                // Le jeu tourne, on met en pause
-                window.audioManager.pause();
-            }
+            wasPaused ? window.audioManager.resume() : window.audioManager.pause();
         }
     }
 };
@@ -144,42 +179,29 @@ window.pauseSolo = function() {
  * Quitter le mode solo et retourner au menu
  */
 window.quitSolo = function() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
 
-    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
-    const gameInstance = soloGameInstance || window.soloGame;
-
-    // ✅ Mettre le jeu en pause IMMÉDIATEMENT (pas de condition running)
+    const gameInstance = getActiveGameInstance();
     if (gameInstance && !gameInstance.paused) {
         gameInstance.pause();
     }
 
-    // Afficher l'overlay
-    const overlay = document.getElementById('solo-quit-overlay');
-    overlay.classList.remove('hidden');
-    overlay.style.display = 'flex';
+    showOverlay('solo-quit-overlay');
 };
 
 /**
  * Confirmer la sortie du mode solo
  */
 function confirmQuitSolo() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
+    hideOverlay('solo-quit-overlay');
 
-    // Cacher l'overlay
-    const overlay = document.getElementById('solo-quit-overlay');
-    overlay.classList.add('hidden');
-    overlay.style.display = 'none';
-
-    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
-    const gameInstance = soloGameInstance || window.soloGame;
-
-    // Arrêter le jeu
+    const gameInstance = getActiveGameInstance();
     if (gameInstance) {
         gameInstance.stop();
     }
 
-    // ✅ Si on quitte une run Roguelike, proposer de sauvegarder
+    // Si on quitte une run Roguelike, proposer de sauvegarder
     if (window.roguelikeManager?.isRunActive) {
         window.roguelikeManager.saveRunMidGame();
     }
@@ -207,19 +229,12 @@ function confirmQuitSolo() {
  * Annuler la sortie et reprendre le jeu
  */
 function cancelQuitSolo() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
+    hideOverlay('solo-quit-overlay');
 
-    // Cacher l'overlay
-    const overlay = document.getElementById('solo-quit-overlay');
-    overlay.classList.add('hidden');
-    overlay.style.display = 'none';
-
-    // ✅ Support Roguelike: utiliser window.soloGame si soloGameInstance n'existe pas
-    const gameInstance = soloGameInstance || window.soloGame;
-
-    // Reprendre le jeu (pause() est un toggle)
+    const gameInstance = getActiveGameInstance();
     if (gameInstance) {
-        gameInstance.pause();
+        gameInstance.pause(); // Toggle - reprend le jeu
     }
 }
 
@@ -240,28 +255,15 @@ window.pauseAI = function() {
         return;
     }
 
-    // Son du bouton
-    if (window.audio && window.audio.buttonClick) {
-        window.audio.buttonClick();
-    }
+    window.audio?.buttonClick?.();
 
-    // Vérifier l'état AVANT de toggler
     const wasPaused = window.aiGame.paused;
-
-    // Toggle pause
     window.aiGame.pause();
 
     logger.log(`[pauseAI] Pause toggled: ${!wasPaused} -> ${window.aiGame.paused}`);
 
-    // Gérer la musique selon le nouvel état
     if (window.audioManager) {
-        if (wasPaused) {
-            // Le jeu était en pause, on reprend
-            window.audioManager.resume();
-        } else {
-            // Le jeu tourne, on met en pause
-            window.audioManager.pause();
-        }
+        wasPaused ? window.audioManager.resume() : window.audioManager.pause();
     }
 };
 
@@ -269,78 +271,40 @@ window.pauseAI = function() {
  * Quitter le mode IA et retourner au menu
  */
 window.quitAI = function() {
-    if (window.audio && window.audio.buttonClick) {
-        window.audio.buttonClick();
-    }
+    window.audio?.buttonClick?.();
 
     // Mettre le jeu en pause
     if (window.aiGame && window.aiGame.running) {
         window.aiGame.pause();
     }
 
-    // Afficher l'overlay
-    const overlay = document.getElementById('ai-quit-overlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-        overlay.style.display = 'flex';
-    }
+    showOverlay('ai-quit-overlay');
 };
 
 /**
  * Confirmer la sortie du mode IA
  */
 function confirmQuitAI() {
-    if (window.audio && window.audio.buttonClick) {
-        window.audio.buttonClick();
-    }
+    window.audio?.buttonClick?.();
+    hideOverlay('ai-quit-overlay');
 
-    // Cacher l'overlay
-    const overlay = document.getElementById('ai-quit-overlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-        overlay.style.display = 'none';
-    }
+    window.aiGame?.stop();
+    window.screenManager?.show('hub');
 
-    // Arrêter le jeu
-    if (window.aiGame) {
-        window.aiGame.stop();
-    }
-
-    // Retour au HUB V6
-    if (window.screenManager) {
-        window.screenManager.show('hub');
-    }
-
-    // Rafraîchir le hub
     if (window.initHub) {
         setTimeout(() => window.initHub(), 100);
     }
 
-    // Lancer la musique du hub
-    if (window.audio && window.audio.playMusic) {
-        window.audio.playMusic('menu');
-    }
+    window.audio?.playMusic?.('menu');
 }
 
 /**
  * Annuler la sortie et reprendre le jeu
  */
 function cancelQuitAI() {
-    if (window.audio && window.audio.buttonClick) {
-        window.audio.buttonClick();
-    }
-
-    // Cacher l'overlay
-    const overlay = document.getElementById('ai-quit-overlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-        overlay.style.display = 'none';
-    }
-
-    // Reprendre le jeu (pause() est un toggle)
-    if (window.aiGame) {
-        window.aiGame.pause();
-    }
+    window.audio?.buttonClick?.();
+    hideOverlay('ai-quit-overlay');
+    window.aiGame?.pause();
 }
 
 // Exposer les fonctions globalement
@@ -718,43 +682,28 @@ window.startLocalMultiplayer = function() {
  * Affiche un overlay de confirmation (comme pour le solo)
  */
 window.abandonMulti = function() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
 
-    // Mettre le jeu en pause
-    if (multiGameInstance && multiGameInstance.running) {
+    if (multiGameInstance?.running) {
         multiGameInstance.pause();
     }
 
-    // Afficher l'overlay de confirmation
-    const overlay = document.getElementById('multi-quit-overlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-        overlay.style.display = 'flex';
-    }
+    showOverlay('multi-quit-overlay');
 };
 
 /**
  * Confirmer l'abandon de la partie multijoueur
  */
 function confirmAbandonMulti() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
+    hideOverlay('multi-quit-overlay');
 
-    // Cacher l'overlay
-    const overlay = document.getElementById('multi-quit-overlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-        overlay.style.display = 'none';
-    }
-
-    // ✅ ENVOYER UN MESSAGE AU SERVEUR pour notifier l'abandon
-    if (multiGameInstance && multiGameInstance.client && multiGameInstance.client.ws) {
-        multiGameInstance.client.ws.send(JSON.stringify({
-            type: 'player_abandon'
-        }));
+    // Notifier le serveur de l'abandon
+    if (multiGameInstance?.client?.ws) {
+        multiGameInstance.client.ws.send(JSON.stringify({ type: 'player_abandon' }));
         logger.log('🏳️ Message d\'abandon envoyé au serveur');
     }
 
-    // Quitter la partie
     window.quitMulti();
 }
 
@@ -762,17 +711,10 @@ function confirmAbandonMulti() {
  * Annuler l'abandon et reprendre le jeu
  */
 function cancelAbandonMulti() {
-    window.audio.buttonClick();
+    window.audio?.buttonClick();
+    hideOverlay('multi-quit-overlay');
 
-    // Cacher l'overlay
-    const overlay = document.getElementById('multi-quit-overlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-        overlay.style.display = 'none';
-    }
-
-    // Reprendre le jeu
-    if (multiGameInstance && multiGameInstance.paused) {
+    if (multiGameInstance?.paused) {
         multiGameInstance.resume();
     }
 }
