@@ -1,7 +1,9 @@
 // ============================================
 // TROPHÉES ET RANGS
 // Système de progression et achievements
-// Version 3.0 - 30 trophées (14 Solo + 9 Multi + 5 IA + 2 Secrets)
+// Version 7.0 - 31 trophées
+// 15 Multi + 11 Boss Rush + 5 Easter Eggs
+// Note: Les trophées Solo/Carrière sont dans achievements.js (Roguelike)
 // ============================================
 
 /**
@@ -12,197 +14,12 @@
 export function createTrophies(career) {
     return {
         // ═══════════════════════════════════════
-        // SOLO (15) - ⭐ FACILE (3)
-        // ═══════════════════════════════════════
-        premier_pas: {
-            name: 'Premier Pas',
-            emoji: '👣',
-            image: 'green-worm-earth.png',
-            description: 'Terminer ta 1ère partie',
-            rarity: 1,
-            xp: 100,
-            secret: false,
-            category: 'solo',
-            check: () => career.totalGames >= 1
-        },
-
-        ver_de_terre: {
-            name: 'Ver de Terre',
-            emoji: '🪱',
-            image: 'green-worm-earth.png',
-            description: 'Atteindre le stage 5',
-            rarity: 1,
-            xp: 200,
-            secret: false,
-            category: 'solo',
-            check: () => career.maxLevel >= 5
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - ⭐⭐ MOYEN (4)
-        // ═══════════════════════════════════════
-        roi_reptiles: {
-            name: 'Roi des Reptiles',
-            emoji: '👑',
-            image: 'golden-trophy-crown.png',
-            description: 'Atteindre le stage 10',
-            rarity: 2,
-            xp: 500,
-            secret: false,
-            category: 'solo',
-            check: () => career.maxLevel >= 10
-        },
-
-        anaconda: {
-            name: 'Anaconda',
-            emoji: '🦎',
-            image: 'coiled-snake-anaconda.png',
-            description: 'Atteindre 50 segments',
-            rarity: 2,
-            xp: 600,
-            secret: false,
-            category: 'solo',
-            check: () => career.bestScore >= 5000  // Proxy : 50 segments ≈ 5000 pts
-        },
-
-        tout_puissant: {
-            name: 'Tout Puissant',
-            emoji: '⚡',
-            image: 'golden-lightning-power.png',
-            description: 'Collecter 75 power-ups (total carrière)',
-            rarity: 2,
-            xp: 700,
-            secret: false,
-            category: 'solo',
-            check: () => (career.totalPowerups || 0) >= 75
-        },
-
-        survivant: {
-            name: 'Survivant',
-            emoji: '⏱️',
-            image: 'water-droplet-shield.png',
-            description: 'Survivre 5 minutes en une partie',
-            rarity: 2,
-            xp: 800,
-            secret: false,
-            category: 'solo',
-            check: () => {
-                const maxSurvival = career.maxSurvival || '0:00';
-                const [min, sec] = maxSurvival.split(':').map(Number);
-                const totalSeconds = (min * 60) + (sec || 0);
-                return totalSeconds >= 300; // 5 minutes
-            }
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - ⭐⭐⭐ DIFFICILE (4)
-        // ═══════════════════════════════════════
-        dieu_serpent: {
-            name: 'Dieu Serpent',
-            emoji: '🌟',
-            image: 'mystical-serpent-deity.png',
-            description: 'Atteindre le stage 15',
-            rarity: 3,
-            xp: 1000,
-            secret: false,
-            category: 'solo',
-            check: () => career.maxLevel >= 15
-        },
-
-        seigneur_chaos: {
-            name: 'Seigneur du Chaos',
-            emoji: '🔮',
-            image: 'dark-skull-chaos.png',
-            description: 'Collecter 150 power-ups (total carrière)',
-            rarity: 3,
-            xp: 1200,
-            secret: false,
-            category: 'solo',
-            check: () => (career.totalPowerups || 0) >= 150
-        },
-
-        puriste: {
-            name: 'Puriste',
-            emoji: '🚫',
-            image: 'glowing-question-mystery.png',
-            description: 'Atteindre stage 10 sans power-up',
-            rarity: 3,
-            xp: 1500,
-            secret: false,
-            category: 'solo',
-            check: () => career.maxLevel >= 10 && career.totalPowerups === 0
-        },
-
-        immortel: {
-            name: 'Immortel',
-            emoji: '💀',
-            image: 'water-droplet-shield.png',
-            description: 'Survivre 10 minutes en une partie',
-            rarity: 3,
-            xp: 1500,
-            secret: false,
-            category: 'solo',
-            check: () => {
-                const maxSurvival = career.maxSurvival || '0:00';
-                const [min, sec] = maxSurvival.split(':').map(Number);
-                const totalSeconds = (min * 60) + (sec || 0);
-                return totalSeconds >= 600; // 10 minutes
-            }
-        },
-
-        // ═══════════════════════════════════════
-        // SOLO - ⭐⭐⭐⭐ EXPERT (4)
-        // ═══════════════════════════════════════
-        ouroboros: {
-            name: 'Ouroboros',
-            emoji: '🐍',
-            image: 'mystical-serpent-deity.png',
-            description: 'Atteindre le stage 20',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'solo',
-            check: () => career.maxLevel >= 20
-        },
-
-        kamikaze: {
-            name: 'Kamikaze',
-            emoji: '💥',
-            image: 'dark-skull-chaos.png',
-            description: 'Mourir en moins de 10 secondes',
-            rarity: 1,
-            xp: 200,
-            secret: false,
-            category: 'solo',
-            check: () => (career.quickDeaths || 0) >= 1
-        },
-
-        phoenix: {
-            name: 'Phoenix',
-            emoji: '🔥',
-            image: 'golden-trophy-crown.png',
-            description: 'Gagner immédiatement après une défaite',
-            rarity: 1,
-            xp: 300,
-            secret: false,
-            category: 'solo',
-            check: () => (career.phoenixRises || 0) >= 1
-        },
-
-        architecte_chaos: {
-            name: 'Architecte du Chaos',
-            emoji: '🌪️',
-            image: 'broken-pillars-chaos.png',
-            description: 'Détruire 200 murs (total carrière)',
-            rarity: 4,
-            xp: 2000,
-            secret: false,
-            category: 'solo',
-            check: () => (career.totalWalls || 0) >= 200
-        },
-
-        // ═══════════════════════════════════════
-        // MULTI (15) - ⭐ FACILE (3)
+        // MULTI (15) - Grades et Progression
+        // ⭐ FACILE (3): bapteme_feu, premiere_victoire, chasseur_bonus_multi
+        // ⭐⭐ MOYEN (4): combattant_multi, phoenix, collecteur_multi, grade_argent_multi
+        // ⭐⭐⭐ DIFFICILE (3): grade_or_multi, invaincu, survivant_multi
+        // ⭐⭐⭐⭐ EXPERT (3): titan, grade_platine_multi, inarretable
+        // ⭐⭐⭐⭐⭐ LÉGENDAIRE (2): grade_legende_multi, legende_multi
         // ═══════════════════════════════════════
         bapteme_feu: {
             name: 'Baptême du Feu',
@@ -221,8 +38,8 @@ export function createTrophies(career) {
             emoji: '⚔️',
             image: 'victory-trophy-laurel.png',
             description: 'Jouer 5 parties multi',
-            rarity: 1,
-            xp: 200,
+            rarity: 2,
+            xp: 400,
             secret: false,
             category: 'multi',
             check: () => (career.totalMultiGames || 0) >= 5
@@ -240,31 +57,55 @@ export function createTrophies(career) {
             check: () => (career.multiWins || 0) >= 1
         },
 
+        chasseur_bonus_multi: {
+            name: 'Chasseur de Bonus',
+            emoji: '🎁',
+            image: 'golden-lightning-power.png',
+            description: 'Collecter 5 power-ups en Multi (total carrière)',
+            rarity: 1,
+            xp: 250,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiPowerups || 0) >= 5
+        },
+
         // ═══════════════════════════════════════
         // MULTI - ⭐⭐ MOYEN (4)
         // ═══════════════════════════════════════
-        veteran: {
-            name: 'Vétéran',
-            emoji: '🎖️',
-            image: 'platinum-crown-champion.png',
-            description: 'Jouer 20 parties multi',
+        phoenix: {
+            name: 'Phoenix',
+            emoji: '🔥',
+            image: 'golden-trophy-crown.png',
+            description: 'Gagner immédiatement après une défaite (multi)',
             rarity: 2,
             xp: 500,
             secret: false,
             category: 'multi',
-            check: () => (career.totalMultiGames || 0) >= 20
+            check: () => (career.phoenixRisesMulti || 0) >= 1
         },
 
-        vainqueur: {
-            name: 'Vainqueur',
-            emoji: '🏆',
+        collecteur_multi: {
+            name: 'Collecteur',
+            emoji: '💎',
+            image: 'golden-lightning-power.png',
+            description: 'Collecter 20 power-ups en Multi (total carrière)',
+            rarity: 2,
+            xp: 500,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiPowerups || 0) >= 20
+        },
+
+        grade_argent_multi: {
+            name: 'Grade Argent',
+            emoji: '🥈',
             image: 'victory-trophy-laurel.png',
-            description: 'Gagner 5 parties multi',
+            description: 'Atteindre le grade Argent en Multi (10 victoires)',
             rarity: 2,
             xp: 600,
             secret: false,
             category: 'multi',
-            check: () => (career.multiWins || 0) >= 5
+            check: () => (career.multiWins || 0) >= 10
         },
 
         survivant_multi: {
@@ -272,21 +113,18 @@ export function createTrophies(career) {
             emoji: '✅',
             image: 'water-droplet-shield.png',
             description: 'Finir 10 parties sans abandon',
-            rarity: 2,
-            xp: 800,
+            rarity: 3,
+            xp: 1000,
             secret: false,
             category: 'multi',
             check: () => (career.multiCompleted || 0) >= 10
         },
 
-        // ═══════════════════════════════════════
-        // MULTI - ⭐⭐⭐ DIFFICILE (4)
-        // ═══════════════════════════════════════
-        champion: {
-            name: 'Champion',
-            emoji: '👑',
-            image: 'platinum-crown-champion.png',
-            description: 'Gagner 20 parties multi',
+        grade_or_multi: {
+            name: 'Grade Or',
+            emoji: '🥇',
+            image: 'golden-trophy-crown.png',
+            description: 'Atteindre le grade Or en Multi (20 victoires)',
             rarity: 3,
             xp: 1000,
             secret: false,
@@ -295,15 +133,54 @@ export function createTrophies(career) {
         },
 
         // ═══════════════════════════════════════
-        // MULTI - ⭐⭐⭐⭐ EXPERT (2)
+        // MULTI - ⭐⭐⭐ DIFFICILE (2)
+        // ═══════════════════════════════════════
+        grade_platine_multi: {
+            name: 'Grade Platine',
+            emoji: '💎',
+            image: 'platinum-crown-champion.png',
+            description: 'Atteindre le grade Platine en Multi (30 victoires)',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiWins || 0) >= 30
+        },
+
+        titan: {
+            name: 'Titan',
+            emoji: '🗿',
+            image: 'platinum-crown-champion.png',
+            description: 'Jouer 50 parties multi',
+            rarity: 4,
+            xp: 2000,
+            secret: false,
+            category: 'multi',
+            check: () => (career.totalMultiGames || 0) >= 50
+        },
+
+        grade_legende_multi: {
+            name: 'Grade Légende',
+            emoji: '👑',
+            image: 'golden-trophy-crown.png',
+            description: 'Atteindre le grade Légende en Multi (50 victoires)',
+            rarity: 5,
+            xp: 5000,
+            secret: false,
+            category: 'multi',
+            check: () => (career.multiWins || 0) >= 50
+        },
+
+        // ═══════════════════════════════════════
+        // MULTI - ⭐⭐⭐⭐ EXPERT (4)
         // ═══════════════════════════════════════
         invaincu: {
             name: 'Invaincu',
             emoji: '🔥',
             image: 'water-droplet-shield.png',
             description: 'Gagner 3 parties d\'affilée',
-            rarity: 4,
-            xp: 2000,
+            rarity: 3,
+            xp: 1000,
             secret: false,
             category: 'multi',
             check: () => (career.currentStreak || 0) >= 3
@@ -321,90 +198,208 @@ export function createTrophies(career) {
             check: () => (career.currentStreak || 0) >= 5
         },
 
+        legende_multi: {
+            name: 'Légende du Multi',
+            emoji: '🏆',
+            image: 'golden-trophy-crown.png',
+            description: 'Débloquer les 14 autres trophées Multi',
+            rarity: 5,
+            xp: 5000,
+            secret: false,
+            category: 'multi',
+            check: () => {
+                const multiTrophies = ['phoenix', 'bapteme_feu', 'combattant_multi', 'premiere_victoire', 'chasseur_bonus_multi',
+                    'collecteur_multi', 'grade_argent_multi', 'survivant_multi', 'grade_or_multi',
+                    'grade_platine_multi', 'titan', 'grade_legende_multi', 'invaincu', 'inarretable'];
+                const unlockedCount = multiTrophies.filter(id => {
+                    const trophy = window.TROPHIES?.[id];
+                    return trophy && trophy.check();
+                }).length;
+                return unlockedCount >= 14;
+            }
+        },
+
         // ═══════════════════════════════════════
-        // IA (5) - Contre Intelligence Artificielle
+        // BOSS RUSH (11) - Chasse aux Boss
+        // ⭐ FACILE (2): premiere_run, tueur_titan
+        // ⭐⭐ MOYEN (2): chasseur_boss, duo_mortel
+        // ⭐⭐⭐ DIFFICILE (3): trio_infernal, maitre_foudre, completiste
+        // ⭐⭐⭐⭐ EXPERT (3): speedrunner, perfectionniste, veterane_boss
+        // ⭐⭐⭐⭐⭐ LÉGENDAIRE (1): legende_boss
         // ═══════════════════════════════════════
-        terminateur: {
-            name: 'Terminateur',
-            emoji: '🤖',
+
+        // ⭐ FACILE
+        premiere_run: {
+            name: 'Première Run',
+            emoji: '🎯',
             image: 'victory-trophy-laurel.png',
-            description: 'Battre l\'IA 1 fois',
+            description: 'Lancer ta 1ère partie Boss Rush',
+            rarity: 1,
+            xp: 100,
+            secret: false,
+            category: 'bossrush',
+            check: () => (career.bossRushRuns || 0) >= 1
+        },
+
+        tueur_titan: {
+            name: 'Brise Roche',
+            emoji: '🗿',
+            image: 'victory-trophy-laurel.png',
+            description: 'Vaincre TITAN',
             rarity: 1,
             xp: 200,
             secret: false,
-            category: 'ia',
-            check: () => (career.aiWins || 0) >= 1
+            category: 'bossrush',
+            check: () => (career.bossRushTitanKills || 0) >= 1
         },
 
-        chasseur_robots: {
-            name: 'Chasseur de Robots',
-            emoji: '🎯',
-            image: 'platinum-crown-champion.png',
-            description: 'Battre l\'IA 10 fois',
+        // ⭐⭐ MOYEN
+        chasseur_boss: {
+            name: 'Chasseur de Boss',
+            emoji: '⚔️',
+            image: 'golden-lightning-power.png',
+            description: 'Lancer 10 parties Boss Rush',
+            rarity: 2,
+            xp: 500,
+            secret: false,
+            category: 'bossrush',
+            check: () => (career.bossRushRuns || 0) >= 10
+        },
+
+        duo_mortel: {
+            name: 'Brise Glace',
+            emoji: '❄️',
+            image: 'water-droplet-shield.png',
+            description: 'Vaincre CRYO',
             rarity: 2,
             xp: 600,
             secret: false,
-            category: 'ia',
-            check: () => (career.aiWins || 0) >= 10
+            category: 'bossrush',
+            check: () => (career.bossRushCryoKills || 0) >= 1
         },
 
-        maitre_stratege: {
-            name: 'Maître Stratège',
-            emoji: '🧠',
-            image: 'crescent-moon-master.png',
-            description: 'Battre l\'IA 25 fois',
+        // ⭐⭐⭐ DIFFICILE
+        trio_infernal: {
+            name: 'Plus Mort que Mort',
+            emoji: '👻',
+            image: 'dark-skull-chaos.png',
+            description: 'Vaincre SPECTRE',
+            rarity: 3,
+            xp: 1000,
+            secret: false,
+            category: 'bossrush',
+            check: () => (career.bossRushSpectreKills || 0) >= 1
+        },
+
+        maitre_foudre: {
+            name: 'Maître de la Foudre',
+            emoji: '⚡',
+            image: 'golden-lightning-power.png',
+            description: 'Vaincre FOUDRE (Boss Final)',
             rarity: 3,
             xp: 1200,
             secret: false,
-            category: 'ia',
-            check: () => (career.aiWins || 0) >= 25
+            category: 'bossrush',
+            check: () => (career.bossRushFoudreKills || 0) >= 1
         },
 
-        nemesis: {
-            name: 'Nemesis',
+        completiste: {
+            name: 'Complétiste',
+            emoji: '🏆',
+            image: 'golden-trophy-crown.png',
+            description: 'Terminer une run Boss Rush (4/4 boss)',
+            rarity: 3,
+            xp: 1500,
+            secret: false,
+            category: 'bossrush',
+            check: () => (career.bossRushCompletions || 0) >= 1
+        },
+
+        // ⭐⭐⭐⭐ EXPERT
+        speedrunner: {
+            name: 'Speedrunner',
             emoji: '⚡',
-            image: 'mystical-serpent-deity.png',
-            description: 'Battre l\'IA 50 fois',
+            image: 'golden-lightning-power.png',
+            description: 'Terminer une run en moins de 5 minutes',
             rarity: 4,
             xp: 2000,
             secret: false,
-            category: 'ia',
-            check: () => (career.aiWins || 0) >= 50
+            category: 'bossrush',
+            check: () => (career.bossRushFastRuns || 0) >= 1
         },
 
-        glouton: {
-            name: 'Glouton',
-            emoji: '🍎',
-            image: 'golden-lightning-power.png',
-            description: 'Manger 100 pommes (total carrière)',
-            rarity: 1,
-            xp: 300,
+        perfectionniste: {
+            name: 'Perfectionniste',
+            emoji: '💎',
+            image: 'platinum-crown-champion.png',
+            description: 'Terminer une run sans prendre de dégâts',
+            rarity: 4,
+            xp: 2500,
             secret: false,
-            category: 'ia',
-            check: () => (career.totalApples || 0) >= 100
+            category: 'bossrush',
+            check: () => (career.bossRushPerfectRuns || 0) >= 1
+        },
+
+        veterane_boss: {
+            name: 'Vétéran des Boss',
+            emoji: '🎖️',
+            image: 'platinum-crown-champion.png',
+            description: 'Terminer 10 runs Boss Rush complètes',
+            rarity: 4,
+            xp: 2500,
+            secret: false,
+            category: 'bossrush',
+            check: () => (career.bossRushCompletions || 0) >= 10
+        },
+
+        // ⭐⭐⭐⭐⭐ LÉGENDAIRE
+        legende_boss: {
+            name: 'Légende des Boss',
+            emoji: '👑',
+            image: 'golden-trophy-crown.png',
+            description: 'Débloquer les 10 autres trophées Boss Rush',
+            rarity: 5,
+            xp: 5000,
+            secret: false,
+            category: 'bossrush',
+            check: () => {
+                const bossRushTrophies = ['premiere_run', 'tueur_titan', 'chasseur_boss', 'duo_mortel',
+                    'trio_infernal', 'maitre_foudre', 'completiste', 'speedrunner', 'perfectionniste', 'veterane_boss'];
+                const unlockedCount = bossRushTrophies.filter(id => {
+                    const trophy = window.TROPHIES?.[id];
+                    return trophy && trophy.check();
+                }).length;
+                return unlockedCount >= 10;
+            }
         },
 
         // ═══════════════════════════════════════
-        // SECRETS (2)
+        // EASTER EGGS (5) - Secrets cachés
+        // explorateur, collectionneur, nocturne, patience, hospitalite
         // ═══════════════════════════════════════
         explorateur: {
             name: 'Explorateur',
             emoji: '🗺️',
             image: 'mystical-rune-secret.png',
-            description: 'Visiter chaque écran du jeu',
+            description: 'Visiter les écrans principaux du jeu',
             rarity: 5,
             xp: 3000,
             secret: true,
             hint: 'Explore chaque recoin...',
             category: 'secret',
             check: () => {
+                // Écrans requis pour le trophée (6 écrans)
                 const requiredScreens = [
-                    'hub', 'box-screen', 'stats-screen',
-                    'game-solo', 'game-ai', 'multiplayer-menu', 'main-lobby-screen',
-                    'options-menu', 'rules-menu', 'credits-menu'
+                    'hub',          // Menu principal
+                    'game-solo',    // Partie solo
+                    'game-multi',   // Partie multi
+                    'game-ai',      // Partie vs IA
+                    'box-screen',   // Ma Box
+                    'options-menu'  // Options
                 ];
                 const visited = career.screensVisited || [];
-                return requiredScreens.every(screen => visited.includes(screen));
+                const allVisited = requiredScreens.every(screen => visited.includes(screen));
+                return allVisited;
             }
         },
 
@@ -422,6 +417,45 @@ export function createTrophies(career) {
                 const unlockedItems = window.boxManager?.getUnlockedCount() || 0;
                 return unlockedItems >= 10;
             }
+        },
+
+        nocturne: {
+            name: 'Nocturne',
+            emoji: '🌙',
+            image: 'crescent-moon-master.png',
+            description: 'Jouer entre 20h et 8h du matin',
+            rarity: 5,
+            xp: 2000,
+            secret: true,
+            hint: 'La nuit porte conseil...',
+            category: 'secret',
+            check: () => (career.nightOwlGames || 0) >= 1
+        },
+
+        patience: {
+            name: 'Patience',
+            emoji: '🧘',
+            image: 'mystical-rune-secret.png',
+            description: 'Attendre 30 secondes sans bouger avant de commencer',
+            rarity: 5,
+            xp: 2000,
+            secret: true,
+            hint: 'Parfois, ne rien faire est la clé...',
+            category: 'secret',
+            check: () => (career.patienceAchieved || 0) >= 1
+        },
+
+        hospitalite: {
+            name: 'Hospitalité',
+            emoji: '🏠',
+            image: 'locked-treasure-chest.png',
+            description: 'Créer un salon dans le lobby multi',
+            rarity: 5,
+            xp: 2000,
+            secret: true,
+            hint: 'Tu seras le bienvenu chez moi...',
+            category: 'secret',
+            check: () => (career.roomsCreated || 0) >= 1
         }
     };
 }

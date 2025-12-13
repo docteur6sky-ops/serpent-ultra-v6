@@ -1,16 +1,31 @@
 /**
- * TROPHY MANAGER - Gestion des trophées
+ * TROPHY MANAGER - Gestion unifiée des trophées
  *
  * Responsabilités :
- * - Vérification des trophées
+ * - Vérification des trophées (classiques + roguelike)
  * - Notifications de déblocage
- * - Affichage overlay trophées
+ * - Affichage overlay trophées unifié
+ *
+ * Total: 82 trophées
+ * - 15 Multi + 10 Boss Rush + 5 Secrets (classiques)
+ * - 52 Roguelike (progression, combat, collection, mastery, career, secret)
  */
 
 import { logger } from '../services/logger.js';
 import { save, load } from '../services/storage.js';
 import { createTrophies } from '../data/trophies.js';
 import { achievementManager, ACHIEVEMENTS } from '../roguelike/achievements.js';
+import { SnakeUltra } from '../SnakeUltra.js';
+
+// ============================================
+// MAPPING RARETÉ ROGUELIKE → ÉTOILES
+// ============================================
+const RARITY_TO_STARS = {
+    'common': 1,
+    'rare': 2,
+    'epic': 3,
+    'legendary': 4
+};
 
 // ============================================
 // CLASSE TROPHY MANAGER
@@ -52,11 +67,18 @@ class TrophyManager {
             const trophy = this.trophies[key];
 
             // Ignorer si déjà débloqué
-            if (this.unlockedTrophies[key]) continue;
+            if (this.unlockedTrophies[key]) {
+                continue;
+            }
 
             // Vérifier condition
             if (trophy.check()) {
+                // Marquer comme débloqué ET sauvegarder IMMÉDIATEMENT
                 this.unlockedTrophies[key] = true;
+                save('tr', this.unlockedTrophies);
+
+                logger.log(`[TrophyManager] ✅ Trophée débloqué: ${key} - ${trophy.name}`);
+
                 changed = true;
                 newTrophies.push({ key, ...trophy });
 
@@ -88,7 +110,7 @@ class TrophyManager {
                 window.careerManager.updateRankDisplay();
             }
 
-            save('tr', this.unlockedTrophies);
+            // Note: save() déjà fait immédiatement à chaque trophée débloqué
             this.updateTrophiesDisplay();
         }
 
@@ -133,60 +155,80 @@ class TrophyManager {
     }
 
     /**
-     * Récupère les stats des trophées
+     * Récupère les stats des trophées (classiques + roguelike)
      */
     getStats() {
-        if (!this.trophies) return { unlocked: 0, total: 0, percentage: 0 };
+        const classicTotal = this.trophies ? Object.keys(this.trophies).length : 0;
+        const classicUnlocked = Object.keys(this.unlockedTrophies).filter(k => this.unlockedTrophies[k]).length;
 
-        const total = Object.keys(this.trophies).length;
-        const unlocked = Object.keys(this.unlockedTrophies).filter(k => this.unlockedTrophies[k]).length;
+        const roguelikeTotal = ACHIEVEMENTS.length;
+        const roguelikeUnlocked = achievementManager.unlockedAchievements.length;
+
+        const total = classicTotal + roguelikeTotal;
+        const unlocked = classicUnlocked + roguelikeUnlocked;
         const percentage = total > 0 ? Math.round((unlocked / total) * 100) : 0;
 
         return { unlocked, total, percentage };
     }
 
     /**
-     * Affiche l'overlay des trophées
+     * Calcule les compteurs pour tous les trophées (classiques + roguelike)
+     */
+    calculateAllCounts() {
+        const counts = {
+            all: { unlocked: 0, total: 0 },
+            multi: { unlocked: 0, total: 0 },
+            bossrush: { unlocked: 0, total: 0 },
+            roguelike: { unlocked: 0, total: 0 },
+            secret: { unlocked: 0, total: 0 }
+        };
+
+        // Compter trophées classiques
+        if (this.trophies) {
+            for (let key in this.trophies) {
+                const trophy = this.trophies[key];
+                const isUnlocked = this.unlockedTrophies[key] || false;
+                const cat = trophy.category || 'multi';
+
+                counts.all.total++;
+                if (counts[cat]) counts[cat].total++;
+
+                if (isUnlocked) {
+                    counts.all.unlocked++;
+                    if (counts[cat]) counts[cat].unlocked++;
+                }
+            }
+        }
+
+        // Compter achievements roguelike
+        for (const achievement of ACHIEVEMENTS) {
+            const isUnlocked = achievementManager.isUnlocked(achievement.id);
+
+            counts.all.total++;
+            counts.roguelike.total++;
+
+            if (isUnlocked) {
+                counts.all.unlocked++;
+                counts.roguelike.unlocked++;
+            }
+        }
+
+        return counts;
+    }
+
+    /**
+     * Affiche l'overlay des trophées unifié
      */
     showTrophiesOverlay(category = 'all') {
         logger.log('[TrophyManager] showTrophiesOverlay() category:', category);
-
-        // Calculer les compteurs roguelike
-        const roguelikeProgress = achievementManager.getProgress();
-
-        // Si catégorie roguelike, afficher les achievements
-        if (category === 'roguelike') {
-            this.showRoguelikeAchievements(roguelikeProgress);
-            return;
-        }
 
         if (!this.trophies) {
             logger.error('[TrophyManager] Trophées non initialisés');
             return;
         }
 
-        // Calculer les compteurs par catégorie
-        const counts = {
-            all: { unlocked: 0, total: 0 },
-            solo: { unlocked: 0, total: 0 },
-            multi: { unlocked: 0, total: 0 },
-            ia: { unlocked: 0, total: 0 },
-            secret: { unlocked: 0, total: 0 }
-        };
-
-        for (let key in this.trophies) {
-            const trophy = this.trophies[key];
-            const isUnlocked = this.unlockedTrophies[key] || false;
-            const cat = trophy.category || 'solo';
-
-            counts.all.total++;
-            if (counts[cat]) counts[cat].total++;
-
-            if (isUnlocked) {
-                counts.all.unlocked++;
-                if (counts[cat]) counts[cat].unlocked++;
-            }
-        }
+        // Calculer tous les compteurs
+        const counts = this.calculateAllCounts();
 
         let content = `
             <div class="overlay-header">
@@ -195,29 +237,20 @@ class TrophyManager {
             </div>
         `;
 
-        // Tab Roguelike en haut (plus grand)
+        // Tabs de catégories unifiées
         content += `
-            <div class="trophy-tabs-roguelike" style="margin-top: 15px;">
-                <button class="trophy-tab trophy-tab-roguelike" onclick="window.audio.buttonClick();window.showTrophiesOverlay('roguelike')">
-                    🎲 ROGUELIKE (${roguelikeProgress.unlocked}/${roguelikeProgress.total})
-                </button>
-            </div>
-        `;
-
-        // Tabs de catégories classiques
-        content += `
-            <div class="trophy-tabs" style="margin-top: 10px;">
+            <div class="trophy-tabs" style="margin-top: 15px;">
                 <button class="trophy-tab ${category === 'all' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('all')">
                     TOUS (${counts.all.unlocked}/${counts.all.total})
-                </button>
-                <button class="trophy-tab ${category === 'solo' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('solo')">
-                    SOLO (${counts.solo.unlocked}/${counts.solo.total})
                 </button>
                 <button class="trophy-tab ${category === 'multi' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('multi')">
                     MULTI (${counts.multi.unlocked}/${counts.multi.total})
                 </button>
-                <button class="trophy-tab ${category === 'ia' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('ia')">
-                    IA (${counts.ia.unlocked}/${counts.ia.total})
+                <button class="trophy-tab ${category === 'bossrush' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('bossrush')">
+                    BOSS (${counts.bossrush.unlocked}/${counts.bossrush.total})
+                </button>
+                <button class="trophy-tab ${category === 'roguelike' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('roguelike')">
+                    ROGUE (${counts.roguelike.unlocked}/${counts.roguelike.total})
                 </button>
                 <button class="trophy-tab ${category === 'secret' ? 'active' : ''}" onclick="window.audio.buttonClick();window.showTrophiesOverlay('secret')">
                     🔒 (${counts.secret.unlocked}/${counts.secret.total})
@@ -237,63 +270,38 @@ class TrophyManager {
             </div>
         `;
 
-        // Collecter et trier les trophées par rareté
-        const trophyList = [];
-        for (let key in this.trophies) {
-            const trophy = this.trophies[key];
-            const cat = trophy.category || 'solo';
+        // Collecter tous les trophées selon la catégorie
+        const allTrophies = this.collectTrophiesForCategory(category);
 
-            if (category !== 'all' && cat !== category) continue;
-            trophyList.push({ key, trophy });
-        }
+        // Trier par nombre d'étoiles
+        allTrophies.sort((a, b) => a.stars - b.stars);
 
-        trophyList.sort((a, b) => a.trophy.rarity - b.trophy.rarity);
-
-        // Générer la grille
+        // Générer la grille par étoiles
         content += `<div class="trophy-grid-container" style="margin-top: 20px;">`;
 
-        let currentRarity = 0;
-        const rarityLabels = {
+        let currentStars = 0;
+        const starsLabels = {
             1: '⭐ Trophées 1 étoile',
             2: '⭐⭐ Trophées 2 étoiles',
-            3: '⭐⭐⭐ Trophées 3 étoiles'
+            3: '⭐⭐⭐ Trophées 3 étoiles',
+            4: '⭐⭐⭐⭐ Trophées 4 étoiles',
+            5: '⭐⭐⭐⭐⭐ Trophées 5 étoiles'
         };
 
-        for (const { key, trophy } of trophyList) {
-            if (trophy.rarity !== currentRarity) {
-                if (currentRarity !== 0) content += `</div>`;
-                currentRarity = trophy.rarity;
+        for (const item of allTrophies) {
+            if (item.stars !== currentStars) {
+                if (currentStars !== 0) content += `</div>`;
+                currentStars = item.stars;
                 content += `
-                    <div class="trophy-rarity-label">${rarityLabels[currentRarity] || `⭐ Rareté ${currentRarity}`}</div>
+                    <div class="trophy-rarity-label">${starsLabels[currentStars] || `⭐ Rareté ${currentStars}`}</div>
                     <div class="trophy-grid">
                 `;
             }
 
-            const isUnlocked = this.unlockedTrophies[key] || false;
-            const stars = '⭐'.repeat(trophy.rarity);
-
-            const displayName = (trophy.secret && !isUnlocked) ? '???' : trophy.name;
-            const displayImage = (trophy.secret && !isUnlocked) ? 'locked-treasure-chest.png' : trophy.image;
-            const displayDesc = (trophy.secret && !isUnlocked)
-                ? (trophy.hint || 'Trophée secret...')
-                : trophy.description;
-
-            const cardClass = `trophy-card ${isUnlocked ? 'unlocked' : 'locked'}`;
-
-            content += `
-                <div class="${cardClass}" data-rarity="${trophy.rarity}" data-trophy-id="${key}">
-                    <img src="assets/trophies/${displayImage}" alt="${displayName}" class="trophy-image" loading="lazy">
-                    <div class="trophy-card-name">${displayName}</div>
-                    <div class="trophy-card-desc">${displayDesc}</div>
-                    <div class="trophy-card-footer">
-                        <div class="trophy-rarity">${stars}</div>
-                        <div class="trophy-xp">+${trophy.xp} XP</div>
-                    </div>
-                </div>
-            `;
+            content += this.renderTrophyCard(item);
         }
 
-        if (currentRarity !== 0) content += `</div>`;
+        if (currentStars !== 0) content += `</div>`;
         content += `</div>`;
 
         // Utiliser showOverlay global
@@ -303,105 +311,101 @@ class TrophyManager {
     }
 
     /**
-     * Affiche les achievements roguelike dans l'overlay
+     * Collecte les trophées pour une catégorie donnée
      */
-    showRoguelikeAchievements(progress) {
-        const CATEGORY_INFO = {
-            progression: { name: 'Progression', icon: '📈' },
-            combat: { name: 'Combat', icon: '⚔️' },
-            collection: { name: 'Collection', icon: '📦' },
-            mastery: { name: 'Maîtrise', icon: '🎯' },
-            secret: { name: 'Secrets', icon: '🔮' }
-        };
+    collectTrophiesForCategory(category) {
+        const items = [];
 
-        let content = `
-            <div class="overlay-header">
-                <h2>🎲 ACHIEVEMENTS ROGUELIKE</h2>
-                <button class="overlay-close" onclick="window.audio.buttonClick();window.closeOverlay()">✖</button>
-            </div>
-        `;
+        // Ajouter trophées classiques
+        if (category === 'all' || category === 'multi' || category === 'bossrush' || category === 'secret') {
+            for (let key in this.trophies) {
+                const trophy = this.trophies[key];
+                const cat = trophy.category || 'multi';
 
-        // Bouton retour vers trophées classiques
-        content += `
-            <div class="trophy-tabs-roguelike" style="margin-top: 15px;">
-                <button class="trophy-tab trophy-tab-roguelike active" onclick="window.audio.buttonClick();">
-                    🎲 ROGUELIKE (${progress.unlocked}/${progress.total})
-                </button>
-            </div>
-            <div class="trophy-tabs" style="margin-top: 10px;">
-                <button class="trophy-tab" onclick="window.audio.buttonClick();window.showTrophiesOverlay('all')">
-                    ← TROPHÉES CLASSIQUES
-                </button>
-            </div>
-        `;
+                if (category !== 'all' && cat !== category) continue;
 
-        // Barre de progression globale
-        content += `
-            <div class="trophy-progress-container" style="margin-top: 15px;">
-                <div class="trophy-progress-bar">
-                    <div class="trophy-progress-fill" style="width: ${progress.percent}%"></div>
-                </div>
-                <div class="trophy-progress-text">${progress.unlocked}/${progress.total} débloqués (${progress.percent}%)</div>
-            </div>
-        `;
-
-        // Grille des achievements par catégorie
-        content += `<div class="trophy-grid-container roguelike-achievements" style="margin-top: 20px;">`;
-
-        for (const [categoryId, categoryInfo] of Object.entries(CATEGORY_INFO)) {
-            const achievements = ACHIEVEMENTS.filter(a => a.category === categoryId);
-            if (achievements.length === 0) continue;
-
-            const unlockedCount = achievements.filter(a => achievementManager.isUnlocked(a.id)).length;
-
-            content += `
-                <div class="trophy-rarity-label" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>${categoryInfo.icon} ${categoryInfo.name}</span>
-                    <span style="color: #888; font-size: 12px;">${unlockedCount}/${achievements.length}</span>
-                </div>
-                <div class="trophy-grid roguelike-grid">
-            `;
-
-            for (const achievement of achievements) {
-                const isUnlocked = achievementManager.isUnlocked(achievement.id);
-                const isHidden = achievement.hidden && !isUnlocked;
-                const unlockData = achievementManager.unlockedAchievements.find(a => a.id === achievement.id);
-
-                const cardClass = `trophy-card achievement-card rarity-${achievement.rarity} ${isUnlocked ? 'unlocked' : 'locked'}`;
-
-                if (isHidden) {
-                    content += `
-                        <div class="${cardClass} hidden-achievement">
-                            <div class="achievement-icon">❓</div>
-                            <div class="trophy-card-name">???</div>
-                            <div class="trophy-card-desc">Continue à jouer pour découvrir...</div>
-                        </div>
-                    `;
-                } else {
-                    const dateStr = unlockData ? new Date(unlockData.unlockedAt).toLocaleDateString('fr-FR') : '';
-                    content += `
-                        <div class="${cardClass}">
-                            <div class="achievement-icon">${achievement.icon}</div>
-                            <div class="trophy-card-name">${achievement.name}</div>
-                            <div class="trophy-card-desc">${achievement.description}</div>
-                            <div class="trophy-card-footer">
-                                <div class="achievement-rarity rarity-${achievement.rarity}">${achievement.rarity.toUpperCase()}</div>
-                                <div class="trophy-xp">+${achievement.xpReward} XP</div>
-                            </div>
-                            ${dateStr ? `<div class="achievement-date">Débloqué le ${dateStr}</div>` : ''}
-                        </div>
-                    `;
-                }
+                items.push({
+                    type: 'classic',
+                    key: key,
+                    name: trophy.name,
+                    description: trophy.description,
+                    emoji: trophy.emoji,
+                    image: trophy.image,
+                    stars: trophy.rarity,
+                    xp: trophy.xp,
+                    secret: trophy.secret,
+                    hint: trophy.hint,
+                    isUnlocked: this.unlockedTrophies[key] || false
+                });
             }
-
-            content += `</div>`;
         }
 
-        content += `</div>`;
+        // Ajouter achievements roguelike
+        if (category === 'all' || category === 'roguelike') {
+            for (const achievement of ACHIEVEMENTS) {
+                // Filtrer les secrets roguelike pour la catégorie secret classique
+                if (category === 'secret' && achievement.category !== 'secret') continue;
 
-        // Utiliser showOverlay global
-        if (window.showOverlay) {
-            window.showOverlay(content);
+                items.push({
+                    type: 'roguelike',
+                    key: achievement.id,
+                    name: achievement.name,
+                    description: achievement.description,
+                    emoji: achievement.icon,
+                    image: null, // Roguelike utilise des emoji, pas d'images
+                    stars: RARITY_TO_STARS[achievement.rarity] || 1,
+                    xp: achievement.xpReward,
+                    secret: achievement.hidden || false,
+                    hint: 'Continue à jouer pour découvrir...',
+                    isUnlocked: achievementManager.isUnlocked(achievement.id),
+                    rarity: achievement.rarity,
+                    category: achievement.category
+                });
+            }
+        }
+
+        return items;
+    }
+
+    /**
+     * Génère le HTML d'une carte trophée
+     */
+    renderTrophyCard(item) {
+        const stars = '⭐'.repeat(item.stars);
+        const isSecret = item.secret && !item.isUnlocked;
+
+        const displayName = isSecret ? '???' : item.name;
+        const displayDesc = isSecret ? (item.hint || 'Trophée secret...') : item.description;
+        const cardClass = `trophy-card ${item.isUnlocked ? 'unlocked' : 'locked'} ${item.type === 'roguelike' ? 'roguelike-card' : ''}`;
+
+        if (item.type === 'roguelike') {
+            // Carte style roguelike (avec emoji)
+            const displayEmoji = isSecret ? '❓' : item.emoji;
+            return `
+                <div class="${cardClass}" data-rarity="${item.stars}" data-trophy-id="${item.key}">
+                    <div class="achievement-icon">${displayEmoji}</div>
+                    <div class="trophy-card-name">${displayName}</div>
+                    <div class="trophy-card-desc">${displayDesc}</div>
+                    <div class="trophy-card-footer">
+                        <div class="trophy-rarity">${stars}</div>
+                        <div class="trophy-xp">+${item.xp} XP</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Carte style classique (avec image)
+            const displayImage = isSecret ? 'locked-treasure-chest.png' : item.image;
+            return `
+                <div class="${cardClass}" data-rarity="${item.stars}" data-trophy-id="${item.key}">
+                    <img src="assets/trophies/${displayImage}" alt="${displayName}" class="trophy-image" loading="lazy">
+                    <div class="trophy-card-name">${displayName}</div>
+                    <div class="trophy-card-desc">${displayDesc}</div>
+                    <div class="trophy-card-footer">
+                        <div class="trophy-rarity">${stars}</div>
+                        <div class="trophy-xp">+${item.xp} XP</div>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -427,6 +431,9 @@ window.trophyManager = trophyManager;
 window.checkTrophy = () => trophyManager.checkTrophies();
 window.updateTrophies = () => trophyManager.updateTrophiesDisplay();
 window.showTrophiesOverlay = (cat) => trophyManager.showTrophiesOverlay(cat);
+
+// Enregistrer dans SnakeUltra
+SnakeUltra.registerManager('trophy', trophyManager);
 
 logger.log('✅ TrophyManager chargé');
 

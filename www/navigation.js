@@ -377,6 +377,11 @@ window.handleSoloGameOver = function(stats) {
         window.checkTrophy();
     }
 
+    // ✅ VÉRIFIER ACHIEVEMENTS ROGUELIKE (pour first_teleport, etc.)
+    if (window.achievementManager?.checkAchievements) {
+        window.achievementManager.checkAchievements();
+    }
+
     // ✅ NOUVEAU : Donner des coins pour cette partie
     if (window.boxManager) {
         // Calcul des coins : score/10 + bonus difficulté

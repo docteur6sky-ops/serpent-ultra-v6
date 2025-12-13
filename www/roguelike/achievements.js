@@ -9,6 +9,8 @@
  * - Secret : Achievements cachés
  */
 
+import { logger } from '../services/logger.js';
+
 // ========== DÉFINITION DES ACHIEVEMENTS ==========
 
 export const ACHIEVEMENTS = [
@@ -126,43 +128,43 @@ export const ACHIEVEMENTS = [
         xpReward: 100
     },
     {
-        id: 'boss_gardien',
-        name: 'Gardien Terrassé',
-        description: 'Vaincre le GARDIEN',
-        icon: '🛡️',
+        id: 'boss_titan',
+        name: 'Titan Terrassé',
+        description: 'Vaincre TITAN (Boss 1 - Murs)',
+        icon: '🗿',
         category: 'combat',
         rarity: 'common',
-        condition: { type: 'specific_boss', value: 'GARDIEN' },
+        condition: { type: 'specific_boss', value: 'TITAN' },
         xpReward: 100
     },
     {
-        id: 'boss_venin',
-        name: 'Antidote',
-        description: 'Vaincre VENIN',
-        icon: '🧪',
+        id: 'boss_cryo',
+        name: 'Briseur de Glace',
+        description: 'Vaincre CRYO (Boss 2 - Glace)',
+        icon: '❄️',
         category: 'combat',
         rarity: 'rare',
-        condition: { type: 'specific_boss', value: 'VENIN' },
+        condition: { type: 'specific_boss', value: 'CRYO' },
         xpReward: 200
     },
     {
-        id: 'boss_titan',
-        name: 'Tueur de Titan',
-        description: 'Vaincre le TITAN',
-        icon: '💪',
+        id: 'boss_spectre',
+        name: 'Chasseur de Fantômes',
+        description: 'Vaincre SPECTRE (Boss 3 - Fantôme)',
+        icon: '👻',
         category: 'combat',
         rarity: 'rare',
-        condition: { type: 'specific_boss', value: 'TITAN' },
+        condition: { type: 'specific_boss', value: 'SPECTRE' },
         xpReward: 300
     },
     {
-        id: 'boss_nemesis',
-        name: 'Némésis Vaincue',
-        description: 'Vaincre NÉMÉSIS (boss final)',
-        icon: '👁️',
+        id: 'boss_foudre',
+        name: 'Maître de la Foudre',
+        description: 'Vaincre FOUDRE (Boss Final)',
+        icon: '⚡',
         category: 'combat',
         rarity: 'legendary',
-        condition: { type: 'specific_boss', value: 'NÉMÉSIS' },
+        condition: { type: 'specific_boss', value: 'FOUDRE' },
         xpReward: 500
     },
     {
@@ -495,35 +497,35 @@ export const ACHIEVEMENTS = [
 
     // ===== SECRETS (5) =====
     {
-        id: 'secret_poison',
-        name: 'Immunisé',
-        description: 'Ne jamais toucher le poison contre VENIN',
-        icon: '🧬',
+        id: 'secret_ice',
+        name: 'Sang Froid',
+        description: 'Vaincre CRYO sans jamais être ralenti',
+        icon: '🧊',
         category: 'secret',
         rarity: 'legendary',
-        condition: { type: 'venin_no_poison', value: 1 },
+        condition: { type: 'cryo_no_slow', value: 1 },
         xpReward: 500,
         hidden: true
     },
     {
-        id: 'secret_charge',
-        name: 'Matador',
-        description: 'Esquiver 10 charges du TITAN en une run',
-        icon: '🐂',
+        id: 'secret_walls',
+        name: 'Démolisseur',
+        description: 'Détruire 10 murs du TITAN en une run',
+        icon: '🧱',
         category: 'secret',
         rarity: 'epic',
-        condition: { type: 'titan_dodges', value: 10 },
+        condition: { type: 'titan_walls_destroyed', value: 10 },
         xpReward: 400,
         hidden: true
     },
     {
-        id: 'secret_mirror',
-        name: 'Briseur de Miroir',
-        description: 'Battre NÉMÉSIS en phase Miroir',
-        icon: '🪞',
+        id: 'secret_ghost',
+        name: 'Exorciste',
+        description: 'Vaincre SPECTRE en phase Néant sans prendre de dégâts',
+        icon: '👻',
         category: 'secret',
         rarity: 'legendary',
-        condition: { type: 'nemesis_mirror_kill', value: 1 },
+        condition: { type: 'spectre_neant_flawless', value: 1 },
         xpReward: 500,
         hidden: true
     },
@@ -841,13 +843,8 @@ class AchievementManager {
             }
         }
 
-        // Venin no poison
-        if (this.stats.bossesKilledByName['VENIN'] && run.poisonHits === 0) {
-            const ach = ACHIEVEMENTS.find(a => a.id === 'secret_poison');
-            if (ach && !this.isUnlocked('secret_poison')) {
-                this.unlock(ach);
-            }
-        }
+        // Note: Les achievements secrets boss sont vérifiés via le système de combat
+        // (cryo_no_slow, titan_walls_destroyed, spectre_neant_flawless)
 
         this.checkAchievements();
     }
@@ -948,12 +945,21 @@ class AchievementManager {
     // ===== UNLOCK =====
 
     unlock(achievement) {
-        if (this.isUnlocked(achievement.id)) return;
+        // Double-check: ne JAMAIS débloquer un achievement déjà débloqué
+        if (this.isUnlocked(achievement.id)) {
+            logger.warn(`[Achievements] ⚠️ Tentative de re-déblocage ignorée: ${achievement.id}`);
+            return;
+        }
+
+        logger.log(`[Achievements] ✅ Déblocage: ${achievement.id} - ${achievement.name}`);
 
         this.unlockedAchievements.push({
             id: achievement.id,
             unlockedAt: Date.now()
         });
+
+        // Sauvegarder IMMÉDIATEMENT pour éviter les doublons
+        this.save();
 
         // Ajouter à la file de notifications
         this.pendingNotifications.push(achievement);
@@ -965,8 +971,6 @@ class AchievementManager {
         if (window.boxManager && window.boxManager.checkAchievementUnlocks) {
             window.boxManager.checkAchievementUnlocks(achievement.id);
         }
-
-        this.save();
     }
 
     isUnlocked(achievementId) {
@@ -1034,4 +1038,8 @@ class AchievementManager {
 
 // Export singleton
 export const achievementManager = new AchievementManager();
+
+// Exposer sur window pour accès global (navigation.js)
+window.achievementManager = achievementManager;
+
 export default achievementManager;
