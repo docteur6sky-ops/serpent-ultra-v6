@@ -9,7 +9,63 @@ import roguelikeManager from './roguelike/RoguelikeManager.js';
 class StatsManager {
     constructor() {
         this.currentMode = 'aventure'; // 'aventure' (Solo+Roguelike) ou 'arene' (Multi+BossRush)
+        this._domCache = null; // Cache DOM initialisé au premier showStats()
         logger.log('[StatsManager] Initialisé');
+    }
+
+    /**
+     * Cache les éléments DOM fréquemment utilisés
+     * Réduit ~70 getElementById par affichage → 1 seule fois
+     */
+    _cacheDOMElements() {
+        if (this._domCache) return this._domCache;
+
+        this._domCache = {
+            // Tabs
+            tabs: document.querySelectorAll('.stats-tab'),
+
+            // Banner
+            banner: document.getElementById('stats-banner'),
+            bannerImage: document.getElementById('stats-banner-image'),
+
+            // Badge/Rank
+            rankBadge: document.getElementById('stats-rank-badge'),
+            rankIcon: document.getElementById('stats-rank-icon'),
+            rankLevel: document.getElementById('stats-rank-level'),
+            rankName: document.getElementById('stats-rank-name'),
+            gradeContainer: document.getElementById('stats-grade-container'),
+
+            // Player
+            playerName: document.getElementById('stats-player-name'),
+            progressFill: document.getElementById('stats-progress-fill'),
+
+            // Content
+            cardMini: document.getElementById('stats-card-mini'),
+            cardStats: document.getElementById('stats-card-stats'),
+            gridUnified: document.getElementById('stats-grid-unified'),
+            overview: document.getElementById('stats-overview'),
+
+            // Buttons
+            rankingBtn: document.getElementById('stats-ranking-btn'),
+            dailyBtn: document.getElementById('stats-daily-btn')
+        };
+
+        logger.log('[StatsManager] Cache DOM initialisé (17 éléments)');
+        return this._domCache;
+    }
+
+    /**
+     * Invalide le cache (appeler si le DOM change)
+     */
+    invalidateDOMCache() {
+        this._domCache = null;
+    }
+
+    /**
+     * Getter pour accéder au cache
+     */
+    get dom() {
+        return this._cacheDOMElements();
     }
 
     /**
@@ -28,8 +84,8 @@ class StatsManager {
         this.currentMode = 'aventure';
         this.updateStatsDisplay();
 
-        // Mettre à jour les onglets visuellement
-        document.querySelectorAll('.stats-tab').forEach(btn => {
+        // Mettre à jour les onglets visuellement (utilise cache)
+        this.dom.tabs.forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-mode') === 'aventure') {
                 btn.classList.add('active');
@@ -42,8 +98,7 @@ class StatsManager {
      * @param {object} bannerItem - Item bannière (optionnel, sinon récupère l'équipée)
      */
     applyStatsBanner(bannerItem = null) {
-        const bannerEl = document.getElementById('stats-banner');
-        const imageEl = document.getElementById('stats-banner-image');
+        const { banner: bannerEl, bannerImage: imageEl } = this.dom;
 
         if (!bannerEl || !imageEl) {
             logger.warn('[StatsManager] Éléments bannière stats non trouvés');
@@ -78,8 +133,8 @@ class StatsManager {
 
         this.currentMode = mode;
 
-        // Update UI tabs
-        document.querySelectorAll('.stats-tab').forEach(btn => {
+        // Update UI tabs (utilise cache)
+        this.dom.tabs.forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-mode') === mode) {
                 btn.classList.add('active');
@@ -123,21 +178,21 @@ class StatsManager {
             window.calculateSoloGrade((career.level || 1) + 10) :
             { emoji: '🥈', label: 'Combattant' };
 
-        // Update badge
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge aventure-mode';
-        badgeEl.style.borderColor = soloGrade.color;
-        badgeEl.style.background = `linear-gradient(135deg, ${soloGrade.color}dd 0%, ${soloGrade.color}66 100%)`;
+        // Utiliser le cache DOM
+        const { rankBadge, rankIcon, playerName, rankLevel, gradeContainer, rankName, progressFill, cardMini } = this.dom;
 
-        document.getElementById('stats-rank-icon').textContent = soloGrade.emoji;
-        document.getElementById('stats-player-name').textContent = pseudo;
+        // Update badge
+        rankBadge.className = 'rank-badge aventure-mode';
+        rankBadge.style.borderColor = soloGrade.color;
+        rankBadge.style.background = `linear-gradient(135deg, ${soloGrade.color}dd 0%, ${soloGrade.color}66 100%)`;
+
+        rankIcon.textContent = soloGrade.emoji;
+        playerName.textContent = pseudo;
 
         // Niveau dans le badge (juste le chiffre)
-        const levelEl = document.getElementById('stats-rank-level');
-        if (levelEl) levelEl.textContent = career.level || 1;
+        if (rankLevel) rankLevel.textContent = career.level || 1;
 
-        const gradeContainer = document.getElementById('stats-grade-container');
-        document.getElementById('stats-rank-name').textContent = soloGrade.label;
+        rankName.textContent = soloGrade.label;
         if (gradeContainer) {
             gradeContainer.style.borderColor = soloGrade.color;
             gradeContainer.style.background = `linear-gradient(135deg, ${soloGrade.color}dd 0%, ${soloGrade.color}66 100%)`;
@@ -147,12 +202,11 @@ class StatsManager {
         const xp = career.xp || 0;
         const xpNext = career.xpNext || 200;
         const progressPercent = Math.min((xp / xpNext) * 100, 100);
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
+        progressFill.style.width = `${progressPercent}%`;
 
         // Mini stats sur la carte (2x2 comme l'ancien design)
-        const miniStatsEl = document.getElementById('stats-card-mini');
-        if (miniStatsEl) {
-            miniStatsEl.innerHTML = `
+        if (cardMini) {
+            cardMini.innerHTML = `
                 <div class="card-mini-stat">
                     <div class="mini-label">Stage Max</div>
                     <div class="mini-value">${career.maxLevel || 0}</div>
@@ -225,10 +279,10 @@ class StatsManager {
                 </div>
             </div>
         `;
-        document.getElementById('stats-grid-unified').innerHTML = gridHTML;
+        this.dom.gridUnified.innerHTML = gridHTML;
 
-        // Bouton leaderboard roguelike
-        const rankingBtn = document.getElementById('stats-ranking-btn');
+        // Bouton leaderboard roguelike (utilise cache)
+        const { rankingBtn } = this.dom;
         rankingBtn.textContent = '🏆 Leaderboard Roguelike';
         rankingBtn.style.display = '';
         rankingBtn.onclick = () => {
@@ -262,21 +316,21 @@ class StatsManager {
         const nextThreshold = Object.entries(multiThresholds).find(([_, v]) => v > multiWins)?.[1] || 50;
         const winsToNext = nextThreshold - multiWins;
 
-        // Update badge
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge arene-mode';
-        badgeEl.style.borderColor = multiGrade.color;
-        badgeEl.style.background = `linear-gradient(135deg, ${multiGrade.color}dd 0%, ${multiGrade.color}66 100%)`;
+        // Utiliser le cache DOM
+        const { rankBadge, rankIcon, playerName, rankLevel, gradeContainer, rankName, progressFill, cardMini, gridUnified, rankingBtn, dailyBtn } = this.dom;
 
-        document.getElementById('stats-rank-icon').textContent = multiGrade.emoji;
-        document.getElementById('stats-player-name').textContent = pseudo;
+        // Update badge
+        rankBadge.className = 'rank-badge arene-mode';
+        rankBadge.style.borderColor = multiGrade.color;
+        rankBadge.style.background = `linear-gradient(135deg, ${multiGrade.color}dd 0%, ${multiGrade.color}66 100%)`;
+
+        rankIcon.textContent = multiGrade.emoji;
+        playerName.textContent = pseudo;
 
         // Victoires dans le badge (juste le chiffre)
-        const levelEl = document.getElementById('stats-rank-level');
-        if (levelEl) levelEl.textContent = multiWins;
+        if (rankLevel) rankLevel.textContent = multiWins;
 
-        const gradeContainer = document.getElementById('stats-grade-container');
-        document.getElementById('stats-rank-name').textContent = multiGrade.label;
+        rankName.textContent = multiGrade.label;
         if (gradeContainer) {
             gradeContainer.style.borderColor = multiGrade.color;
             gradeContainer.style.background = `linear-gradient(135deg, ${multiGrade.color}dd 0%, ${multiGrade.color}66 100%)`;
@@ -284,16 +338,15 @@ class StatsManager {
 
         // Progression vers le prochain grade multi
         const progressPercent = this.calculateMultiProgress(multiWins);
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
+        progressFill.style.width = `${progressPercent}%`;
 
         // Stats Multi - calculer winRate en premier
         const winRate = (career.totalMultiGames || 0) > 0 ?
             Math.round(((career.multiWins || 0) / (career.totalMultiGames || 1)) * 100) : 0;
 
         // Mini stats sur la carte (2x2 comme l'ancien design) - Multi
-        const miniStatsEl = document.getElementById('stats-card-mini');
-        if (miniStatsEl) {
-            miniStatsEl.innerHTML = `
+        if (cardMini) {
+            cardMini.innerHTML = `
                 <div class="card-mini-stat">
                     <div class="mini-label">Victoires</div>
                     <div class="mini-value">${career.multiWins || 0}</div>
@@ -371,10 +424,9 @@ class StatsManager {
                 </div>
             </div>
         `;
-        document.getElementById('stats-grid-unified').innerHTML = gridHTML;
+        gridUnified.innerHTML = gridHTML;
 
-        // Bouton leaderboard multi
-        const rankingBtn = document.getElementById('stats-ranking-btn');
+        // Bouton leaderboard multi (utilise cache)
         rankingBtn.textContent = '🏆 Classement Online';
         rankingBtn.style.display = '';
         rankingBtn.onclick = () => {
@@ -383,395 +435,11 @@ class StatsManager {
         };
     }
 
-    /**
-     * Affiche les stats SOLO (legacy - pour compatibilité)
-     */
-    displaySoloStats() {
-        logger.log('[StatsManager] Affichage stats Solo');
-
-        // ✅ UNIFIÉ : Lecture depuis window.career uniquement
-        const career = window.career || {
-            level: 1, xp: 0, xpNext: 200,
-            totalGames: 0, totalScore: 0, bestScore: 0,
-            maxLevel: 0, totalPowerups: 0, totalWalls: 0,
-            maxSurvivalTime: 0
-        };
-        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
-
-        // ✅ Utiliser calculateSoloGrade (avec tri correct) au lieu de getCurrentRank
-        const gradeData = window.calculateSoloGrade ? window.calculateSoloGrade(career.level) : {
-            emoji: '🥉',
-            label: 'Apprenti',
-            color: '#CD7F32'
-        };
-        // Adapter le format pour compatibilité (label → title)
-        const rank = {
-            emoji: gradeData.emoji,
-            title: gradeData.label,
-            color: gradeData.color
-        };
-
-        // Calculer progression XP (formule exponentielle)
-        const progressPercent = Math.min((career.xp / career.xpNext) * 100, 100);
-
-        // Achievements Carrière (anciennement trophées solo, maintenant dans roguelike)
-        const careerAchievements = achievementManager.getByCategory('career');
-        const unlocked = careerAchievements.filter(a => achievementManager.isUnlocked(a.id)).length;
-        const total = careerAchievements.length || 7;
-
-        // Update UI: Badge - Reset complet puis appliquer le bon style
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge';
-        badgeEl.style.borderColor = '';
-        badgeEl.style.background = '';
-        badgeEl.style.boxShadow = '';
-
-        // Appliquer classe CSS ou style inline selon la couleur du grade
-        if (rank.color === '#CD7F32') badgeEl.classList.add('bronze');
-        else if (rank.color === '#C0C0C0') badgeEl.classList.add('silver');
-        else if (rank.color === '#FFD700') badgeEl.classList.add('gold');
-        else {
-            // Pour les autres grades (platinum, diamond, elite, legend), style inline
-            badgeEl.style.borderColor = rank.color;
-            badgeEl.style.background = `linear-gradient(135deg, ${rank.color} 0%, ${rank.color}88 100%)`;
-        }
-
-        // Update UI: Icon
-        document.getElementById('stats-rank-icon').textContent = rank.emoji;
-
-        // Update UI: Player name
-        document.getElementById('stats-player-name').textContent = pseudo;
-
-        // Update UI: Rank name avec conteneur coloré (style hub)
-        const rankNameEl = document.getElementById('stats-rank-name');
-        const gradeContainer = document.getElementById('stats-grade-container');
-        rankNameEl.textContent = rank.title;
-
-        // Appliquer la couleur du grade au conteneur
-        if (gradeContainer) {
-            gradeContainer.style.borderColor = rank.color;
-            gradeContainer.style.background = `linear-gradient(135deg, ${rank.color}66 0%, ${rank.color}33 100%)`;
-        }
-
-        // Update UI: Progress bar
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
-
-        // Update UI: Card Stats (4 stats importantes)
-        const cardStatsHTML = `
-            <div class="rank-stat">
-                <div class="rank-stat-label">Stage Max</div>
-                <div class="rank-stat-value">${career.maxLevel || 0}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Score Total</div>
-                <div class="rank-stat-value">${this.formatNumber(career.totalScore || 0)}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Power-Ups</div>
-                <div class="rank-stat-value">${career.totalPowerups || 0}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Murs Détruits</div>
-                <div class="rank-stat-value">${career.totalWalls || 0}</div>
-            </div>
-        `;
-        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
-
-        // Update UI: Overview Stats (4 stats d'ensemble)
-        const maxSurvival = this.formatSurvivalTime(career.maxSurvivalTime || 0);
-        const overviewHTML = `
-            <div class="overview-stat">
-                <div class="overview-stat-label">Parties Jouées</div>
-                <div class="overview-stat-value">${career.totalGames || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Survie Max</div>
-                <div class="overview-stat-value">${maxSurvival}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Meilleur Score</div>
-                <div class="overview-stat-value">${this.formatNumber(career.bestScore || 0)}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Achievements</div>
-                <div class="overview-stat-value">${unlocked}/${total}</div>
-            </div>
-        `;
-        document.getElementById('stats-overview').innerHTML = overviewHTML;
-
-        // Update UI: Button text
-        document.getElementById('stats-ranking-btn').textContent = 'Classement';
-        document.getElementById('stats-ranking-btn').style.display = '';
-
-        // Cacher le bouton Daily (visible uniquement en Roguelike)
-        const dailyBtn = document.getElementById('stats-daily-btn');
-        if (dailyBtn) dailyBtn.style.display = 'none';
-    }
-
-    /**
-     * Affiche les stats MULTI
-     */
-    displayMultiStats() {
-        logger.log('[StatsManager] Affichage stats Multi');
-
-        // ✅ UNIFIÉ : Lecture depuis window.career uniquement
-        const career = window.career || {
-            level: 1,
-            multiWins: 0,
-            totalMultiGames: 0,
-            multiCompleted: 0,
-            currentStreak: 0,
-            bestStreak: 0
-        };
-        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
-
-        // Calculer grade multi via hub-manager
-        const multiGrade = window.calculateMultiGrade ?
-            window.calculateMultiGrade(career.multiWins || 0) :
-            { emoji: '🥉', color: '#CD7F32', label: 'BRONZE' };
-
-        // Update UI: Badge - Reset complet puis appliquer le bon style
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge';
-        badgeEl.style.borderColor = '';
-        badgeEl.style.background = '';
-        badgeEl.style.boxShadow = '';
-
-        // Ajouter la classe CSS selon le grade
-        if (multiGrade.color === '#CD7F32') badgeEl.classList.add('bronze');
-        else if (multiGrade.color === '#C0C0C0') badgeEl.classList.add('silver');
-        else if (multiGrade.color === '#FFD700') badgeEl.classList.add('gold');
-        else {
-            // Pour platinum et legend, utiliser style inline
-            badgeEl.style.borderColor = multiGrade.color;
-            badgeEl.style.background = `linear-gradient(135deg, ${multiGrade.color} 0%, ${multiGrade.color}88 100%)`;
-        }
-
-        document.getElementById('stats-rank-icon').textContent = multiGrade.emoji;
-        document.getElementById('stats-player-name').textContent = pseudo;
-
-        // Update UI: Rank name avec conteneur coloré (style hub)
-        const rankNameEl = document.getElementById('stats-rank-name');
-        const gradeContainer = document.getElementById('stats-grade-container');
-        rankNameEl.textContent = multiGrade.label;
-
-        // Appliquer la couleur du grade au conteneur
-        if (gradeContainer) {
-            gradeContainer.style.borderColor = multiGrade.color;
-            gradeContainer.style.background = `linear-gradient(135deg, ${multiGrade.color}66 0%, ${multiGrade.color}33 100%)`;
-        }
-
-        // Progression vers le prochain grade
-        const progressPercent = this.calculateMultiProgress(career.multiWins || 0);
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
-
-        // Card Stats Multi (données existantes dans career)
-        const wins = career.multiWins || 0;
-        const totalGames = career.totalMultiGames || 0;
-        const completed = career.multiCompleted || 0;
-        const abandons = totalGames - completed; // Calculé
-        const losses = completed - wins; // Défaites = parties finies - victoires
-        const bestStreak = career.bestStreak || 0;
-
-        const cardStatsHTML = `
-            <div class="rank-stat">
-                <div class="rank-stat-label">Victoires</div>
-                <div class="rank-stat-value">${wins}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Défaites</div>
-                <div class="rank-stat-value">${Math.max(0, losses)}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Abandons</div>
-                <div class="rank-stat-value">${Math.max(0, abandons)}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Meilleure Série</div>
-                <div class="rank-stat-value">${bestStreak}</div>
-            </div>
-        `;
-        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
-
-        // Overview Stats Multi
-        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-        const currentStreak = career.currentStreak || 0;
-
-        // Trophées multi
-        const tr = JSON.parse(localStorage.getItem('tr') || '{}');
-        const multiTrophies = window.TROPHIES ?
-            Object.entries(window.TROPHIES).filter(([k, t]) => t.category === 'multi' && tr[k]).length : 0;
-        const totalMultiTrophies = window.TROPHIES ?
-            Object.values(window.TROPHIES).filter(t => t.category === 'multi').length : 9;
-
-        const overviewHTML = `
-            <div class="overview-stat">
-                <div class="overview-stat-label">Parties Jouées</div>
-                <div class="overview-stat-value">${totalGames}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Win Rate</div>
-                <div class="overview-stat-value">${winRate}%</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Série Actuelle</div>
-                <div class="overview-stat-value">${currentStreak}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Trophées Multi</div>
-                <div class="overview-stat-value">${multiTrophies}/${totalMultiTrophies}</div>
-            </div>
-        `;
-        document.getElementById('stats-overview').innerHTML = overviewHTML;
-
-        // Button text
-        document.getElementById('stats-ranking-btn').textContent = 'Classement Online';
-        document.getElementById('stats-ranking-btn').style.display = '';
-
-        // Cacher le bouton Daily
-        const dailyBtn = document.getElementById('stats-daily-btn');
-        if (dailyBtn) dailyBtn.style.display = 'none';
-    }
-
-    /**
-     * Affiche les stats Boss Rush
-     */
-    displayBossRushStats() {
-        logger.log('[StatsManager] Affichage stats Boss Rush');
-
-        // Lecture depuis window.career
-        const career = window.career || {
-            bossRushRuns: 0,
-            bossRushCompletions: 0,
-            bossRushBestTime: null,
-            bossRushTitanKills: 0,
-            bossRushCryoKills: 0,
-            bossRushSpectreKills: 0,
-            bossRushFoudreKills: 0,
-            bossRushPerfectRuns: 0,
-            bossRushFastRuns: 0
-        };
-        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
-
-        // Calculer le rang Boss Rush basé sur les completions
-        const bossRushRank = this.getBossRushRank(career.bossRushCompletions || 0);
-
-        // Update UI: Badge - Style orange/rouge Boss Rush
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge bossrush-mode';
-        badgeEl.style.borderColor = bossRushRank.color;
-        badgeEl.style.background = `linear-gradient(135deg, ${bossRushRank.color}66 0%, ${bossRushRank.color}33 100%)`;
-        badgeEl.style.boxShadow = `0 0 20px ${bossRushRank.color}66`;
-
-        document.getElementById('stats-rank-icon').textContent = bossRushRank.emoji;
-        document.getElementById('stats-player-name').textContent = pseudo;
-
-        // Update UI: Rank name avec conteneur coloré
-        const rankNameEl = document.getElementById('stats-rank-name');
-        const gradeContainer = document.getElementById('stats-grade-container');
-        rankNameEl.textContent = bossRushRank.label;
-
-        if (gradeContainer) {
-            gradeContainer.style.borderColor = bossRushRank.color;
-            gradeContainer.style.background = `linear-gradient(135deg, ${bossRushRank.color}66 0%, ${bossRushRank.color}33 100%)`;
-        }
-
-        // Progression vers le prochain rang
-        const progressPercent = this.calculateBossRushProgress(career.bossRushCompletions || 0);
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
-
-        // Card Stats Boss Rush (4 stats principales)
-        const totalBossKills = (career.bossRushTitanKills || 0) + (career.bossRushCryoKills || 0) +
-                              (career.bossRushSpectreKills || 0) + (career.bossRushFoudreKills || 0);
-        const bestTimeStr = career.bossRushBestTime ? this.formatBossRushTime(career.bossRushBestTime) : '--:--';
-
-        const cardStatsHTML = `
-            <div class="rank-stat">
-                <div class="rank-stat-label">Runs Complètes</div>
-                <div class="rank-stat-value">${career.bossRushCompletions || 0}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Meilleur Temps</div>
-                <div class="rank-stat-value">${bestTimeStr}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Boss Vaincus</div>
-                <div class="rank-stat-value">${totalBossKills}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Runs Parfaites</div>
-                <div class="rank-stat-value">${career.bossRushPerfectRuns || 0}</div>
-            </div>
-        `;
-        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
-
-        // Trophées Boss Rush
-        const tr = JSON.parse(localStorage.getItem('tr') || '{}');
-        const bossRushTrophies = window.TROPHIES ?
-            Object.entries(window.TROPHIES).filter(([k, t]) => t.category === 'bossrush' && tr[k]).length : 0;
-        const totalBossRushTrophies = window.TROPHIES ?
-            Object.values(window.TROPHIES).filter(t => t.category === 'bossrush').length : 10;
-
-        // Overview Stats Boss Rush
-        const completionRate = (career.bossRushRuns || 0) > 0 ?
-            Math.round(((career.bossRushCompletions || 0) / (career.bossRushRuns || 1)) * 100) : 0;
-
-        const overviewHTML = `
-            <div class="overview-stat">
-                <div class="overview-stat-label">Runs Totales</div>
-                <div class="overview-stat-value">${career.bossRushRuns || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Taux Réussite</div>
-                <div class="overview-stat-value">${completionRate}%</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Runs Rapides</div>
-                <div class="overview-stat-value">${career.bossRushFastRuns || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Trophées Boss</div>
-                <div class="overview-stat-value">${bossRushTrophies}/${totalBossRushTrophies}</div>
-            </div>
-        `;
-        document.getElementById('stats-overview').innerHTML = overviewHTML;
-
-        // Button text (pas de classement pour Boss Rush)
-        document.getElementById('stats-ranking-btn').textContent = 'Classement';
-        document.getElementById('stats-ranking-btn').style.display = 'none';
-
-        // Cacher le bouton Daily
-        const dailyBtn = document.getElementById('stats-daily-btn');
-        if (dailyBtn) dailyBtn.style.display = 'none';
-    }
-
-    /**
-     * Retourne le rang Boss Rush basé sur les completions
-     */
-    getBossRushRank(completions) {
-        if (completions >= 20) return { label: 'LÉGENDE', color: '#ff5722', emoji: '👑' };
-        if (completions >= 10) return { label: 'CHAMPION', color: '#9c27b0', emoji: '💎' };
-        if (completions >= 5) return { label: 'EXPERT', color: '#2196f3', emoji: '⚔️' };
-        if (completions >= 1) return { label: 'CHASSEUR', color: '#4caf50', emoji: '🎯' };
-        return { label: 'NOVICE', color: '#9e9e9e', emoji: '🔰' };
-    }
-
-    /**
-     * Calcule la progression vers le prochain rang Boss Rush
-     */
-    calculateBossRushProgress(completions) {
-        const thresholds = [0, 1, 5, 10, 20];
-
-        for (let i = thresholds.length - 1; i >= 0; i--) {
-            if (completions >= thresholds[i]) {
-                if (i === thresholds.length - 1) return 100;
-                const current = thresholds[i];
-                const next = thresholds[i + 1];
-                return Math.round(((completions - current) / (next - current)) * 100);
-            }
-        }
-        return 0;
-    }
+    // ============================================
+    // MÉTHODES LEGACY SUPPRIMÉES
+    // displaySoloStats, displayMultiStats, displayBossRushStats, displayRoguelikeStats
+    // ont été remplacées par displayAventureStats() et displayAreneStats()
+    // ============================================
 
     /**
      * Formate le temps Boss Rush (secondes → M:SS)
@@ -781,136 +449,6 @@ class StatsManager {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * Affiche les stats ROGUELIKE
-     */
-    displayRoguelikeStats() {
-        logger.log('[StatsManager] Affichage stats Roguelike');
-
-        // Récupérer les données roguelike
-        const meta = roguelikeManager.metaProgression || {
-            totalXP: 0,
-            totalRuns: 0,
-            bestLevel: 0,
-            bestScore: 0
-        };
-        const stats = achievementManager.getStats();
-        const progress = achievementManager.getProgress();
-        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Joueur';
-
-        // Update UI: Badge - Style violet roguelike
-        const badgeEl = document.getElementById('stats-rank-badge');
-        badgeEl.className = 'rank-badge roguelike-mode';
-        badgeEl.style.borderColor = '#9c27b0';
-        badgeEl.style.background = 'linear-gradient(135deg, #1a0a2e 0%, #4a2c7a 100%)';
-        badgeEl.style.boxShadow = '0 0 20px rgba(156, 39, 176, 0.4)';
-
-        document.getElementById('stats-rank-icon').textContent = '🎲';
-        document.getElementById('stats-player-name').textContent = pseudo;
-
-        // Update UI: Rank name avec conteneur violet
-        const rankNameEl = document.getElementById('stats-rank-name');
-        const gradeContainer = document.getElementById('stats-grade-container');
-
-        // Calculer le rang roguelike basé sur le niveau max atteint
-        const roguelikeRank = this.getRoguelikeRank(meta.bestLevel);
-        rankNameEl.textContent = roguelikeRank.label;
-
-        if (gradeContainer) {
-            gradeContainer.style.borderColor = roguelikeRank.color;
-            gradeContainer.style.background = `linear-gradient(135deg, ${roguelikeRank.color}66 0%, ${roguelikeRank.color}33 100%)`;
-        }
-
-        // Progression vers le prochain rang
-        const progressPercent = this.calculateRoguelikeProgress(meta.bestLevel);
-        document.getElementById('stats-progress-fill').style.width = `${progressPercent}%`;
-
-        // Card Stats Roguelike (4 stats principales)
-        const cardStatsHTML = `
-            <div class="rank-stat">
-                <div class="rank-stat-label">Meilleur Stage</div>
-                <div class="rank-stat-value">${meta.bestLevel || 0}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Meilleur Score</div>
-                <div class="rank-stat-value">${this.formatNumber(meta.bestScore || 0)}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">Runs Totales</div>
-                <div class="rank-stat-value">${meta.totalRuns || 0}</div>
-            </div>
-            <div class="rank-stat">
-                <div class="rank-stat-label">XP Total</div>
-                <div class="rank-stat-value">${this.formatNumber(meta.totalXP || 0)}</div>
-            </div>
-        `;
-        document.getElementById('stats-card-stats').innerHTML = cardStatsHTML;
-
-        // Overview Stats Roguelike
-        const overviewHTML = `
-            <div class="overview-stat">
-                <div class="overview-stat-label">Boss Vaincus</div>
-                <div class="overview-stat-value">${stats.bossesKilled || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Pommes Totales</div>
-                <div class="overview-stat-value">${stats.totalApples || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Combo Max</div>
-                <div class="overview-stat-value">${stats.maxComboEver || 0}</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-label">Achievements</div>
-                <div class="overview-stat-value">${progress.unlocked}/${progress.total}</div>
-            </div>
-        `;
-        document.getElementById('stats-overview').innerHTML = overviewHTML;
-
-        // Button text - Leaderboard Roguelike
-        const rankingBtn = document.getElementById('stats-ranking-btn');
-        rankingBtn.textContent = '🏆 Leaderboard Roguelike';
-        rankingBtn.style.display = '';
-        rankingBtn.onclick = () => {
-            window.audio?.buttonClick();
-            this.showRoguelikeLeaderboard();
-        };
-
-        // Afficher le bouton Daily Challenge
-        const dailyBtn = document.getElementById('stats-daily-btn');
-        if (dailyBtn) {
-            dailyBtn.style.display = '';
-        }
-    }
-
-    /**
-     * Retourne le rang roguelike basé sur le niveau max
-     */
-    getRoguelikeRank(bestLevel) {
-        if (bestLevel >= 20) return { label: 'LÉGENDE', color: '#ff5722', emoji: '🔥' };
-        if (bestLevel >= 15) return { label: 'MAÎTRE', color: '#9c27b0', emoji: '👑' };
-        if (bestLevel >= 10) return { label: 'EXPERT', color: '#2196f3', emoji: '💎' };
-        if (bestLevel >= 5) return { label: 'AVENTURIER', color: '#4caf50', emoji: '⚔️' };
-        return { label: 'DÉBUTANT', color: '#9e9e9e', emoji: '🌱' };
-    }
-
-    /**
-     * Calcule la progression vers le prochain rang roguelike
-     */
-    calculateRoguelikeProgress(bestLevel) {
-        const thresholds = [0, 5, 10, 15, 20];
-
-        for (let i = thresholds.length - 1; i >= 0; i--) {
-            if (bestLevel >= thresholds[i]) {
-                if (i === thresholds.length - 1) return 100; // Max rang
-                const current = thresholds[i];
-                const next = thresholds[i + 1];
-                return Math.round(((bestLevel - current) / (next - current)) * 100);
-            }
-        }
-        return 0;
     }
 
     /**
