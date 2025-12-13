@@ -1734,6 +1734,38 @@ wss.on('connection', (ws, req) => {
 // EXPRESS
 // ============================================
 
+// 🌐 CORS - Configuration sécurisée
+// Permet les requêtes cross-origin pour l'app mobile Capacitor
+app.use((req, res, next) => {
+    // Origines autorisées (ajuster en production)
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'http://localhost:5500',
+        'capacitor://localhost',           // Android Capacitor
+        'ionic://localhost',               // iOS Ionic
+        'http://192.168.1.100:3000',       // LAN local (ajuster l'IP)
+        'https://snake-ultra.com'          // Domaine production (à configurer)
+    ];
+
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin) || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight 24h
+
+    // Répondre immédiatement aux requêtes OPTIONS (preflight)
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+
+    next();
+});
+
 // 🚫 NO-CACHE pour le développement (évite les problèmes de cache navigateur)
 app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

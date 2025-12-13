@@ -11,6 +11,39 @@ import { logger } from './services/logger.js';
 import { state } from './services/StateManager.js';
 
 // ============================================
+// GESTION D'ERREUR GLOBALE
+// Capture les erreurs non-gérées pour éviter crash silencieux
+// ============================================
+window.addEventListener('error', (event) => {
+    logger.error('[GLOBAL ERROR]', event.message, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+    });
+    // Ne pas bloquer l'exécution du reste
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    logger.error('[UNHANDLED PROMISE]', event.reason?.message || event.reason);
+});
+
+/**
+ * Import dynamique avec gestion d'erreur
+ * @param {string} modulePath - Chemin du module
+ * @param {string} moduleName - Nom pour le logging
+ * @returns {Promise<any>}
+ */
+async function safeImport(modulePath, moduleName) {
+    try {
+        const module = await import(modulePath);
+        return module;
+    } catch (e) {
+        logger.error(`[Main] Échec import ${moduleName}:`, e.message);
+        return null;
+    }
+}
+
+// ============================================
 // PHASE 1: Initialisation SecurityManager + Storage
 // DOIT être fait AVANT tout manager qui utilise storage.js
 // ============================================
