@@ -14,8 +14,11 @@
 import { logger } from '../services/logger.js';
 import { save, load } from '../services/storage.js';
 import { createTrophies } from '../data/trophies.js';
-import { achievementManager, ACHIEVEMENTS } from '../roguelike/achievements.js';
+import { ACHIEVEMENTS } from '../roguelike/achievements.js';
 import { SnakeUltra } from '../SnakeUltra.js';
+
+// Utiliser window.achievementManager pour garantir le singleton
+const getAchievementManager = () => window.achievementManager;
 
 // ============================================
 // MAPPING RARETÉ ROGUELIKE → ÉTOILES
@@ -162,7 +165,8 @@ class TrophyManager {
         const classicUnlocked = Object.keys(this.unlockedTrophies).filter(k => this.unlockedTrophies[k]).length;
 
         const roguelikeTotal = ACHIEVEMENTS.length;
-        const roguelikeUnlocked = achievementManager.unlockedAchievements.length;
+        const am = getAchievementManager();
+        const roguelikeUnlocked = am ? am.unlockedAchievements.length : 0;
 
         const total = classicTotal + roguelikeTotal;
         const unlocked = classicUnlocked + roguelikeUnlocked;
@@ -201,8 +205,9 @@ class TrophyManager {
         }
 
         // Compter achievements roguelike
+        const am = getAchievementManager();
         for (const achievement of ACHIEVEMENTS) {
-            const isUnlocked = achievementManager.isUnlocked(achievement.id);
+            const isUnlocked = am ? am.isUnlocked(achievement.id) : false;
             const isSecret = achievement.category === 'secret';
 
             counts.all.total++;
@@ -353,6 +358,7 @@ class TrophyManager {
 
         // Ajouter achievements roguelike
         if (category === 'all' || category === 'roguelike' || category === 'secret') {
+            const am = getAchievementManager();
             for (const achievement of ACHIEVEMENTS) {
                 // Pour 'roguelike': exclure les secrets (ils vont dans l'onglet 🔒)
                 if (category === 'roguelike' && achievement.category === 'secret') continue;
@@ -361,6 +367,7 @@ class TrophyManager {
                 if (category === 'secret' && achievement.category !== 'secret') continue;
 
                 // Pour 'all': inclure tout
+                const isUnlocked = am ? am.isUnlocked(achievement.id) : false;
 
                 items.push({
                     type: 'roguelike',
@@ -373,7 +380,7 @@ class TrophyManager {
                     xp: achievement.xpReward,
                     secret: achievement.hidden || false,
                     hint: 'Continue à jouer pour découvrir...',
-                    isUnlocked: achievementManager.isUnlocked(achievement.id),
+                    isUnlocked: isUnlocked,
                     rarity: achievement.rarity,
                     category: achievement.category
                 });

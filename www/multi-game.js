@@ -1164,12 +1164,30 @@ class MultiplayerSnakeGame {
     // ============================================
 
     showWaitingOverlay() {
-        // Créer un overlay d'attente (styles dans snake.css)
+        // Créer un overlay d'attente AAA (styles dans snake.css)
         const overlay = document.createElement('div');
         overlay.id = 'mp-waiting-overlay';
         overlay.innerHTML = `
-            <h2>🔍 Recherche adversaire...</h2>
-            <div class="mp-spinner"></div>
+            <div class="mp-waiting-content">
+                <div class="mp-waiting-icon">🎯</div>
+                <h2 class="mp-waiting-title">Recherche en cours</h2>
+                <p class="mp-waiting-subtitle">Connexion à un adversaire...</p>
+
+                <div class="mp-waiting-spinner-container">
+                    <div class="mp-spinner-outer"></div>
+                    <div class="mp-spinner-inner"></div>
+                    <div class="mp-spinner-dot"></div>
+                </div>
+
+                <div class="mp-waiting-status">
+                    <div class="mp-status-dot"></div>
+                    <span class="mp-status-text">Connecté au serveur</span>
+                </div>
+
+                <button class="mp-waiting-cancel" onclick="window.multiGame?.cancelMatchmaking()">
+                    Annuler
+                </button>
+            </div>
         `;
 
         // Ajouter au body (position fixed dans CSS)
@@ -1177,6 +1195,17 @@ class MultiplayerSnakeGame {
 
         // Enregistrer l'overlay dans le ScreenManager
         window.screenManager.registerOverlay('mp-waiting-overlay');
+    }
+
+    cancelMatchmaking() {
+        // Fermer la connexion et retourner au lobby
+        this.hideWaitingOverlay();
+        if (this.client) {
+            this.client.disconnect();
+        }
+        if (window.screenManager) {
+            window.screenManager.show('main-lobby-screen');
+        }
     }
 
     hideWaitingOverlay() {

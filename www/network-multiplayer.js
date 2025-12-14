@@ -263,6 +263,18 @@ class MultiplayerClient {
                 if (this.onSwordDamage) this.onSwordDamage(message);
                 break;
 
+            case 'sword_activated':
+                // ⚔️ Épée activée (nouveau système avec durée)
+                logger.log(`⚔️ Épée activée! Charge: ${message.charge}, Durée: ${message.duration}ms`);
+                if (this.onSwordActivated) this.onSwordActivated(message);
+                break;
+
+            case 'sword_hit_success':
+                // ⚔️ Attaque épée réussie
+                logger.log(`⚔️ Épée touche! Dégâts: ${message.damage}, Segments gagnés: ${message.segmentsGained}`);
+                if (this.onSwordHitSuccess) this.onSwordHitSuccess(message);
+                break;
+
             case 'opponent_abandoned':
                 // 🏳️ L'adversaire a abandonné, vous gagnez !
                 logger.log('🏳️ Adversaire abandonné - Victoire !');
@@ -672,53 +684,81 @@ class MultiplayerClient {
     }
 
     /**
-     * Afficher le countdown avec un nombre
+     * Afficher le countdown avec un nombre (AAA Style)
      */
     showCountdown(number) {
         const overlay = document.getElementById('countdown-overlay');
         const numberElem = document.getElementById('countdown-number');
+        const labelElem = overlay?.querySelector('.countdown-label');
+        const progressCircle = overlay?.querySelector('.countdown-circle-progress');
 
         if (!overlay || !numberElem) return;
 
-        // ✅ AMÉLIORATION: Nettoyer le canvas au début du countdown (nombre = 5)
+        // Nettoyer le canvas au début du countdown (nombre = 5)
         if (number === 5 && window.multiGame) {
             window.multiGame.clearCanvas();
         }
 
-        // Afficher l'overlay
-        overlay.classList.remove('hidden');
+        // Afficher l'overlay et reset les classes
+        overlay.classList.remove('hidden', 'go');
+        numberElem.classList.remove('go');
+
+        // Mettre à jour le label
+        if (labelElem) {
+            labelElem.textContent = 'PRÉPAREZ-VOUS';
+            labelElem.classList.remove('go');
+        }
 
         // Mettre à jour le nombre
         numberElem.textContent = number;
-        numberElem.classList.remove('go');
 
-        // Réinitialiser l'animation
+        // Animer le cercle de progression (5 → 1 = 100% → 20%)
+        if (progressCircle) {
+            const progress = (5 - number) / 5;
+            const circumference = 283; // 2 * PI * 45
+            progressCircle.style.strokeDashoffset = circumference * (1 - progress);
+        }
+
+        // Réinitialiser l'animation du nombre
         numberElem.style.animation = 'none';
         setTimeout(() => {
-            numberElem.style.animation = 'countdownPulse 1s ease-in-out';
+            numberElem.style.animation = 'countdownNumberPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
         }, 10);
-
-        // ✅ FIX: Ne PAS enregistrer countdown-overlay (élément HTML permanent)
-        // Le countdown doit rester dans le DOM pour être réutilisé
     }
 
     /**
-     * Afficher "GO!" puis cacher le countdown
+     * Afficher "GO!" puis cacher le countdown (AAA Style)
      */
     showCountdownGo() {
         const overlay = document.getElementById('countdown-overlay');
         const numberElem = document.getElementById('countdown-number');
+        const labelElem = overlay?.querySelector('.countdown-label');
+        const progressCircle = overlay?.querySelector('.countdown-circle-progress');
 
         if (!overlay || !numberElem) return;
 
-        // Afficher "GO!" avec style spécial
-        numberElem.textContent = 'GO!';
+        // Ajouter classe "go" pour le style vert
+        overlay.classList.add('go');
         numberElem.classList.add('go');
+
+        // Mettre à jour le label
+        if (labelElem) {
+            labelElem.textContent = 'C\'EST PARTI !';
+            labelElem.classList.add('go');
+        }
+
+        // Cercle complet
+        if (progressCircle) {
+            progressCircle.style.strokeDashoffset = 0;
+        }
+
+        // Afficher "GO!"
+        numberElem.textContent = 'GO!';
 
         // Réinitialiser l'animation
         numberElem.style.animation = 'none';
         setTimeout(() => {
-            numberElem.style.animation = 'countdownPulse 1s ease-in-out';
+            numberElem.style.animation = 'countdownGoPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
         }, 10);
 
         // Lancer la musique du jeu
@@ -731,6 +771,7 @@ class MultiplayerClient {
         // Cacher après 1 seconde
         setTimeout(() => {
             overlay.classList.add('hidden');
+            overlay.classList.remove('go');
         }, 1000);
     }
 }

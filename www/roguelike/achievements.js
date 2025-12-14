@@ -608,14 +608,34 @@ class AchievementManager {
     load() {
         try {
             const saved = localStorage.getItem('snakeAchievements');
+
             if (saved) {
-                const data = JSON.parse(saved);
-                this.unlockedAchievements = data.unlocked || [];
-                this.stats = { ...this.getDefaultStats(), ...data.stats };
+                let parsedData = JSON.parse(saved);
+
+                // Gérer le wrapper SecurityManager {data: {...}, t: ..., v: ...}
+                if (parsedData.data && parsedData.t !== undefined) {
+                    logger.log('[Achievements] Format SecurityManager détecté, extraction des données...');
+                    parsedData = parsedData.data;
+                }
+
+                this.unlockedAchievements = parsedData.unlocked || [];
+                this.stats = { ...this.getDefaultStats(), ...parsedData.stats };
                 this.stats.currentRun = this.getDefaultRunStats();
+                logger.log(`[Achievements] ✅ Chargé: ${this.unlockedAchievements.length} achievements débloqués`);
+
+                // Debug: afficher les IDs débloqués
+                if (this.unlockedAchievements.length > 0) {
+                    const ids = this.unlockedAchievements.map(a => a.id).join(', ');
+                    logger.log(`[Achievements] IDs: ${ids}`);
+                }
+            } else {
+                logger.log('[Achievements] Aucune donnée sauvegardée trouvée');
             }
         } catch (e) {
             console.error('[Achievements] Erreur chargement:', e);
+            // Reset en cas d'erreur de parsing
+            this.unlockedAchievements = [];
+            this.stats = this.getDefaultStats();
         }
     }
 
@@ -625,7 +645,16 @@ class AchievementManager {
                 unlocked: this.unlockedAchievements,
                 stats: { ...this.stats, currentRun: null }  // Ne pas sauvegarder la run actuelle
             };
-            localStorage.setItem('snakeAchievements', JSON.stringify(data));
+            const jsonData = JSON.stringify(data);
+            localStorage.setItem('snakeAchievements', jsonData);
+
+            // Vérification immédiate que la sauvegarde a fonctionné
+            const verify = localStorage.getItem('snakeAchievements');
+            if (verify !== jsonData) {
+                logger.error('[Achievements] ⚠️ Vérification sauvegarde échouée!');
+            } else {
+                logger.log(`[Achievements] ✅ Sauvegarde OK: ${this.unlockedAchievements.length} achievements`);
+            }
         } catch (e) {
             console.error('[Achievements] Erreur sauvegarde:', e);
         }
