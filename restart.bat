@@ -1,0 +1,6 @@
+@echo off
+echo Arret des processus node...
+taskkill /F /IM node.exe 2>nul
+timeout /t 2 /nobreak >nul
+echo Demarrage du serveur...
+node server.js
