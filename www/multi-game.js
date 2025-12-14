@@ -43,6 +43,12 @@ class MultiplayerSnakeGame {
         this.powerupsCollectedThisGame = 0;
         this.lastPowerupState = null;
 
+        // 💥 Système de particules pour explosions
+        this.particles = [];
+        this.MAX_PARTICLES = 500;
+        this.explodingPlayers = {}; // { playerId: true } pour cacher les serpents explosés
+        this.pendingGameOver = null; // Message gameOver en attente (affichage après explosion)
+
         // Couleurs
         this.COLORS = {
             GOLD: '#D4AF37',
@@ -120,21 +126,28 @@ class MultiplayerSnakeGame {
                     if (myPlayer?.storedItem) {
                         // Item stocké - afficher l'emoji correspondant
                         itemSlot.classList.add('has-item');
-                        itemSlot.classList.remove('has-sword');
+                        itemSlot.classList.remove('has-sword', 'sword-active');
                         const itemEmojis = {
                             ice: '❄️', fire: '🔥', rock: '🪨', ghost: '👻', lightning: '⚡', sword: '⚔️'
                         };
                         itemIcon.textContent = itemEmojis[myPlayer.storedItem] || '?';
+                        // Mettre à jour la charge si épée stockée
+                        if (myPlayer.storedItem === 'sword') {
+                            this.updateSwordSlotCharge(myPlayer);
+                        }
                     } else if (myPlayer?.hasSword) {
-                        // Épée activée (équipée) - afficher les dégâts
-                        itemSlot.classList.add('has-sword');
+                        // ⚔️ Épée activée (dégainée) - le timer SVG gère l'affichage
+                        itemSlot.classList.add('has-sword', 'sword-active');
                         itemSlot.classList.remove('has-item');
-                        const damage = 3 + (myPlayer.applesEatenWithSword || 0);
-                        itemIcon.textContent = `⚔️+${damage}`;
+                        // L'icône et le timer sont gérés par startSwordTimer()
                     } else {
-                        // Aucun item
-                        itemSlot.classList.remove('has-item', 'has-sword');
+                        // Aucun item - reset complet
+                        itemSlot.classList.remove('has-item', 'has-sword', 'sword-active');
                         itemIcon.textContent = '?';
+                        // Reset le timer si épée plus active
+                        if (this.swordTimerRAF) {
+                            this.clearSwordTimer();
+                        }
                     }
                 }
             }
@@ -164,10 +177,24 @@ class MultiplayerSnakeGame {
             this.showDamageEffect(message.damage);
         };
 
+        // ⚔️ ÉPÉE ACTIVÉE (nouveau système avec durée)
+        this.client.onSwordActivated = (message) => {
+            logger.log(`[MultiGame] Épée activée! Charge: ${message.charge}, Durée: ${message.duration}ms`);
+            this.startSwordTimer(message.endTime, message.charge);
+        };
+
+        // ⚔️ HIT RÉUSSI
+        this.client.onSwordHitSuccess = (message) => {
+            logger.log(`[MultiGame] Épée touche! Dégâts: ${message.damage}, Segments gagnés: ${message.segmentsGained}`);
+            this.showSwordHitEffect(message.damage);
+            this.clearSwordTimer(); // Arrêter le timer car épée consommée
+        };
+
         this.client.onGameOver = (message) => {
             this.stopRenderLoop();
             this.stopTimerUpdate();
-            this.showGameOver(message);
+            // 💥 Déclencher l'explosion avant d'afficher le game over
+            this.triggerDeathExplosion(message);
             this.gameOverShown = true; // ✅ FIX: Marquer que game over a été affiché
         };
 
@@ -194,6 +221,11 @@ class MultiplayerSnakeGame {
         this.gameOverShown = false; // ✅ FIX: Réinitialiser à chaque nouvelle partie
         this.powerupsCollectedThisGame = 0; // ✅ Reset compteur power-ups
         this.lastPowerupState = null;
+
+        // 💥 Reset système de particules
+        this.particles = [];
+        this.explodingPlayers = {};
+        this.pendingGameOver = null;
 
         // Stocker le pseudo du joueur
         if (playerPseudo) {
@@ -518,6 +550,233 @@ class MultiplayerSnakeGame {
         this.ctx.globalAlpha = 1;
     }
 
+    // ============================================
+    // 💥 SYSTÈME D'EXPLOSION DU SERPENT
+    // ============================================
+
+    /**
+     * Fait exploser un serpent en particules (effet de mort)
+     * @param {Array} snake - Tableau des segments du serpent [{x, y}, ...]
+     * @param {string} color - Couleur des particules
+     * @param {string} playerId - ID du joueur (pour le marquer comme explosé)
+     */
+    explodeSnake(snake, color = '#00FF87', playerId = null) {
+        if (!snake || snake.length === 0) return;
+
+        // Marquer ce joueur comme explosé (pour cacher son serpent)
+        if (playerId) {
+            this.explodingPlayers[playerId] = true;
+        }
+
+        // Générer particules pour chaque segment
+        snake.forEach((segment, index) => {
+            // Plus de particules pour la tête
+            const particleCount = index === 0 ? 20 : 8;
+
+            for (let i = 0; i < particleCount; i++) {
+                if (this.particles.length >= this.MAX_PARTICLES) break;
+
+                const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.5;
+                const speed = 3 + Math.random() * 4;
+                const size = index === 0 ? 4 + Math.random() * 4 : 2 + Math.random() * 3;
+
+                this.particles.push({
+                    x: segment.x * this.CELL_SIZE + this.CELL_SIZE / 2,
+                    y: segment.y * this.CELL_SIZE + this.CELL_SIZE / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1.0,
+                    color: color,
+                    size: size
+                });
+            }
+        });
+
+        logger.debug(`💥 Serpent explosé en ${this.particles.length} particules`);
+    }
+
+    /**
+     * Met à jour les particules (physique + fade out)
+     */
+    updateParticles() {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+
+            // Physique
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.15; // Gravité
+            p.vx *= 0.98; // Friction
+            p.vy *= 0.98;
+
+            // Fade out
+            p.life -= 0.02;
+
+            // Supprimer particules mortes
+            if (p.life <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * Dessine toutes les particules actives
+     */
+    drawParticles() {
+        if (this.particles.length === 0) return;
+
+        for (const p of this.particles) {
+            this.ctx.globalAlpha = p.life;
+            this.ctx.fillStyle = p.color;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+
+        this.ctx.globalAlpha = 1;
+    }
+
+    /**
+     * Déclenche l'effet de mort complet (explosion + affichage game over différé)
+     * @param {Object} message - Message de game over du serveur
+     */
+    triggerDeathExplosion(message) {
+        if (!this.serverState || !this.serverState.players) {
+            this.showGameOver(message);
+            return;
+        }
+
+        const myId = this.client.playerId;
+        let hasExplosion = false;
+
+        // Déterminer qui est mort (le perdant, ou les deux si match nul)
+        for (const [playerId, playerData] of Object.entries(this.serverState.players)) {
+            if (!playerData.alive && playerData.snake && playerData.snake.length > 0) {
+                // Choisir la couleur selon si c'est moi ou l'adversaire
+                const isMe = playerId === myId;
+                const color = isMe ? '#00FF87' : '#FF6B6B'; // Vert pour moi, rouge pour adversaire
+                this.explodeSnake(playerData.snake, color, playerId);
+                hasExplosion = true;
+            }
+        }
+
+        // Si personne n'est mort (time_up), afficher game over directement
+        if (!hasExplosion) {
+            this.showGameOver(message);
+            return;
+        }
+
+        // Stocker le message pour l'afficher après l'explosion
+        this.pendingGameOver = message;
+
+        // Continuer le rendu pour voir l'explosion
+        this.isActive = true;
+        this.startExplosionRender();
+    }
+
+    /**
+     * Boucle de rendu spéciale pour l'explosion (continue même après game over)
+     */
+    startExplosionRender() {
+        const explosionDuration = 1500; // 1.5 secondes pour l'explosion
+        const startTime = Date.now();
+
+        const renderExplosion = () => {
+            const elapsed = Date.now() - startTime;
+
+            // Dessiner le jeu avec l'explosion
+            this.drawWithExplosion();
+
+            if (elapsed < explosionDuration && this.particles.length > 0) {
+                this.renderRAF = requestAnimationFrame(renderExplosion);
+            } else {
+                // Explosion terminée, afficher le game over
+                this.isActive = false;
+                if (this.pendingGameOver) {
+                    this.showGameOver(this.pendingGameOver);
+                    this.pendingGameOver = null;
+                }
+            }
+        };
+
+        renderExplosion();
+    }
+
+    /**
+     * Dessine le jeu pendant l'explosion (serpents explosés cachés)
+     */
+    drawWithExplosion() {
+        if (!this.serverState || !this.ctx) return;
+
+        // Effacer le canvas
+        this.ctx.fillStyle = this.COLORS.BG_DARK;
+        this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
+
+        // Couleur bordure
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const borderColor = isDarkMode ? '#008B8B' : '#d8d800ff';
+
+        // Dessiner la grille
+        RenderUtils.drawGrid(
+            this.ctx,
+            this.GRID_SIZE,
+            this.CELL_SIZE,
+            this.CANVAS_SIZE,
+            { grid: this.COLORS.grid, border: borderColor }
+        );
+
+        // Dessiner nourriture, obstacles, etc.
+        if (this.serverState.food) {
+            RenderUtils.drawStar(this.ctx, this.serverState.food.x, this.serverState.food.y, this.CELL_SIZE);
+        }
+        if (this.serverState.bad) {
+            RenderUtils.drawSkull(this.ctx, this.serverState.bad.x, this.serverState.bad.y, this.CELL_SIZE);
+        }
+        if (this.serverState.obstacles) {
+            for (let obs of this.serverState.obstacles) {
+                RenderUtils.drawWall(this.ctx, obs.x, obs.y, this.CELL_SIZE);
+            }
+        }
+
+        // Dessiner les serpents NON explosés (survivants)
+        if (this.serverState.players) {
+            for (let [playerId, playerData] of Object.entries(this.serverState.players)) {
+                // Ne pas dessiner les serpents explosés
+                if (this.explodingPlayers[playerId]) continue;
+                if (!playerData.snake || playerData.snake.length === 0) continue;
+
+                const isMe = playerId === this.client.playerId;
+                let skinColors = null;
+
+                if (!isMe) {
+                    skinColors = {
+                        head: { light: '#FF6B6B', dark: '#CC3636' },
+                        body: { from: '#FF6B6B', to: '#CC3636' },
+                        tail: { color: '#CC3636' },
+                        outline: '#8B0000',
+                        glow: '#FF6B6B'
+                    };
+                }
+
+                let dx = 1, dy = 0;
+                if (playerData.snake.length >= 2) {
+                    const head = playerData.snake[0];
+                    const neck = playerData.snake[1];
+                    dx = head.x - neck.x;
+                    dy = head.y - neck.y;
+                    if (Math.abs(dx) > 1) dx = -Math.sign(dx);
+                    if (Math.abs(dy) > 1) dy = -Math.sign(dy);
+                }
+
+                drawSnakeEnhanced(this.ctx, playerData.snake, getDirectionString(dx, dy), this.CELL_SIZE, skinColors);
+            }
+        }
+
+        // Mettre à jour et dessiner les particules
+        this.updateParticles();
+        this.drawParticles();
+    }
+
     // ❌ FONCTION DÉSACTIVÉE - Remplacée par les mini-barres HTML dans le tableau
     // drawPowerupUI() {
     //     if (!this.serverState || !this.serverState.players) return;
@@ -651,10 +910,18 @@ class MultiplayerSnakeGame {
         this.updatePlayerPowerup('multi-player2-powerup', players[p2Id]);
 
         // ═══════════════════════════════════════════════════════════
-        // ❤️ BARRES DE VIE (15 segments)
+        // ❤️ BARRES DE VIE (selon grade du joueur)
         // ═══════════════════════════════════════════════════════════
-        this.updateHealthBar('multi-player1-health', players[p1Id]?.health ?? 15);
-        this.updateHealthBar('multi-player2-health', players[p2Id]?.health ?? 15);
+        const p1Health = players[p1Id]?.health ?? 15;
+        const p2Health = players[p2Id]?.health ?? 15;
+        // DEBUG: Voir les valeurs de health reçues
+        if (this._lastP1Health !== p1Health || this._lastP2Health !== p2Health) {
+            logger.log(`[MultiGame] ❤️ Health update: P1=${p1Health}, P2=${p2Health}`);
+            this._lastP1Health = p1Health;
+            this._lastP2Health = p2Health;
+        }
+        this.updateHealthBar('multi-player1-health', p1Health);
+        this.updateHealthBar('multi-player2-health', p2Health);
 
         // ═══════════════════════════════════════════════════════════
         // ⚔️ CHARGE ÉPÉE (bordure slot)
@@ -734,6 +1001,105 @@ class MultiplayerSnakeGame {
 
         // Notification de dégâts
         this.client.showMessage(`⚔️ -${damage} HP!`, 'error');
+    }
+
+    /**
+     * ⚔️ Démarre le timer visuel de l'épée active (barre circulaire SVG)
+     */
+    startSwordTimer(endTime, charge) {
+        const slot = document.getElementById('multi-sword-slot');
+        const icon = document.getElementById('multi-sword-icon');
+
+        if (!slot || !icon) return;
+
+        // Afficher l'icône épée
+        slot.classList.add('sword-active');
+        icon.textContent = '⚔️';
+
+        // Créer ou récupérer le SVG circulaire
+        let svgTimer = slot.querySelector('.sword-timer-svg');
+        if (!svgTimer) {
+            svgTimer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svgTimer.classList.add('sword-timer-svg');
+            svgTimer.setAttribute('viewBox', '0 0 100 100');
+            svgTimer.innerHTML = `
+                <circle class="sword-timer-bg" cx="50" cy="50" r="45" />
+                <circle class="sword-timer-progress" cx="50" cy="50" r="45" />
+            `;
+            slot.appendChild(svgTimer);
+        }
+
+        const progressCircle = svgTimer.querySelector('.sword-timer-progress');
+        const circumference = 2 * Math.PI * 45; // r=45
+        progressCircle.style.strokeDasharray = circumference;
+
+        // Calculer durée totale
+        const duration = endTime - Date.now();
+        const startTime = Date.now();
+
+        // Animation du timer
+        const updateTimer = () => {
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, duration - elapsed);
+            const progress = remaining / duration;
+
+            // Mettre à jour le cercle (sens anti-horaire)
+            progressCircle.style.strokeDashoffset = circumference * (1 - progress);
+
+            // Couleur selon temps restant
+            if (progress < 0.3) {
+                progressCircle.style.stroke = '#ff4444'; // Rouge
+            } else if (progress < 0.6) {
+                progressCircle.style.stroke = '#ffaa00'; // Orange
+            } else {
+                progressCircle.style.stroke = '#00ff88'; // Vert
+            }
+
+            if (remaining > 0) {
+                this.swordTimerRAF = requestAnimationFrame(updateTimer);
+            } else {
+                // Timer expiré - reset visuel
+                this.clearSwordTimer();
+            }
+        };
+
+        updateTimer();
+    }
+
+    /**
+     * ⚔️ Nettoie le timer visuel de l'épée
+     */
+    clearSwordTimer() {
+        if (this.swordTimerRAF) {
+            cancelAnimationFrame(this.swordTimerRAF);
+            this.swordTimerRAF = null;
+        }
+
+        const slot = document.getElementById('multi-sword-slot');
+        if (slot) {
+            slot.classList.remove('sword-active');
+            const svgTimer = slot.querySelector('.sword-timer-svg');
+            if (svgTimer) {
+                svgTimer.remove();
+            }
+        }
+    }
+
+    /**
+     * ⚔️ Effet visuel quand l'épée touche
+     */
+    showSwordHitEffect(damage) {
+        // Flash doré sur le canvas
+        const canvas = this.canvas;
+        if (canvas) {
+            canvas.style.boxShadow = `0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 30px rgba(255, 215, 0, 0.3)`;
+            setTimeout(() => {
+                canvas.style.boxShadow = '';
+            }, 300);
+        }
+
+        // Notification succès
+        this.client.showMessage(`⚔️ +${damage} segments volés!`, 'success');
     }
 
     updatePlayerPowerup(containerId, playerData) {
@@ -856,30 +1222,50 @@ class MultiplayerSnakeGame {
                     ? '🏳️ Adversaire a abandonné !'
                     : '💀 Les deux sont morts !';
 
-        // Créer l'overlay de game over (styles dans snake.css)
+        // Créer l'overlay de game over (styles AAA dans snake.css)
         const gameOverOverlay = document.createElement('div');
         gameOverOverlay.id = 'mp-gameover-overlay';
+        gameOverOverlay.className = isWinner ? 'victory' : (message.winner ? 'defeat' : 'draw');
+
+        // Titre et icône selon le résultat
+        const titleText = isWinner ? 'VICTOIRE' : (message.winner ? 'DÉFAITE' : 'MATCH NUL');
+        const titleIcon = isWinner ? '🏆' : (message.winner ? '💀' : '⚔️');
 
         gameOverOverlay.innerHTML = `
             <div class="mp-gameover-content">
-                <h1 class="mp-gameover-title">${resultMessage}</h1>
-                <p class="mp-gameover-result">${reasonText}</p>
+                <div class="mp-gameover-icon">${titleIcon}</div>
+                <h1 class="mp-gameover-title ${isWinner ? 'victory' : ''}">${titleText}</h1>
+                <p class="mp-gameover-subtitle">${reasonText}</p>
 
-                <div class="mp-gameover-stats">
-                    <div class="mp-stat">
-                        <div class="mp-stat-label">${myPseudo}</div>
-                        <div class="mp-stat-value">${mySegments}</div>
+                <div class="mp-gameover-scores">
+                    <div class="mp-score-card ${mySegments > opponentSegments ? 'winner' : ''}">
+                        <div class="mp-score-avatar">🐍</div>
+                        <div class="mp-score-name">${myPseudo}</div>
+                        <div class="mp-score-value">${mySegments}</div>
+                        <div class="mp-score-label">segments</div>
                     </div>
-                    <div class="mp-stat">
-                        <div class="mp-stat-label">${opponentPseudo}</div>
-                        <div class="mp-stat-value">${opponentSegments}</div>
+                    <div class="mp-score-vs">VS</div>
+                    <div class="mp-score-card ${opponentSegments > mySegments ? 'winner' : ''}">
+                        <div class="mp-score-avatar">🐍</div>
+                        <div class="mp-score-name">${opponentPseudo}</div>
+                        <div class="mp-score-value">${opponentSegments}</div>
+                        <div class="mp-score-label">segments</div>
                     </div>
                 </div>
 
-                <div class="mp-gameover-buttons">
-                    <button id="mp-replay-btn" class="mp-gameover-btn">🔄 Rejouer</button>
-                    <button id="mp-leaderboard-btn" class="mp-gameover-btn">🏆 Leaderboard</button>
-                    <button id="mp-menu-btn" class="mp-gameover-btn">🏠 Menu</button>
+                <div class="mp-gameover-actions">
+                    <button id="mp-replay-btn" class="mp-btn-primary">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">Rejouer</span>
+                    </button>
+                    <button id="mp-leaderboard-btn" class="mp-btn-secondary">
+                        <span class="btn-icon">🏆</span>
+                        <span class="btn-text">Leaderboard</span>
+                    </button>
+                    <button id="mp-menu-btn" class="mp-btn-tertiary">
+                        <span class="btn-icon">🏠</span>
+                        <span class="btn-text">Menu</span>
+                    </button>
                 </div>
             </div>
         `;
