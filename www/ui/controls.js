@@ -114,17 +114,13 @@ function handleSoloKeys(e) {
         case 'e':
         case 'E':
             e.preventDefault();
-            // Utiliser l'item stocké (Mystery Box)
-            if (window.soloGame?.powerUpSystem?.useStoredItem()) {
-                // Item utilisé avec succès
-            }
+            // Utiliser l'item stocké (Mystery Box ou Boss)
+            useStoredItem();
             break;
         case 'Shift':
             e.preventDefault();
             // Activer le boost de vitesse
-            if (window.soloGame?.powerUpSystem?.activateBoost()) {
-                // Boost activé avec succès
-            }
+            activateBoost();
             break;
     }
 }
@@ -233,6 +229,12 @@ window.moveRight = moveRight;
  * Utilise l'item stocké (appelable depuis n'importe où)
  */
 export function useStoredItem() {
+    // En combat de boss, utiliser le système boss
+    if (window.soloGame?.bossSystem?.isActive) {
+        window.soloGame.bossSystem.useStoredItem();
+        return true;
+    }
+    // Sinon, utiliser le système power-up normal
     if (window.soloGame?.powerUpSystem?.useStoredItem()) {
         return true;
     }
@@ -247,6 +249,11 @@ export function useStoredItem() {
  * Active le boost de vitesse (appelable depuis n'importe où)
  */
 export function activateBoost() {
+    // En combat de boss, utiliser le système boss
+    if (window.soloGame?.bossSystem?.isActive) {
+        return window.soloGame.bossSystem.activateBoost();
+    }
+    // Sinon, utiliser le système power-up normal
     if (window.soloGame?.powerUpSystem?.activateBoost()) {
         return true;
     }

@@ -276,8 +276,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         if (this.roguelikeSystem.isActive) {
             let speed = 150;
 
+            // ⚡ Boost boss (priorité maximale) - vitesse x2
+            if (this.bossSystem.isActive && this.bossSystem.isBoostActive) {
+                speed = speed / 2;
+            }
             // Boost universel (priorité sur sprint)
-            if (this.powerUpSystem.boostActive) {
+            else if (this.powerUpSystem.boostActive) {
                 speed = speed / this.powerUpSystem.boostSpeedMultiplier;
             }
             // Sprint (ability roguelike)
@@ -298,8 +302,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         const baseSpeed = this.difficulty === 0 ? 2.5 : this.difficulty === 1 ? 5 : 8;
         let speed = 1000 / (baseSpeed + (this.level - 1) * 0.5);
 
+        // ⚡ Boost boss (priorité maximale) - vitesse x2
+        if (this.bossSystem.isActive && this.bossSystem.isBoostActive) {
+            speed = speed / 2;
+        }
         // Boost universel (priorité sur sprint)
-        if (this.powerUpSystem.boostActive) {
+        else if (this.powerUpSystem.boostActive) {
             speed = speed / this.powerUpSystem.boostSpeedMultiplier;
         }
         // Sprint
@@ -766,6 +774,14 @@ class SoloSnakeGame extends BaseSnakeGame {
             // Boss et épée
             this.bossRenderer.drawBoss(this.bossSystem.boss);
             this.bossRenderer.drawSword(this.bossSystem.sword);
+
+            // 🎁 Mystery Boxes du boss (jusqu'à 4)
+            const bossMysteryBoxes = this.bossSystem.mysteryBoxPositions;
+            if (bossMysteryBoxes && bossMysteryBoxes.length > 0) {
+                for (const box of bossMysteryBoxes) {
+                    RenderUtils.drawMysteryBox(this.ctx, box.x, box.y, this.CELL_SIZE);
+                }
+            }
         }
 
         // Serpent

@@ -73,6 +73,445 @@ export class BossFightSystem {
 
         // Stats pour achievements
         this.bossStartPlayerSegments = 0;
+
+        // 🎁 MYSTERY BOX - Système d'items comme en multi
+        this.mysteryBoxes = [];  // Tableau de boxes (max 4)
+        this.maxMysteryBoxes = 4;
+        this.mysteryBoxRespawnTime = 3000; // 3 secondes (spawn plus rapide)
+        this.mysteryBoxSpawnInterval = null;
+
+        // 🎒 ITEM STOCKÉ - 1 slot comme en multi
+        this.storedItem = null;
+
+        // ⚡ BOOST - Vitesse x2 temporaire
+        this.boostActive = false;
+        this.boostEndTime = 0;
+        this.boostCooldownEnd = 0;
+        this.boostDuration = 3000;   // 3 secondes
+        this.boostCooldown = 10000;  // 10 secondes
+
+        // 🛡️ Invincibilité après collision tête-tête
+        this.headToHeadInvincible = false;
+        this.headToHeadInvincibleUntil = 0;
+    }
+
+    // ============================================
+    // 🎁 MYSTERY BOX - Comme en multi
+    // ============================================
+
+    /**
+     * Génère une Mystery Box à une position aléatoire (max 4 sur le terrain)
+     */
+    spawnMysteryBox() {
+        if (this.mysteryBoxes.length >= this.maxMysteryBoxes) return; // Max atteint
+
+        let attempts = 0;
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * this.game.GRID_SIZE);
+            y = Math.floor(Math.random() * this.game.GRID_SIZE);
+            attempts++;
+            if (attempts > 200) break;
+        } while (this.isPositionOccupied(x, y));
+
+        if (attempts <= 200) {
+            this.mysteryBoxes.push({ x, y });
+            logger.log(`[BossFight] 🎁 Mystery Box générée en (${x}, ${y}) - Total: ${this.mysteryBoxes.length}/${this.maxMysteryBoxes}`);
+        }
+    }
+
+    /**
+     * Vérifie si une position est occupée
+     */
+    isPositionOccupied(x, y) {
+        // Vérifier joueur
+        for (const seg of this.game.snake) {
+            if (seg.x === x && seg.y === y) return true;
+        }
+        // Vérifier boss
+        if (this.boss?.snake) {
+            for (const seg of this.boss.snake) {
+                if (seg.x === x && seg.y === y) return true;
+            }
+        }
+        // Vérifier épée
+        if (this.sword && this.sword.x === x && this.sword.y === y) return true;
+        // Vérifier obstacles
+        if (this.game.obstacles?.some(o => o.x === x && o.y === y)) return true;
+        // Vérifier pomme
+        if (this.game.food && this.game.food.x === x && this.game.food.y === y) return true;
+        // Vérifier autres mystery boxes
+        for (const box of this.mysteryBoxes) {
+            if (box.x === x && box.y === y) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Détermine l'item aléatoire dans la Mystery Box
+     * 50% épée, 10% chaque power-up (ice, fire, rock, ghost, lightning)
+     */
+    getRandomMysteryItem() {
+        const roll = Math.random();
+        if (roll < 0.5) {
+            return 'sword';  // 50% épée
+        }
+        const otherItems = ['ice', 'fire', 'rock', 'ghost', 'lightning'];
+        return otherItems[Math.floor(Math.random() * otherItems.length)];
+    }
+
+    /**
+     * Joueur ramasse une Mystery Box - Lance la roulette dans le slot
+     * @param {object} box - La box collectée {x, y}
+     */
+    collectMysteryBox(box) {
+        if (!box) return;
+
+        // Effets visuels (particules + son)
+        this.game.createParticles(box.x, box.y, '#FFD700', 8);
+        if (window.audio) window.audio.powerupSound?.();
+
+        // Retirer cette box du tableau
+        const index = this.mysteryBoxes.findIndex(b => b.x === box.x && b.y === box.y);
+        if (index !== -1) {
+            this.mysteryBoxes.splice(index, 1);
+        }
+
+        // Item final (déterminé à l'avance)
+        const finalItem = this.getRandomMysteryItem();
+
+        // Lancer la roulette dans le slot (comme en solo)
+        this.revealItemAnimation(finalItem);
+
+        // Respawn après délai (essayer d'ajouter une nouvelle box)
+        setTimeout(() => {
+            if (this.isBossFight && !this.bossDefeated) {
+                this.spawnMysteryBox();
+            }
+        }, this.mysteryBoxRespawnTime);
+    }
+
+    /**
+     * Animation de roulette dans le slot (style Mario Kart)
+     */
+    async revealItemAnimation(finalType) {
+        const slot = document.getElementById('stored-item-slot');
+        const icon = document.getElementById('stored-item-icon');
+
+        if (!slot || !icon) {
+            this.storedItem = finalType;
+            this.updateStoredItemUI();
+            return;
+        }
+
+        const emojis = ['⚔️', '❄️', '🔥', '🪨', '👻', '⚡'];
+        const itemEmojis = {
+            sword: '⚔️',
+            ice: '❄️',
+            fire: '🔥',
+            rock: '🪨',
+            ghost: '👻',
+            lightning: '⚡'
+        };
+
+        // Afficher le slot avec animation
+        slot.classList.add('revealing');
+
+        // Roulette rapide qui ralentit progressivement
+        for (let i = 0; i < 15; i++) {
+            icon.textContent = emojis[i % emojis.length];
+            if (window.audio && i % 3 === 0) window.audio.dpadClick?.();
+            await new Promise(r => setTimeout(r, 40 + i * 12)); // Ralentit progressivement
+        }
+
+        // Révéler le vrai item
+        icon.textContent = itemEmojis[finalType];
+        slot.classList.remove('revealing');
+        slot.classList.add('has-item', 'item-revealed');
+
+        // Stocker l'item
+        this.storedItem = finalType;
+
+        // Son de révélation
+        if (window.audio) window.audio.powerupSound?.();
+
+        // Flash de révélation
+        setTimeout(() => {
+            slot.classList.remove('item-revealed');
+        }, 500);
+
+        logger.log(`[BossFight] 🎁 Roulette terminée → ${finalType}`);
+    }
+
+    // ============================================
+    // 🎒 ITEM STOCKÉ - Utilisation
+    // ============================================
+
+    /**
+     * Utilise l'item stocké
+     */
+    useStoredItem() {
+        if (!this.storedItem) return;
+
+        const item = this.storedItem;
+        logger.log(`[BossFight] 🎒 Joueur utilise l'item: ${item}`);
+
+        if (item === 'sword') {
+            // Activer l'épée comme si on l'avait ramassée
+            this.swordActive = true;
+            this.swordTimer = this.swordDuration;
+            if (window.audio) window.audio.swordPickup?.();
+            logger.log(`[BossFight] ⚔️ Épée activée! Durée: ${this.swordDuration}s`);
+        } else {
+            // Power-up - activer via PowerUpSystem.activate()
+            this.game.powerUpSystem.activate(item);
+            logger.log(`[BossFight] ✨ Power-up ${item} activé!`);
+        }
+
+        // Vider le slot
+        this.storedItem = null;
+        this.updateStoredItemUI();
+    }
+
+    /**
+     * Met à jour l'affichage de l'item stocké (utilise le bouton HTML existant)
+     */
+    updateStoredItemUI() {
+        const iconSpan = document.getElementById('stored-item-icon');
+        const slot = document.getElementById('stored-item-slot');
+        if (!iconSpan || !slot) return;
+
+        if (this.storedItem) {
+            const itemEmojis = {
+                sword: '⚔️',
+                ice: '❄️',
+                fire: '🔥',
+                rock: '🪨',
+                ghost: '👻',
+                lightning: '⚡'
+            };
+            iconSpan.textContent = itemEmojis[this.storedItem] || '?';
+            slot.classList.add('has-item');
+            slot.style.borderColor = '#FFD700';
+            slot.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.5)';
+        } else {
+            iconSpan.textContent = '';
+            slot.classList.remove('has-item');
+            slot.style.borderColor = '';
+            slot.style.boxShadow = '';
+        }
+    }
+
+    // ============================================
+    // ⚡ BOOST - Vitesse x2 temporaire
+    // ============================================
+
+    /**
+     * Active le boost de vitesse
+     */
+    activateBoost() {
+        const now = Date.now();
+
+        // Vérifier cooldown
+        if (now < this.boostCooldownEnd) {
+            const remaining = Math.ceil((this.boostCooldownEnd - now) / 1000);
+            logger.log(`[BossFight] ⚡ Boost en cooldown (${remaining}s)`);
+            return false;
+        }
+
+        // Activer le boost
+        this.boostActive = true;
+        this.boostEndTime = now + this.boostDuration;
+        this.boostCooldownEnd = now + this.boostCooldown;
+
+        logger.log(`[BossFight] ⚡ BOOST activé!`);
+        if (window.audio) window.audio.buttonClick?.();
+
+        this.updateBoostUI();
+        return true;
+    }
+
+    /**
+     * Met à jour l'état du boost (appelé dans update)
+     */
+    updateBoostState() {
+        const now = Date.now();
+
+        // Vérifier expiration boost
+        if (this.boostActive && now >= this.boostEndTime) {
+            this.boostActive = false;
+            logger.log(`[BossFight] ⚡ Boost expiré`);
+        }
+
+        // Vérifier expiration invincibilité tête-tête
+        if (this.headToHeadInvincible && now >= this.headToHeadInvincibleUntil) {
+            this.headToHeadInvincible = false;
+        }
+
+        this.updateBoostUI();
+    }
+
+    /**
+     * Retourne le multiplicateur de vitesse actuel
+     */
+    getSpeedMultiplier() {
+        if (this.boostActive) {
+            return 2.0; // Vitesse x2
+        }
+        return 1.0;
+    }
+
+    /**
+     * Met à jour l'UI du boost (utilise le bouton HTML existant)
+     */
+    updateBoostUI() {
+        const btn = document.getElementById('boost-btn');
+        if (!btn) return;
+
+        const now = Date.now();
+        if (this.boostActive) {
+            // Boost actif - vert
+            btn.classList.add('boost-active');
+            btn.classList.remove('boost-cooldown');
+        } else if (now < this.boostCooldownEnd) {
+            // En cooldown - grisé
+            btn.classList.remove('boost-active');
+            btn.classList.add('boost-cooldown');
+        } else {
+            // Disponible - normal
+            btn.classList.remove('boost-active', 'boost-cooldown');
+        }
+    }
+
+    // ============================================
+    // 💥 FEEDBACK VISUELS - Comme en multi
+    // ============================================
+
+    /**
+     * Affiche un texte flottant de dégâts discret au-dessus d'une position
+     */
+    showFloatingDamage(gridX, gridY, text, color) {
+        const floatingText = document.createElement('div');
+        floatingText.className = 'floating-damage';
+        floatingText.textContent = text;
+
+        const canvas = document.getElementById('canvas-solo');
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const cellSize = canvas.width / this.game.GRID_SIZE;
+        const pixelX = rect.left + (gridX * cellSize) + (cellSize / 2);
+        const pixelY = rect.top + (gridY * cellSize);
+
+        floatingText.style.cssText = `
+            position: fixed;
+            left: ${pixelX}px;
+            top: ${pixelY}px;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: ${color};
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.9;
+            animation: floatUpSubtle 0.8s ease-out forwards;
+        `;
+
+        document.body.appendChild(floatingText);
+        setTimeout(() => floatingText.remove(), 800);
+    }
+
+    /**
+     * Flash coloré subtil sur le canvas
+     */
+    flashCanvas(color = 'gold') {
+        const canvas = document.getElementById('canvas-solo');
+        if (!canvas) return;
+
+        if (color === 'gold') {
+            canvas.style.boxShadow = `0 0 20px rgba(255, 215, 0, 0.4)`;
+        } else if (color === 'red') {
+            canvas.style.boxShadow = `inset 0 0 40px rgba(255, 0, 0, 0.3)`;
+        }
+
+        setTimeout(() => {
+            canvas.style.boxShadow = '';
+        }, 200);
+    }
+
+    /**
+     * Effet visuel slash lors de l'attaque épée
+     */
+    showSlashEffect(x, y) {
+        const canvas = document.getElementById('canvas-solo');
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const cellSize = rect.width / this.game.GRID_SIZE;
+        const centerX = rect.left + (x + 0.5) * cellSize;
+        const centerY = rect.top + (y + 0.5) * cellSize;
+
+        // Créer l'élément slash
+        const slash = document.createElement('div');
+        slash.className = 'sword-slash-effect';
+        slash.innerHTML = '⚔️';
+        slash.style.cssText = `
+            position: fixed;
+            left: ${centerX}px;
+            top: ${centerY}px;
+            transform: translate(-50%, -50%) scale(0.5) rotate(-45deg);
+            font-size: 80px;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 1;
+            filter: drop-shadow(0 0 20px #FFD700) drop-shadow(0 0 40px #FFA500);
+            animation: slashAnim 0.4s ease-out forwards;
+        `;
+        document.body.appendChild(slash);
+
+        // Ajouter les lignes de slash
+        for (let i = 0; i < 3; i++) {
+            const line = document.createElement('div');
+            const angle = -60 + i * 30;
+            line.style.cssText = `
+                position: fixed;
+                left: ${centerX}px;
+                top: ${centerY}px;
+                width: 120px;
+                height: 4px;
+                background: linear-gradient(90deg, transparent, #FFD700, #FFF, #FFD700, transparent);
+                transform: translate(-50%, -50%) rotate(${angle}deg) scaleX(0);
+                transform-origin: center;
+                z-index: 9999;
+                pointer-events: none;
+                animation: slashLine 0.3s ease-out forwards;
+                animation-delay: ${i * 0.05}s;
+            `;
+            document.body.appendChild(line);
+            setTimeout(() => line.remove(), 400);
+        }
+
+        setTimeout(() => slash.remove(), 500);
+
+        // Injecter l'animation CSS si pas déjà présente
+        if (!document.getElementById('slash-anim-style')) {
+            const style = document.createElement('style');
+            style.id = 'slash-anim-style';
+            style.textContent = `
+                @keyframes slashAnim {
+                    0% { transform: translate(-50%, -50%) scale(0.5) rotate(-45deg); opacity: 1; }
+                    50% { transform: translate(-50%, -50%) scale(1.5) rotate(15deg); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(2) rotate(45deg); opacity: 0; }
+                }
+                @keyframes slashLine {
+                    0% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(0); opacity: 1; }
+                    50% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(1); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(0); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     // ============================================
@@ -118,26 +557,28 @@ export class BossFightSystem {
         const secs = (objective.timeLimit || 120) % 60;
         const timerStr = secs > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${mins}:00`;
 
-        let tutorialHTML = '';
-        if (isFirstBoss) {
-            tutorialHTML = `
-                <div class="boss-intro-tutorial">
-                    <div class="boss-intro-tutorial-title">Comment vaincre</div>
-                    <div class="boss-intro-tutorial-item">
-                        <span class="boss-intro-tutorial-icon">⚔️</span>
-                        <span>Ramasse l'ÉPÉE pour attaquer</span>
-                    </div>
-                    <div class="boss-intro-tutorial-item">
-                        <span class="boss-intro-tutorial-icon">🎯</span>
-                        <span>Avec l'épée, touche-le = vole 5 segments</span>
-                    </div>
-                    <div class="boss-intro-tutorial-item">
-                        <span class="boss-intro-tutorial-icon">⚠️</span>
-                        <span>Sans épée, FUIS le boss !</span>
-                    </div>
+        // Tutoriel toujours affiché avec nouvelles règles
+        const tutorialHTML = `
+            <div class="boss-intro-tutorial">
+                <div class="boss-intro-tutorial-title">Comment vaincre</div>
+                <div class="boss-intro-tutorial-item">
+                    <span class="boss-intro-tutorial-icon">🎁</span>
+                    <span>Ramasse la <b>MYSTERY BOX</b> pour obtenir un bonus</span>
                 </div>
-            `;
-        }
+                <div class="boss-intro-tutorial-item">
+                    <span class="boss-intro-tutorial-icon">⚔️</span>
+                    <span>Avec <b>ÉPÉE</b>, touche le boss = vole ses segments</span>
+                </div>
+                <div class="boss-intro-tutorial-item">
+                    <span class="boss-intro-tutorial-icon">⚡</span>
+                    <span>Utilise le <b>BOOST</b> pour aller 2x plus vite</span>
+                </div>
+                <div class="boss-intro-tutorial-item">
+                    <span class="boss-intro-tutorial-icon">💥</span>
+                    <span>Collision tête-tête : le plus court perd 1 segment</span>
+                </div>
+            </div>
+        `;
 
         // Écran VS Triple AAA
         introScreen.innerHTML = `
@@ -255,7 +696,24 @@ export class BossFightSystem {
 
         this.startBossTimer();
         this.showBossUI(levelData);
-        this.startSwordSpawning();
+        // ⚔️ Épée uniquement via Mystery Box (pas de spawn automatique)
+
+        // 🎁 Spawn Mystery Boxes au début du combat (max 4, spawn progressif)
+        this.mysteryBoxes = [];
+        this.storedItem = null;
+        this.boostActive = false;
+        this.boostEndTime = 0;
+        this.boostCooldownEnd = 0;
+        this.headToHeadInvincible = false;
+        // Spawn 2 boxes au départ, puis 2 autres rapidement
+        setTimeout(() => this.spawnMysteryBox(), 2000);
+        setTimeout(() => this.spawnMysteryBox(), 3000);
+        setTimeout(() => this.spawnMysteryBox(), 5000);
+        setTimeout(() => this.spawnMysteryBox(), 7000);
+
+        // Afficher les UI (boost button, stored item)
+        this.updateBoostUI();
+        this.updateStoredItemUI();
 
         logger.log(`[BossFight] Boss créé: ${bossSegments} seg, ${this.bossTimer}s, aggro ${this.boss.aggression * 100}%`);
     }
@@ -294,17 +752,19 @@ export class BossFightSystem {
     showBossUI(levelData) {
         const container = document.getElementById('roguelike-objective');
         if (container) {
+            // HUD ultra-compact: [Timer] [Nom] [Phase] [Barre HP]
             container.innerHTML = `
-                <div class="boss-ui">
-                    <div class="boss-header">
-                        <div class="boss-name">${levelData.name}</div>
-                        <div class="boss-phase" id="boss-phase"></div>
+                <div class="boss-hud-aaa">
+                    <div class="boss-hud-timer" id="boss-timer"></div>
+                    <div class="boss-hud-name" id="boss-name-display">${levelData.name}</div>
+                    <div class="boss-hud-phase" id="boss-phase"></div>
+                    <div class="boss-hud-bar">
+                        <div class="boss-hud-bar-bg">
+                            <div class="boss-hud-bar-fill" id="boss-health-fill"></div>
+                            <div class="boss-hud-bar-shine"></div>
+                        </div>
+                        <span class="boss-hud-hp" id="boss-health-text"></span>
                     </div>
-                    <div class="boss-health-bar">
-                        <div class="boss-health-fill" id="boss-health-fill"></div>
-                        <span class="boss-health-text" id="boss-health-text"></span>
-                    </div>
-                    <div class="boss-timer" id="boss-timer"></div>
                 </div>
             `;
             container.classList.remove('hidden');
@@ -326,9 +786,12 @@ export class BossFightSystem {
             healthFill.style.width = `${percent}%`;
             healthText.textContent = `${currentSegments}/${maxSegments}`;
 
+            // Couleur dynamique selon la phase (AAA gradient)
             const phaseColor = this.boss.phaseColor || '#ff4444';
-            healthFill.style.backgroundColor = phaseColor;
-            healthFill.style.boxShadow = `0 0 10px ${phaseColor}`;
+            const lighterColor = this.lightenColor(phaseColor, 30);
+            const darkerColor = this.darkenColor(phaseColor, 30);
+            healthFill.style.background = `linear-gradient(180deg, ${lighterColor} 0%, ${phaseColor} 30%, ${darkerColor} 100%)`;
+            healthFill.style.boxShadow = `0 0 8px ${phaseColor}, inset 0 1px 0 rgba(255,255,255,0.4)`;
         }
 
         if (phaseEl && this.boss) {
@@ -338,24 +801,41 @@ export class BossFightSystem {
             if (phaseName) {
                 phaseEl.textContent = phaseName;
                 phaseEl.style.color = phaseColor;
-                phaseEl.style.textShadow = `0 0 8px ${phaseColor}`;
-                phaseEl.classList.add('phase-active');
+                phaseEl.style.borderColor = phaseColor;
+                phaseEl.style.textShadow = `0 0 6px ${phaseColor}`;
             }
         }
 
         if (timerEl) {
             const mins = Math.floor(this.bossTimer / 60);
             const secs = this.bossTimer % 60;
-            timerEl.textContent = `⏱️ ${mins}:${secs.toString().padStart(2, '0')}`;
+            timerEl.textContent = `⏱️${mins}:${secs.toString().padStart(2, '0')}`;
 
             if (this.bossTimer <= 10) {
-                timerEl.style.color = '#ff4444';
                 timerEl.classList.add('timer-critical');
             } else {
-                timerEl.style.color = '#ffffff';
                 timerEl.classList.remove('timer-critical');
             }
         }
+    }
+
+    // Utilitaires couleur pour le dégradé dynamique
+    lightenColor(color, percent) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.min(255, (num >> 16) + amt);
+        const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+        const B = Math.min(255, (num & 0x0000FF) + amt);
+        return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+    }
+
+    darkenColor(color, percent) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, (num >> 16) - amt);
+        const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+        const B = Math.max(0, (num & 0x0000FF) - amt);
+        return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
     }
 
     hideBossUI() {
@@ -376,6 +856,9 @@ export class BossFightSystem {
 
     update(timestamp) {
         if (!this.isBossFight || !this.boss || this.bossDefeated) return;
+
+        // ⚡ Mettre à jour l'état du boost et invincibilités
+        this.updateBoostState();
 
         // Décrémenter la période de grâce après vol de segments
         if (this.stealGracePeriod > 0) {
@@ -1056,6 +1539,13 @@ export class BossFightSystem {
             this.bossCollectSword();
         }
 
+        // 🎁 Joueur ramasse une Mystery Box
+        const collectedBox = this.mysteryBoxes.find(box => box.x === playerHead.x && box.y === playerHead.y);
+        if (collectedBox) {
+            this.collectMysteryBox(collectedBox);
+            this.updateStoredItemUI();
+        }
+
         // Collision joueur avec skulls (Boss 3 SPECTRE)
         if (this.boss?.skulls && this.boss.skulls.length > 0) {
             const skullHit = this.boss.skulls.find(s =>
@@ -1097,6 +1587,10 @@ export class BossFightSystem {
         for (let i = 1; i < this.boss.snake.length; i++) {
             const segment = this.boss.snake[i];
             if (playerHead.x === segment.x && playerHead.y === segment.y) {
+                // Pendant l'invincibilité tête-tête, ignorer
+                if (this.headToHeadInvincible) {
+                    return;
+                }
                 // Pendant la période de grâce (après vol), on ignore la collision
                 if (this.stealGracePeriod > 0) {
                     return;
@@ -1118,6 +1612,10 @@ export class BossFightSystem {
         for (let i = 1; i < this.game.snake.length; i++) {
             const segment = this.game.snake[i];
             if (bossHead.x === segment.x && bossHead.y === segment.y) {
+                // Pendant l'invincibilité tête-tête, ignorer
+                if (this.headToHeadInvincible) {
+                    return;
+                }
                 if (this.boss.hasSword) {
                     this.bossStealsPlayerSegments();
                 } else {
@@ -1193,33 +1691,134 @@ export class BossFightSystem {
     }
 
     handleHeadToHeadCollision() {
-        logger.log('[BossFight] Collision tête contre tête!');
+        // Si invincible après collision tête-tête, ignorer
+        if (this.headToHeadInvincible) return;
 
-        const playerLoss = Math.min(3, this.game.snake.length - 3);
-        const bossLoss = Math.min(3, this.boss.snake.length - 1);
+        logger.log('[BossFight] 💥 Collision tête contre tête!', {
+            playerLength: this.game.snake.length,
+            bossLength: this.boss.snake.length
+        });
 
-        for (let i = 0; i < playerLoss; i++) {
-            if (this.game.snake.length > 3) this.game.snake.pop();
+        const playerLength = this.game.snake.length;
+        const bossLength = this.boss.snake.length;
+
+        // Le plus court perd 1 segment (comme en multi)
+        if (playerLength < bossLength) {
+            // Joueur plus court → perd 1 segment
+            if (this.game.snake.length > 3) {
+                this.game.snake.pop();
+                this.game.syncCombo();
+                logger.log('[BossFight] Joueur perd 1 segment (plus petit)');
+            }
+        } else if (bossLength < playerLength) {
+            // Boss plus court → perd 1 segment
+            if (this.boss.snake.length > 1) {
+                this.boss.snake.pop();
+                logger.log('[BossFight] Boss perd 1 segment (plus petit)');
+            }
         }
-        for (let i = 0; i < bossLoss; i++) {
-            if (this.boss.snake.length > 0) this.boss.snake.pop();
-        }
+        // Si égalité → personne ne perd
 
-        if (playerLoss > 0) this.game.syncCombo();
+        // Éjection perpendiculaire (90°) - comme en multi
+        this.ejectHeadToHead();
 
-        this.game.triggerScreenShake(10);
+        // Invincibilité temporaire (500ms)
+        this.headToHeadInvincible = true;
+        this.headToHeadInvincibleUntil = Date.now() + 500;
 
+        // Effets visuels
+        this.game.triggerScreenShake(8);
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#FF4444', 8);
+        this.game.createParticles(this.boss.snake[0].x, this.boss.snake[0].y, '#FF4444', 8);
+        if (window.audio) window.audio.hit?.();
+
+        // Vérifier défaite/victoire
         if (this.game.snake.length <= 3) {
             this.bossFightLost();
             return;
         }
-
         if (this.boss.snake.length <= 1) {
             this.bossFightWon();
             return;
         }
 
         this.updateBossUI();
+    }
+
+    /**
+     * Éjecte le joueur et le boss perpendiculairement après collision tête-tête
+     * Choisit automatiquement la direction SAFE (pas vers son propre corps)
+     */
+    ejectHeadToHead() {
+        const playerHead = this.game.snake[0];
+        const bossHead = this.boss.snake[0];
+
+        // Calculer les directions perpendiculaires à la direction du joueur
+        const playerDir = { dx: this.game.dx, dy: this.game.dy };
+        const leftDir = { dx: playerDir.dy, dy: -playerDir.dx };
+        const rightDir = { dx: -playerDir.dy, dy: playerDir.dx };
+
+        // Trouver quelle direction est SAFE pour le joueur (pas vers son propre corps)
+        const playerSafeDir = this.findSafeDirection(playerHead, leftDir, rightDir, this.game.snake);
+
+        // Le boss prend la direction opposée
+        const bossDir = (playerSafeDir === leftDir) ? rightDir : leftDir;
+
+        // Éjecter le joueur vers la direction safe (3 cases)
+        for (let i = 0; i < 3; i++) {
+            const newX = (playerHead.x + playerSafeDir.dx + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            const newY = (playerHead.y + playerSafeDir.dy + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            this.game.snake.unshift({ x: newX, y: newY });
+            this.game.snake.pop();
+        }
+        // Changer direction du joueur
+        this.game.dx = playerSafeDir.dx;
+        this.game.dy = playerSafeDir.dy;
+        this.game.ndx = playerSafeDir.dx;
+        this.game.ndy = playerSafeDir.dy;
+
+        // Éjecter le boss vers l'autre direction (3 cases)
+        for (let i = 0; i < 3; i++) {
+            const newX = (bossHead.x + bossDir.dx + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            const newY = (bossHead.y + bossDir.dy + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            this.boss.snake.unshift({ x: newX, y: newY });
+            this.boss.snake.pop();
+        }
+        // Changer direction du boss
+        this.boss.dx = bossDir.dx;
+        this.boss.dy = bossDir.dy;
+        this.boss.ndx = bossDir.dx;
+        this.boss.ndy = bossDir.dy;
+
+        logger.log('[BossFight] ✅ Éjection perpendiculaire SAFE effectuée');
+    }
+
+    /**
+     * Trouve la direction safe entre deux options (celle qui n'envoie pas vers le corps)
+     */
+    findSafeDirection(head, dir1, dir2, snake) {
+        // Vérifier si dir1 mène vers le corps du serpent (3 cases devant)
+        let dir1Safe = true;
+        let dir2Safe = true;
+
+        for (let step = 1; step <= 3; step++) {
+            const x1 = (head.x + dir1.dx * step + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            const y1 = (head.y + dir1.dy * step + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+
+            const x2 = (head.x + dir2.dx * step + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+            const y2 = (head.y + dir2.dy * step + this.game.GRID_SIZE) % this.game.GRID_SIZE;
+
+            // Vérifier collision avec le corps (en excluant la tête et les 2 premiers segments)
+            for (let i = 3; i < snake.length; i++) {
+                if (snake[i].x === x1 && snake[i].y === y1) dir1Safe = false;
+                if (snake[i].x === x2 && snake[i].y === y2) dir2Safe = false;
+            }
+        }
+
+        // Préférer dir1 si safe, sinon dir2, sinon dir1 par défaut
+        if (dir1Safe) return dir1;
+        if (dir2Safe) return dir2;
+        return dir1; // Fallback
     }
 
     playerBlockedByBoss() {
@@ -1274,6 +1873,9 @@ export class BossFightSystem {
         const segmentsToSteal = baseSegments + bonusFromApples;
         const actualStolen = Math.min(segmentsToSteal, this.boss.snake.length);
 
+        // Sauvegarder la position de la tête du boss AVANT de voler les segments
+        const bossHeadPos = this.boss.snake[0] ? { x: this.boss.snake[0].x, y: this.boss.snake[0].y } : null;
+
         logger.log(`[BossFight] Joueur vole ${actualStolen} segments au boss! (base: ${baseSegments} + pommes: ${bonusFromApples})`);
 
         for (let i = 0; i < actualStolen; i++) {
@@ -1298,8 +1900,15 @@ export class BossFightSystem {
         this.stealGracePeriod = 2;
 
         if (window.audio) window.audio.eat?.();
-        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ffd700', 8);
-        this.game.triggerScreenShake(5);
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ffd700', 12);
+        this.game.triggerScreenShake(8);
+
+        // 💥 Feedback visuels (utiliser la position sauvegardée)
+        if (bossHeadPos) {
+            this.showSlashEffect(bossHeadPos.x, bossHeadPos.y);  // Effet slash épée
+            this.showFloatingDamage(bossHeadPos.x, bossHeadPos.y, `+${actualStolen} ⚔️`, '#FFD700');
+        }
+        this.flashCanvas('gold');
 
         if (this.boss.snake.length <= 1) {
             this.bossFightWon();
@@ -1331,8 +1940,13 @@ export class BossFightSystem {
         this.boss.hasSword = false;
         this.boss.swordTimer = 0;
 
-        this.game.triggerScreenShake(10);
-        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ff0000', 8);
+        this.game.triggerScreenShake(12);
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ff0000', 12);
+
+        // 💥 Feedback visuels discrets
+        const playerHead = this.game.snake[0];
+        this.showFloatingDamage(playerHead.x, playerHead.y, `-${segmentsLost} 💔`, '#FF4444');
+        this.flashCanvas('red');
 
         if (this.game.snake.length <= 3) {
             this.bossFightLost();
@@ -1353,25 +1967,111 @@ export class BossFightSystem {
         achievementManager.onBossKilled(bossName, this.bossTimer, segmentsLostDuringFight);
 
         this.bossDefeated = true;
-        this.cleanup();
+
+        // 🎉 Animation de victoire spectaculaire AVANT cleanup
+        this.showVictoryAnimation();
 
         if (window.audio) window.audio.victory?.();
-        this.game.triggerScreenShake(15);
+        this.game.triggerScreenShake(20);
 
-        // Boss Rush Mode
-        if (this.game.isBossRushMode) {
-            logger.log('[BossFight] Boss Rush - Boss vaincu');
-            this.game.running = false;
-            this.game.paused = true;
+        // Délai pour laisser l'animation se jouer
+        setTimeout(() => {
+            this.cleanup();
 
-            if (window.bossRushManager) {
-                window.bossRushManager.onBossDefeated();
+            // Boss Rush Mode
+            if (this.game.isBossRushMode) {
+                logger.log('[BossFight] Boss Rush - Boss vaincu');
+                this.game.running = false;
+                this.game.paused = true;
+
+                if (window.bossRushManager) {
+                    window.bossRushManager.onBossDefeated();
+                }
+                return;
             }
-            return;
+
+            // Roguelike Mode
+            this.game.completeRoguelikeLevel();
+        }, 1500);
+    }
+
+    /**
+     * Animation de victoire spectaculaire
+     */
+    showVictoryAnimation() {
+        const playerHead = this.game.snake[0];
+        const colors = ['#FFD700', '#FFA500', '#FF6347', '#00FF00', '#00FFFF', '#FF00FF'];
+
+        // Explosion de particules en plusieurs vagues
+        for (let wave = 0; wave < 4; wave++) {
+            setTimeout(() => {
+                for (let i = 0; i < 20; i++) {
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const offsetX = (Math.random() - 0.5) * 10;
+                    const offsetY = (Math.random() - 0.5) * 10;
+                    this.game.createParticles(playerHead.x + offsetX, playerHead.y + offsetY, color, 5);
+                }
+                this.game.triggerScreenShake(8);
+            }, wave * 200);
         }
 
-        // Roguelike Mode
-        this.game.completeRoguelikeLevel();
+        // Flash doré sur le canvas
+        const canvas = document.getElementById('canvas-solo');
+        if (canvas) {
+            canvas.style.boxShadow = '0 0 100px rgba(255, 215, 0, 0.8)';
+            setTimeout(() => {
+                canvas.style.boxShadow = '0 0 50px rgba(255, 215, 0, 0.4)';
+            }, 300);
+            setTimeout(() => {
+                canvas.style.boxShadow = '';
+            }, 800);
+        }
+
+        // Texte "VICTOIRE!" flottant
+        this.showVictoryText();
+    }
+
+    /**
+     * Affiche le texte VICTOIRE
+     */
+    showVictoryText() {
+        const canvas = document.getElementById('canvas-solo');
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const text = document.createElement('div');
+        text.textContent = '⚔️ VICTOIRE! ⚔️';
+        text.style.cssText = `
+            position: fixed;
+            left: ${rect.left + rect.width / 2}px;
+            top: ${rect.top + rect.height / 2}px;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 48px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 0 20px #FFA500, 0 0 40px #FF6347, 2px 2px 0 #000;
+            z-index: 10000;
+            pointer-events: none;
+            animation: victoryPop 1.2s ease-out forwards;
+        `;
+        document.body.appendChild(text);
+
+        // Injecter l'animation si pas présente
+        if (!document.getElementById('victory-anim-style')) {
+            const style = document.createElement('style');
+            style.id = 'victory-anim-style';
+            style.textContent = `
+                @keyframes victoryPop {
+                    0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+                    30% { transform: translate(-50%, -50%) scale(1.3) rotate(5deg); opacity: 1; }
+                    50% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        setTimeout(() => text.remove(), 1500);
     }
 
     bossFightLost() {
@@ -1413,6 +2113,18 @@ export class BossFightSystem {
         this.swordActive = false;
         this.swordTimer = 0;
         this.stealGracePeriod = 0;
+
+        // 🎁 Nettoyer Mystery Boxes et systèmes ajoutés
+        this.mysteryBoxes = [];
+        this.storedItem = null;
+        this.boostActive = false;
+        this.boostEndTime = 0;
+        this.boostCooldownEnd = 0;
+        this.headToHeadInvincible = false;
+
+        // Réinitialiser les boutons UI HTML existants
+        this.updateStoredItemUI();
+        this.updateBoostUI();
 
         this.hideBossUI();
     }
@@ -1456,6 +2168,18 @@ export class BossFightSystem {
 
     get swordPosition() {
         return this.sword;
+    }
+
+    get mysteryBoxPositions() {
+        return this.mysteryBoxes;
+    }
+
+    get currentStoredItem() {
+        return this.storedItem;
+    }
+
+    get isBoostActive() {
+        return this.boostActive;
     }
 
     /**

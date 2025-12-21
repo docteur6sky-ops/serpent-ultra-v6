@@ -14,6 +14,7 @@ import { ROGUELIKE_LEVELS } from '../roguelike/levels.js';
 // ============================================
 
 // Les 4 boss du mode Rush - liés aux vrais boss du roguelike (levels 5, 10, 15, 20)
+// Total: 2500 XP, 1300 Gold
 const BOSS_RUSH_STAGES = [
     {
         stage: 1,
@@ -22,7 +23,7 @@ const BOSS_RUSH_STAGES = [
         subtitle: "Le Bâtisseur",
         difficulty: "Facile",
         color: "#8B4513",
-        reward: { xp: 100, coins: 25 }
+        reward: { xp: 250, coins: 200 }
     },
     {
         stage: 2,
@@ -31,7 +32,7 @@ const BOSS_RUSH_STAGES = [
         subtitle: "Le Serpent de Glace",
         difficulty: "Normal",
         color: "#00BFFF",
-        reward: { xp: 200, coins: 50 }
+        reward: { xp: 500, coins: 200 }
     },
     {
         stage: 3,
@@ -40,16 +41,16 @@ const BOSS_RUSH_STAGES = [
         subtitle: "Le Fantôme",
         difficulty: "Difficile",
         color: "#9932CC",
-        reward: { xp: 300, coins: 75 }
+        reward: { xp: 750, coins: 200 }
     },
     {
         stage: 4,
-        bossLevel: 20,  // FOUDRE (boss final) - Phases: lightning_line
+        bossLevel: 20,  // FOUDRE (boss final) - Phases: lightning_line + bonus
         name: "FOUDRE",
         subtitle: "L'Éclair Ultime",
         difficulty: "Extrême",
         color: "#FFD700",
-        reward: { xp: 500, coins: 150 }
+        reward: { xp: 1000, coins: 700 }  // 200 base + 500 bonus
     }
 ];
 
@@ -337,10 +338,16 @@ class BossRushManager {
             stageTimes: this.currentRun.stageTimes
         };
 
-        // XP partiel (100 XP par boss vaincu)
+        // XP et Gold partiels (récompenses des boss vaincus)
         const bossesDefeated = stage - 1;
-        const partialXP = bossesDefeated * 100;
+        let partialXP = 0;
+        let partialCoins = 0;
+        for (let i = 0; i < bossesDefeated; i++) {
+            partialXP += BOSS_RUSH_STAGES[i].reward.xp;
+            partialCoins += BOSS_RUSH_STAGES[i].reward.coins;
+        }
         finalStats.earnedXP = partialXP;
+        finalStats.earnedCoins = partialCoins;
 
         // Mettre à jour stats locales
         this.stats.totalRuns++;
@@ -349,9 +356,12 @@ class BossRushManager {
         }
         this.saveStats();
 
-        // Donner XP partiel
+        // Donner XP et Gold partiels
         if (window.careerManager && partialXP > 0) {
             window.careerManager.addXP(partialXP);
+        }
+        if (window.boxManager && partialCoins > 0) {
+            window.boxManager.addCoins(partialCoins, 'Boss Rush partiel');
         }
 
         // Vérifier les trophées
