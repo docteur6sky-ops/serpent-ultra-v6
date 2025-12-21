@@ -9332,6 +9332,39 @@ body.dark-mode .hub-chest-timer {
     z-index: 100;
 }
 
+/* Background dynamique de la Box */
+.box-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+}
+
+.box-bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.box-bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 20, 40, 0.7);
+}
+
+/* Éléments au-dessus du background */
+.box-header,
+.box-tabs,
+.box-grid {
+    position: relative;
+    z-index: 1;
+}
+
 /* Header AAA */
 .box-header {
     display: flex;
@@ -9573,10 +9606,51 @@ body.dark-mode .hub-chest-timer {
 .box-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
     padding: 1rem;
     overflow-y: auto;
+}
+
+/* Égaliser toutes les cartes - même taille */
+.box-grid .box-item {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Séparateur de rareté */
+.rarity-separator {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 0 0.75rem 0;
+    margin-top: 0.25rem;
+}
+
+.rarity-separator:first-child {
+    margin-top: 0;
+    padding-top: 0.5rem;
+}
+
+.rarity-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, currentColor 20%, currentColor 80%, transparent 100%);
+    opacity: 0.6;
+}
+
+.rarity-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 0 0 15px currentColor, 0 0 5px currentColor;
+    white-space: nowrap;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
 }
 
 /* Item Card - Style AAA avec bordure dorée épaisse */
@@ -9586,14 +9660,14 @@ body.dark-mode .hub-chest-timer {
     flex-direction: column;
     align-items: center;
     background: linear-gradient(180deg, rgba(20, 25, 40, 0.95) 0%, rgba(10, 15, 25, 0.98) 100%);
-    border: 3px solid #B8860B;
-    border-radius: 16px;
-    padding: 0.75rem;
+    border: 2px solid #B8860B;
+    border-radius: 12px;
+    padding: 0.6rem;
     transition: all 0.3s;
     cursor: pointer;
     min-height: 280px;
     box-shadow:
-        0 0 15px rgba(184, 134, 11, 0.3),
+        0 0 12px rgba(184, 134, 11, 0.25),
         inset 0 1px 0 rgba(255, 215, 0, 0.1);
 }
 
@@ -9637,7 +9711,6 @@ body.dark-mode .hub-chest-timer {
 /* Item Équipé - Bordure cyan brillante */
 .box-item.equipped {
     border-color: #00D9FF;
-    border-width: 3px;
     background: linear-gradient(180deg, rgba(0, 50, 80, 0.6) 0%, rgba(10, 15, 25, 0.98) 100%);
     box-shadow:
         0 0 20px rgba(0, 217, 255, 0.4),
@@ -9652,7 +9725,7 @@ body.dark-mode .hub-chest-timer {
 
 /* Item Verrouillé ACHETABLE - bordure dorée brillante */
 .box-item.locked.purchasable {
-    border: 3px solid #FFD700;
+    border-color: #FFD700;
     box-shadow:
         0 0 20px rgba(255, 215, 0, 0.4),
         inset 0 0 25px rgba(255, 215, 0, 0.08);
@@ -9668,7 +9741,7 @@ body.dark-mode .hub-chest-timer {
     align-items: center;
     justify-content: center;
     background: radial-gradient(ellipse at center, rgba(40, 50, 70, 0.8) 0%, rgba(15, 20, 30, 0.95) 100%);
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -9697,11 +9770,12 @@ body.dark-mode .hub-chest-timer {
     font-size: 4rem;
 }
 
-/* Canvas preview pour les skins - Plus grand et centré */
+/* Canvas preview pour les skins - Remplit tout l'espace */
 .skin-preview-canvas {
-    width: 130px;
-    height: 130px;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 .locked-preview {
@@ -9834,8 +9908,9 @@ body.dark-mode .hub-chest-timer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.5rem;
     width: 100%;
+    padding-top: 0.5rem;
 }
 
 .status-badge {
@@ -9940,6 +10015,53 @@ body.dark-mode .hub-chest-timer {
 .btn-buy.cant-afford {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Bouton Trophées - va vers la page achievements */
+.btn-trophy {
+    background: linear-gradient(135deg, #555555, #3a3a3a);
+    color: #aaa;
+    box-shadow: 0 2px 10px rgba(100, 100, 100, 0.2);
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-trophy:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(100, 100, 100, 0.3);
+    background: linear-gradient(135deg, #666666, #4a4a4a);
+}
+
+/* Bouton Déverrouiller - achievement accompli */
+.btn-unlock-ready {
+    background: linear-gradient(135deg, #00FF87, #00AA55);
+    color: #1a1a2e;
+    box-shadow: 0 2px 10px rgba(0, 255, 135, 0.4);
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    animation: pulse-unlock 1.5s ease-in-out infinite;
+}
+
+.btn-unlock-ready:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 25px rgba(0, 255, 135, 0.6);
+}
+
+@keyframes pulse-unlock {
+    0%, 100% { box-shadow: 0 2px 10px rgba(0, 255, 135, 0.4); }
+    50% { box-shadow: 0 4px 20px rgba(0, 255, 135, 0.7); }
 }
 
 /* ============================================
@@ -10057,6 +10179,45 @@ body.dark-mode .hub-chest-timer {
     text-align: center;
 }
 
+/* Section condition de déblocage */
+.skin-bonus-popup .popup-unlock-section {
+    background: rgba(255, 100, 100, 0.1);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.skin-bonus-popup .popup-unlock-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #FF6B6B;
+    margin-bottom: 4px;
+}
+
+.skin-bonus-popup .popup-unlock-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.3;
+}
+
+/* Section bonus roguelike */
+.skin-bonus-popup .popup-bonus-section {
+    background: rgba(100, 150, 255, 0.1);
+    border: 1px solid rgba(100, 150, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+/* Description du skin */
+.skin-bonus-popup .popup-description {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    text-align: center;
+    margin-top: 4px;
+}
 
 .skin-bonus-content {
     position: relative;
@@ -10571,7 +10732,7 @@ body.dark-mode .hub-chest-timer {
 
 @media (min-width: 768px) {
     .box-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 

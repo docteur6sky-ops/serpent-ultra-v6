@@ -23,7 +23,7 @@ export const ITEMS = {
         // ============================================
         classic: {
             id: 'classic',
-            name: 'Snake Classique',
+            name: 'Classique',
             emoji: '🐍',
             image: 'assets/skins/skin_classic.webp',
             type: 'skin',
@@ -292,11 +292,11 @@ export const ITEMS = {
             }
         },
 
-        chameleon: {
-            id: 'chameleon',
-            name: 'Caméléon',
-            emoji: '🦎',
-            image: 'assets/skins/skin_chameleon.webp',
+        prismatic: {
+            id: 'prismatic',
+            name: 'Prismatique',
+            emoji: '🔮',
+            image: 'assets/skins/skin_prismatic.webp',
             type: 'skin',
             rarity: 'epic',
             unlocked: false,
@@ -304,17 +304,17 @@ export const ITEMS = {
             unlockType: 'coins',
             effect: 'color-shift', // Effet spécial: change de couleur périodiquement
             colors: {
-                head: { light: '#7FFF00', dark: '#32CD32' },
-                body: { from: '#7FFF00', to: '#228B22' },
-                tail: { color: '#006400' },
-                outline: '#003300',
-                glow: '#7FFF00'
+                head: { light: '#FF69B4', dark: '#FF1493' },
+                body: { from: '#00FFFF', to: '#FF69B4' },
+                tail: { color: '#9400D3' },
+                outline: '#4B0082',
+                glow: '#FF69B4'
             },
-            description: 'Change de couleur périodiquement',
+            description: 'Couleurs prismatiques changeantes',
             roguelikeBonus: {
                 type: 'powerup_random',
                 value: true,
-                bonusName: 'Adaptation',
+                bonusName: 'Prismes',
                 bonusDesc: 'Les power-ups durent +50% plus longtemps'
             }
         },
@@ -324,7 +324,7 @@ export const ITEMS = {
         // ============================================
         crown: {
             id: 'crown',
-            name: 'Couronne',
+            name: 'Royal',
             emoji: '👑',
             image: 'assets/skins/skin_crown.webp',
             type: 'skin',
@@ -336,13 +336,13 @@ export const ITEMS = {
             unlockLabel: '🏆 Légende (100 runs)',
             effect: 'crown', // Effet spécial: accessoire couronne sur la tête
             colors: {
-                head: { light: '#FFD700', dark: '#FFA500' },
-                body: { from: '#FFD700', to: '#B8860B' },
-                tail: { color: '#8B6914' },
-                outline: '#654321',
-                glow: '#FFD700'
+                head: { light: '#DC143C', dark: '#8B0000' },
+                body: { from: '#800080', to: '#4B0082' },
+                tail: { color: '#2E0854' },
+                outline: '#1A0033',
+                glow: '#DC143C'
             },
-            description: 'Le roi des serpents avec sa couronne royale',
+            description: 'Le roi des serpents, pourpre royal',
             roguelikeBonus: {
                 type: 'starting_upgrades',
                 upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
@@ -354,35 +354,6 @@ export const ITEMS = {
         // ============================================
         // TIER 6 - SKINS ROGUELIKE (Achievements)
         // ============================================
-
-        toxic: {
-            id: 'toxic',
-            name: 'Toxique',
-            emoji: '☣️',
-            image: 'assets/skins/skin_toxic.webp',
-            type: 'skin',
-            rarity: 'epic',
-            unlocked: false,
-            price: 0,
-            unlockType: 'achievement',
-            unlockAchievement: 'boss_venin',
-            unlockLabel: '🧪 Antidote (vaincre VENIN)',
-            effect: 'pulse', // Effet spécial: pulsation verte
-            colors: {
-                head: { light: '#39FF14', dark: '#00CC00' },
-                body: { from: '#39FF14', to: '#006600' },
-                tail: { color: '#003300' },
-                outline: '#001A00',
-                glow: '#39FF14'
-            },
-            description: 'Radioactif et mortel, résistant au poison',
-            roguelikeBonus: {
-                type: 'skull_immunity',
-                value: true,
-                bonusName: 'Antidote',
-                bonusDesc: 'Immunité aux crânes (ne perd pas de segments)'
-            }
-        },
 
         blood: {
             id: 'blood',

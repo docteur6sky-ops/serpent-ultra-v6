@@ -6,7 +6,7 @@ import { logger } from './services/logger.js';
 import { getAllItems, getItemsByType } from './data/items.js';
 import { drawSkinPreview } from './SkinsRenderer.js';
 
-let currentFilter = 'all'; // Filtre actif (all, skins, backgrounds)
+let currentFilter = 'skins'; // Filtre actif (skins, banners, backgrounds)
 
 /**
  * Ouvre l'écran Box
@@ -16,6 +16,12 @@ function openBox() {
 
     // Afficher l'écran
     window.screenManager.show('box-screen');
+
+    // Toujours ouvrir sur l'onglet Skins
+    currentFilter = 'skins';
+    document.querySelectorAll('.box-tab').forEach(tab => tab.classList.remove('active'));
+    const skinsTab = document.querySelector('[data-category="skins"]');
+    if (skinsTab) skinsTab.classList.add('active');
 
     // Rafraîchir les données
     refreshBoxUI();
@@ -123,6 +129,9 @@ function filterBoxItems(category) {
 function renderItems(category) {
     let items;
 
+    // Ordre de rareté (du moins rare au plus rare)
+    const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
     if (category === 'all') {
         items = getAllItems();
     } else if (category === 'skins') {
@@ -131,6 +140,15 @@ function renderItems(category) {
         items = getItemsByType('banner');
     } else if (category === 'backgrounds') {
         items = getItemsByType('background');
+    }
+
+    // Trier par rareté (legendaires en premier)
+    if (items && items.length > 0) {
+        items.sort((a, b) => {
+            const rarityA = rarityOrder[a.rarity] ?? 99;
+            const rarityB = rarityOrder[b.rarity] ?? 99;
+            return rarityA - rarityB;
+        });
     }
 
     const grid = document.getElementById('boxGrid');
@@ -184,7 +202,7 @@ function createItemCard(item) {
         const canvasId = `skin-preview-${item.id}`;
         previewHTML = `
             <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
-                <canvas id="${canvasId}" width="100" height="100" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
+                <canvas id="${canvasId}" width="180" height="180" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
                 ${centerBadge}
             </div>
         `;
@@ -274,7 +292,7 @@ function createItemCard(item) {
             const canvas = document.getElementById(canvasId);
             if (canvas) {
                 const ctx = canvas.getContext('2d');
-                drawSkinPreview(ctx, item.id, 100);
+                drawSkinPreview(ctx, item.id, 180);
             }
         }, 10);
     }

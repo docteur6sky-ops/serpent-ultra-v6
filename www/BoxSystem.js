@@ -554,7 +554,7 @@ class BoxManager {
 // FONCTIONS UI - INTERFACE UTILISATEUR
 // ============================================
 
-let currentFilter = 'all';
+let currentFilter = 'skins';
 
 function openBox() {
     if (window.audio) window.audio.buttonClick();
@@ -573,6 +573,12 @@ function openBox() {
     if (window.boxManager.syncWithAchievements) {
         window.boxManager.syncWithAchievements();
     }
+
+    // Toujours ouvrir sur l'onglet Skins
+    currentFilter = 'skins';
+    document.querySelectorAll('.box-tab').forEach(tab => tab.classList.remove('active'));
+    const skinsTab = document.querySelector('[data-category="skins"]');
+    if (skinsTab) skinsTab.classList.add('active');
 
     window.screenManager.show('box-screen');
     refreshBoxUI();
@@ -595,7 +601,26 @@ function closeBox() {
 function refreshBoxUI() {
     updateHeader();
     updateTabs();
+    updateBoxBackground();
     renderItems(currentFilter);
+}
+
+/**
+ * Met à jour le background de la Box avec le background équipé
+ */
+function updateBoxBackground() {
+    const bgImage = document.getElementById('box-bg-image');
+    if (!bgImage) return;
+
+    const equippedBgId = window.boxManager.equippedBackground;
+    const bgItem = getItemById(equippedBgId);
+
+    if (bgItem && bgItem.image) {
+        bgImage.src = bgItem.image;
+    } else {
+        // Background par défaut
+        bgImage.src = 'assets/backgrounds/backgrounds_generique.webp';
+    }
 }
 
 function updateHeader() {
@@ -664,6 +689,11 @@ function filterBoxItems(category) {
 function renderItems(category) {
     let items;
 
+    // Ordre de rareté (du moins rare au plus rare)
+    const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
+    const rarityNames = { common: 'Commun', rare: 'Rare', epic: 'Épique', legendary: 'Légendaire' };
+    const rarityColors = { common: '#AAAAAA', rare: '#00D9FF', epic: '#9400D3', legendary: '#FFD700' };
+
     if (category === 'all') {
         items = getAllItems();
     } else if (category === 'skins') {
@@ -674,12 +704,35 @@ function renderItems(category) {
         items = getItemsByType('background');
     }
 
+    // Trier par rareté (common → legendary)
+    if (items && items.length > 0) {
+        items.sort((a, b) => {
+            const rarityA = rarityOrder[a.rarity] ?? 99;
+            const rarityB = rarityOrder[b.rarity] ?? 99;
+            return rarityA - rarityB;
+        });
+    }
+
     const grid = document.getElementById('boxGrid');
     if (!grid) return;
 
     grid.innerHTML = '';
 
+    // Grouper par rareté et ajouter des séparateurs
+    let currentRarity = null;
     items.forEach(item => {
+        // Ajouter un séparateur si nouvelle rareté
+        if (item.rarity !== currentRarity) {
+            currentRarity = item.rarity;
+            const separator = document.createElement('div');
+            separator.className = 'rarity-separator';
+            separator.innerHTML = `
+                <div class="rarity-line"></div>
+                <span class="rarity-label" style="color: ${rarityColors[currentRarity] || '#FFF'}">${rarityNames[currentRarity] || currentRarity}</span>
+                <div class="rarity-line"></div>
+            `;
+            grid.appendChild(separator);
+        }
         const card = createItemCard(item);
         grid.appendChild(card);
     });
@@ -726,7 +779,7 @@ function createItemCard(item) {
         previewHTML = `
             <div class="box-item-preview ${!isUnlocked ? 'locked-preview' : ''}">
                 ${rarityBadge}
-                <canvas id="${canvasId}" width="140" height="140" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
+                <canvas id="${canvasId}" width="180" height="180" class="skin-preview-canvas ${!isUnlocked ? 'locked-skin' : ''}"></canvas>
                 ${centerBadge}
             </div>
         `;
@@ -756,11 +809,11 @@ function createItemCard(item) {
     // Type label
     const typeLabels = { 'skin': 'Skin', 'background': 'Background', 'banner': 'Bannière' };
 
-    // Bouton info pour les skins avec bonus roguelike
+    // Bouton info pour tous les skins (bonus roguelike + conditions de déblocage)
     let infoBtnHTML = '';
-    if (item.type === 'skin' && item.roguelikeBonus) {
+    if (item.type === 'skin') {
         infoBtnHTML = `
-            <button class="skin-info-btn" onclick="window.showSkinBonusInfo('${item.id}', event); return false;" title="Bonus Roguelike">
+            <button class="skin-info-btn" onclick="window.showSkinBonusInfo('${item.id}', event); return false;" title="Informations">
                 <span class="info-icon">ℹ️</span>
             </button>
         `;
@@ -777,33 +830,15 @@ function createItemCard(item) {
         </div>
     `;
 
-    // Status badge (uniquement pour achievements/level/chest)
+    // Status badge (uniquement pour level/chest - achievement a son propre bouton)
     let statusHTML = '';
-    let progressHTML = '';
 
     if (!isEquipped && !isUnlocked) {
         if (item.unlockType === 'level') {
             statusHTML = `<span class="status-badge level">🎮 Niveau ${item.unlockLevel}</span>`;
-        } else if (item.unlockType === 'achievement') {
-            const label = item.unlockLabel || '🏆 Achievement';
-            statusHTML = `<span class="status-badge achievement">${label}</span>`;
-
-            if (item.unlockAchievement && window.boxManager.getAchievementProgress) {
-                const progress = window.boxManager.getAchievementProgress(item.unlockAchievement);
-                if (progress) {
-                    progressHTML = `
-                        <div class="achievement-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progress.percent}%"></div>
-                            </div>
-                            <span class="progress-text">${progress.current}/${progress.target}</span>
-                        </div>
-                    `;
-                }
-            }
         } else if (item.unlockType === 'chest') {
             statusHTML = '<span class="status-badge chest">🎁 Coffre</span>';
-        } else if (item.unlockType !== 'coins') {
+        } else if (item.unlockType !== 'coins' && item.unlockType !== 'achievement') {
             statusHTML = '<span class="status-badge locked">🔒 Verrouillé</span>';
         }
     }
@@ -817,12 +852,22 @@ function createItemCard(item) {
     } else if (item.unlockType === 'coins' && item.price > 0) {
         const canAfford = window.boxManager.getCoins() >= item.price;
         buttonHTML = `<button class="btn-buy ${!canAfford ? 'cant-afford' : ''}" onclick="buyBoxItem('${item.id}')" ${!canAfford ? 'title="Pas assez de coins"' : ''}>💰 ${item.price}</button>`;
+    } else if (item.unlockType === 'achievement') {
+        // Vérifier si l'achievement est accompli
+        const isAchievementDone = achievementManager && achievementManager.isUnlocked(item.unlockAchievement);
+        if (isAchievementDone) {
+            // Achievement accompli → bouton Déverrouiller
+            buttonHTML = `<button class="btn-unlock-ready" onclick="unlockAchievementItem('${item.id}')">🔓 Déverrouiller</button>`;
+        } else {
+            // Achievement pas encore accompli → bouton Trophées
+            buttonHTML = `<button class="btn-trophy" onclick="window.showTrophiesOverlay()">🏆 Trophées</button>`;
+        }
     } else {
         buttonHTML = '<button class="btn-locked" disabled>Verrouillé</button>';
     }
 
     // Footer
-    const footerHTML = `<div class="box-item-footer">${statusHTML}${progressHTML}${buttonHTML}</div>`;
+    const footerHTML = `<div class="box-item-footer">${statusHTML}${buttonHTML}</div>`;
 
     card.innerHTML = previewHTML + infoHTML + footerHTML;
 
@@ -833,7 +878,7 @@ function createItemCard(item) {
             const canvas = document.getElementById(canvasId);
             if (canvas) {
                 const ctx = canvas.getContext('2d');
-                drawSkinPreview(ctx, item.id, 140);
+                drawSkinPreview(ctx, item.id, 180);
             }
         }, 10);
     }
@@ -861,6 +906,26 @@ function equipBoxItem(itemId) {
     }
 }
 
+/**
+ * Débloque un item dont l'achievement est accompli
+ */
+function unlockAchievementItem(itemId) {
+    if (window.audio) window.audio.buttonClick();
+
+    const item = getItemById(itemId);
+    if (!item) return;
+
+    // Vérifier que l'achievement est bien accompli
+    if (item.unlockType === 'achievement' && achievementManager) {
+        const isAchievementDone = achievementManager.isUnlocked(item.unlockAchievement);
+        if (isAchievementDone) {
+            // Débloquer l'item
+            window.boxManager.unlockItem(itemId);
+            refreshBoxUI();
+        }
+    }
+}
+
 // ============================================
 // INITIALISATION GLOBALE
 // ============================================
@@ -877,6 +942,7 @@ window.closeBox = closeBox;
 window.filterBoxItems = filterBoxItems;
 window.buyBoxItem = buyBoxItem;
 window.equipBoxItem = equipBoxItem;
+window.unlockAchievementItem = unlockAchievementItem;
 window.refreshBoxUI = refreshBoxUI;
 
 // ============================================
@@ -884,7 +950,7 @@ window.refreshBoxUI = refreshBoxUI;
 // ============================================
 
 /**
- * Affiche une popup avec les infos du bonus roguelike du skin
+ * Affiche une popup avec les infos du skin (bonus roguelike + conditions de déblocage)
  */
 function showSkinBonusInfo(skinId, event) {
     if (event) {
@@ -896,28 +962,55 @@ function showSkinBonusInfo(skinId, event) {
     closeSkinBonusInfo();
 
     const skin = getItemById(skinId);
-    if (!skin || !skin.roguelikeBonus) return;
+    if (!skin) return;
 
     const bonus = skin.roguelikeBonus;
+    const isUnlocked = window.boxManager?.isUnlocked(skinId) || skin.unlocked;
 
     // Trouver la carte parent
     const btn = event.target.closest('.skin-info-btn');
     const card = btn?.closest('.box-item');
     if (!card) return;
 
-    // Créer la popup
-    const popup = document.createElement('div');
-    popup.className = 'skin-bonus-popup';
-    popup.id = 'skinBonusPopup';
-    popup.innerHTML = `
+    // Construire le contenu de la popup
+    let popupContent = `
         <div class="popup-header">
             <span class="popup-emoji">${skin.emoji}</span>
             <h4 class="popup-title">${skin.name}</h4>
         </div>
-        <div class="popup-bonus-name">${bonus.bonusName}</div>
-        <div class="popup-bonus-desc">${bonus.bonusDesc}</div>
-        <div class="popup-footer">Roguelike uniquement</div>
     `;
+
+    // Condition de déblocage (si pas encore débloqué)
+    if (!isUnlocked && skin.unlockType === 'achievement' && skin.unlockLabel) {
+        popupContent += `
+            <div class="popup-unlock-section">
+                <div class="popup-unlock-title">🔓 Condition</div>
+                <div class="popup-unlock-desc">${skin.unlockLabel}</div>
+            </div>
+        `;
+    }
+
+    // Bonus roguelike (si existe)
+    if (bonus) {
+        popupContent += `
+            <div class="popup-bonus-section">
+                <div class="popup-bonus-name">✨ ${bonus.bonusName}</div>
+                <div class="popup-bonus-desc">${bonus.bonusDesc}</div>
+                <div class="popup-footer">Roguelike uniquement</div>
+            </div>
+        `;
+    }
+
+    // Description du skin
+    if (skin.description) {
+        popupContent += `<div class="popup-description">${skin.description}</div>`;
+    }
+
+    // Créer la popup
+    const popup = document.createElement('div');
+    popup.className = 'skin-bonus-popup';
+    popup.id = 'skinBonusPopup';
+    popup.innerHTML = popupContent;
 
     card.appendChild(popup);
 

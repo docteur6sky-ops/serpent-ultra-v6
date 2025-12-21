@@ -812,6 +812,12 @@
         <!-- 📦 MA BOX - COLLECTION D'ITEMS -->
         <!-- ============================================ -->
         <div class="screen hidden" id="box-screen">
+            <!-- Background dynamique -->
+            <div class="box-background" id="box-background">
+                <img class="box-bg-image" id="box-bg-image" src="assets/backgrounds/backgrounds_generique.webp" alt="">
+                <div class="box-bg-overlay"></div>
+            </div>
+
             <!-- Header AAA -->
             <div class="box-header">
                 <!-- Gold AAA à gauche -->
@@ -837,12 +843,7 @@
 
             <!-- Tabs Catégories -->
             <div class="box-tabs">
-                <button class="box-tab active" data-category="all" onclick="filterBoxItems('all')">
-                    <span class="tab-icon">📂</span>
-                    <span class="tab-label">Tous</span>
-                    <span class="tab-count" id="tab-count-all">(0)</span>
-                </button>
-                <button class="box-tab" data-category="skins" onclick="filterBoxItems('skins')">
+                <button class="box-tab active" data-category="skins" onclick="filterBoxItems('skins')">
                     <span class="tab-icon">🐍</span>
                     <span class="tab-label">Skins</span>
                     <span class="tab-count" id="tab-count-skins">(0)</span>
