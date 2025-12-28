@@ -3,14 +3,14 @@
 // Configuration et initialisation Firebase
 // ============================================
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
     GoogleAuthProvider,
     signInWithPopup,
     signOut,
     onAuthStateChanged
-} from 'firebase/auth';
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
     getFirestore,
     collection,
@@ -24,7 +24,7 @@ import {
     getDocs,
     serverTimestamp,
     where
-} from 'firebase/firestore';
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { logger } from './logger.js';
 
 // ============================================
@@ -349,66 +349,10 @@ export async function getUserRank(mode) {
 }
 
 // ============================================
-// SAUVEGARDE CLOUD
-// ============================================
-
-/**
- * Sauvegarde la progression dans le cloud
- */
-export async function saveProgressToCloud(progressData) {
-    if (!db || !currentUser) return false;
-
-    try {
-        const progressRef = doc(db, 'users', currentUser.uid, 'progress', 'current');
-        await setDoc(progressRef, {
-            ...progressData,
-            lastSaved: serverTimestamp()
-        });
-
-        logger.log('[Firebase] Progression sauvegardée');
-        return true;
-    } catch (error) {
-        logger.error('[Firebase] Erreur sauvegarde:', error);
-        return false;
-    }
-}
-
-/**
- * Charge la progression depuis le cloud
- */
-export async function loadProgressFromCloud() {
-    if (!db || !currentUser) return null;
-
-    try {
-        const progressRef = doc(db, 'users', currentUser.uid, 'progress', 'current');
-        const progressSnap = await getDoc(progressRef);
-
-        if (progressSnap.exists()) {
-            logger.log('[Firebase] Progression chargée');
-            return progressSnap.data();
-        }
-        return null;
-    } catch (error) {
-        logger.error('[Firebase] Erreur chargement:', error);
-        return null;
-    }
-}
-
-// ============================================
 // EXPORTS
 // ============================================
 
 export default {
-    initFirebase,
-    signInWithGoogle,
-    logOut,
-    getCurrentUser,
-    isLoggedIn,
-    getUserProfile,
-    updateUserStats,
-    submitScore,
-    getLeaderboard,
-    getUserRank,
-    saveProgressToCloud,
-    loadProgressFromCloud
+    initFirebase, signInWithGoogle, logOut, getCurrentUser, isLoggedIn, getUserProfile, updateUserStats,
+    submitScore, getLeaderboard, getUserRank
 };
