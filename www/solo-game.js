@@ -76,6 +76,15 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Aliases pour compatibilité (accès depuis les systèmes)
         this.powerupEffects = this.powerUpSystem.effects;
+
+        // 🧹 Cache DOM refs pour performance
+        this._isDarkMode = false; // Cache pour éviter classList.contains chaque frame
+        this._darkModeCheckCounter = 0;
+        this._domCache = {
+            sc: null,
+            lv: null,
+            seg: null
+        };
     }
 
     // ============================================
@@ -261,7 +270,7 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Update particules (limiter à 100 max)
         if (this.particles && this.particles.length > 100) {
-            this.particles = this.particles.slice(-100);
+            this.particles.splice(0, this.particles.length - 100);
         }
         this.updateParticles();
 
@@ -384,7 +393,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.snake.pop();
 
         // Collision avec soi-même
-        if (this.snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
+        // Collision avec soi-même (boucle for au lieu de slice pour éviter allocation)
+        let selfCollision = false;
+        for (let i = 1; i < this.snake.length; i++) {
+            if (this.snake[i].x === head.x && this.snake[i].y === head.y) { selfCollision = true; break; }
+        }
+        if (selfCollision) {
             // Vérifier immunité auto-collision (skin cyber/glitch/spectral)
             const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
             const selfCollisionImmune = run?.selfCollisionImmune || false;
@@ -691,7 +705,12 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
         // Grille
-        const isDarkMode = document.body.classList.contains('dark-mode');
+        // Check isDarkMode toutes les 60 frames seulement
+        if (++this._darkModeCheckCounter >= 60) {
+            this._isDarkMode = document.body.classList.contains('dark-mode');
+            this._darkModeCheckCounter = 0;
+        }
+        const isDarkMode = this._isDarkMode;
         const borderColor = isDarkMode ? '#00A5A5' : '#d8d800ff';
         RenderUtils.drawGrid(this.ctx, this.GRID_SIZE, this.CELL_SIZE, this.CANVAS_SIZE, { grid: '#404060', border: borderColor });
 
@@ -881,7 +900,7 @@ class SoloSnakeGame extends BaseSnakeGame {
     // ============================================
 
     updateUI() {
-        const sc = document.getElementById('solo-sc');
+        const sc = this._domCache.sc || (this._domCache.sc = document.getElementById('solo-sc'));
         if (sc) {
             if (this.roguelikeSystem.isActive && window.roguelikeManager?.currentRun) {
                 // Mode Roguelike : formule XP identique à RoguelikeManager.endRun()
@@ -896,14 +915,14 @@ class SoloSnakeGame extends BaseSnakeGame {
             }
         }
 
-        const lv = document.getElementById('solo-lv');
+        const lv = this._domCache.lv || (this._domCache.lv = document.getElementById('solo-lv'));
         if (lv) {
             lv.textContent = this.roguelikeSystem.isActive && this.roguelikeSystem.levelData
                 ? this.roguelikeSystem.levelData.level
                 : this.level;
         }
 
-        const seg = document.getElementById('solo-seg');
+        const seg = this._domCache.seg || (this._domCache.seg = document.getElementById('solo-seg'));
         if (seg) {
             seg.textContent = this.roguelikeSystem.isActive ? this.combo : Math.max(0, this.snake.length - 3);
         }
@@ -1075,6 +1094,15 @@ class SoloSnakeGame extends BaseSnakeGame {
 
     get roguelikeLevelData() { return this.roguelikeSystem.levelData; }
     set roguelikeLevelData(val) { this.roguelikeSystem.levelData = val; }
+
+    // 🧹 Override stop() pour cleanup des systèmes
+    stop() {
+        // Cleanup des systèmes
+        if (this.bossSystem) this.bossSystem.cleanup();
+        if (this.powerUpSystem) this.powerUpSystem.reset();
+        // Appeler le parent
+        super.stop();
+    }
 
     get roguelikeModifiers() { return this.roguelikeSystem.modifiers; }
     set roguelikeModifiers(val) { this.roguelikeSystem.modifiers = val; }

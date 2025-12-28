@@ -93,6 +93,10 @@ export class BossFightSystem {
         // 🛡️ Invincibilité après collision tête-tête
         this.headToHeadInvincible = false;
         this.headToHeadInvincibleUntil = 0;
+
+        // 🧹 CLEANUP: Stockage des timers pour nettoyage
+        this.mysteryBoxTimeouts = [];
+        this._bossIntroClickHandler = null;
     }
 
     // ============================================
@@ -616,11 +620,17 @@ export class BossFightSystem {
         // Stocker la config pour le flash
         this._currentBossConfig = config;
 
-        document.getElementById('boss-intro-start').addEventListener('click', () => {
+        // 🧹 Supprimer ancien listener si existe
+        const btn = document.getElementById('boss-intro-start');
+        if (this._bossIntroClickHandler) {
+            btn.removeEventListener('click', this._bossIntroClickHandler);
+        }
+        // Créer et stocker le nouveau handler
+        this._bossIntroClickHandler = () => {
             this.hideBossIntro();
-            // Flash couleur simple puis combat
             this.startBossWithFlash(levelData, objective);
-        });
+        };
+        btn.addEventListener('click', this._bossIntroClickHandler);
 
         logger.log(`[BossFight] Écran VS affiché: ${levelData.name}`);
     }
@@ -629,6 +639,12 @@ export class BossFightSystem {
         const introScreen = document.getElementById('boss-intro-screen');
         if (introScreen) {
             introScreen.classList.add('hidden');
+        }
+        // 🧹 Supprimer le listener pour éviter accumulation
+        const btn = document.getElementById('boss-intro-start');
+        if (btn && this._bossIntroClickHandler) {
+            btn.removeEventListener('click', this._bossIntroClickHandler);
+            this._bossIntroClickHandler = null;
         }
     }
 
@@ -706,10 +722,10 @@ export class BossFightSystem {
         this.boostCooldownEnd = 0;
         this.headToHeadInvincible = false;
         // Spawn 2 boxes au départ, puis 2 autres rapidement
-        setTimeout(() => this.spawnMysteryBox(), 2000);
-        setTimeout(() => this.spawnMysteryBox(), 3000);
-        setTimeout(() => this.spawnMysteryBox(), 5000);
-        setTimeout(() => this.spawnMysteryBox(), 7000);
+        this.mysteryBoxTimeouts.push(setTimeout(() => this.spawnMysteryBox(), 2000));
+        this.mysteryBoxTimeouts.push(setTimeout(() => this.spawnMysteryBox(), 3000));
+        this.mysteryBoxTimeouts.push(setTimeout(() => this.spawnMysteryBox(), 5000));
+        this.mysteryBoxTimeouts.push(setTimeout(() => this.spawnMysteryBox(), 7000));
 
         // Afficher les UI (boost button, stored item)
         this.updateBoostUI();
@@ -2113,6 +2129,12 @@ export class BossFightSystem {
         this.swordActive = false;
         this.swordTimer = 0;
         this.stealGracePeriod = 0;
+
+        // 🧹 Nettoyer les timeouts de Mystery Box
+        if (this.mysteryBoxTimeouts && this.mysteryBoxTimeouts.length > 0) {
+            this.mysteryBoxTimeouts.forEach(id => clearTimeout(id));
+            this.mysteryBoxTimeouts = [];
+        }
 
         // 🎁 Nettoyer Mystery Boxes et systèmes ajoutés
         this.mysteryBoxes = [];
