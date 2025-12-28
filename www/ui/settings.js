@@ -49,8 +49,10 @@ export function updateSFXVolume(value) {
         slider.style.setProperty('--slider-value', value + '%');
     }
 
-    // Effets sonores gérés par window.audio (beep)
-    // Volume des effets reste dans l'ancien système pour l'instant
+    // Appliquer le volume aux effets sonores
+    if (window.audio && window.audio.setVolume) {
+        window.audio.setVolume(volume);
+    }
 }
 
 /**
@@ -119,6 +121,11 @@ export function loadSoundSettings() {
         window.audioManager.setVolume(musicVolume);
         window.audioManager.setMuted(muted);
     }
+
+    // Appliquer le volume des effets sonores
+    if (window.audio && window.audio.setVolume) {
+        window.audio.setVolume(sfxVolume);
+    }
 }
 
 // ============================================
@@ -152,6 +159,126 @@ export function loadDarkMode() {
         document.body.classList.add('dark-mode');
         const indicator = document.getElementById('dark-mode-indicator');
         if (indicator) indicator.textContent = 'ON';
+    }
+}
+
+// ============================================
+// VIBRATION (Haptic Feedback)
+// ============================================
+
+/**
+ * Basculer la vibration (haptic feedback)
+ */
+export function toggleVibration() {
+    const indicator = document.getElementById('vibration-indicator');
+    const currentState = localStorage.getItem('vibrationEnabled') !== 'false'; // Default ON
+    const newState = !currentState;
+
+    localStorage.setItem('vibrationEnabled', newState);
+
+    if (indicator) indicator.textContent = newState ? 'ON' : 'OFF';
+
+    // Test vibration si activée
+    if (newState && navigator.vibrate) {
+        navigator.vibrate(50);
+    }
+
+    logger.log(`[Settings] Vibration: ${newState ? 'ON' : 'OFF'}`);
+}
+
+/**
+ * Charger les paramètres de vibration
+ */
+export function loadVibrationSettings() {
+    const vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false'; // Default ON
+    const indicator = document.getElementById('vibration-indicator');
+    if (indicator) indicator.textContent = vibrationEnabled ? 'ON' : 'OFF';
+}
+
+/**
+ * Déclencher une vibration si activée
+ * @param {number} duration - Durée en ms (default 30)
+ */
+export function vibrate(duration = 30) {
+    const vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false';
+    if (vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate(duration);
+    }
+}
+
+// ============================================
+// CONTRÔLES TACTILES
+// ============================================
+
+/**
+ * Mettre à jour la sensibilité tactile
+ * @param {number} value - Sensibilité (1-10)
+ */
+export function updateTouchSensitivity(value) {
+    const valueElement = document.getElementById('sensitivity-value');
+    if (valueElement) valueElement.textContent = value;
+
+    localStorage.setItem('touchSensitivity', value);
+
+    // Appliquer au TouchControls si disponible
+    // Sensibilité inversée : 1 = distance max (moins sensible), 10 = distance min (très sensible)
+    if (window.touchControls) {
+        const minSwipeDistance = 110 - (value * 10); // 10 -> 10px, 1 -> 100px
+        window.touchControls.minSwipeDistance = minSwipeDistance;
+    }
+
+    logger.log(`[Settings] Sensibilité tactile: ${value}`);
+}
+
+/**
+ * Mettre à jour la taille du D-Pad
+ * @param {number} value - Taille en % (80-150)
+ */
+export function updateDpadSize(value) {
+    const valueElement = document.getElementById('dpad-size-value');
+    if (valueElement) valueElement.textContent = value + '%';
+
+    localStorage.setItem('dpadSize', value);
+
+    // Appliquer à tous les D-Pads
+    document.querySelectorAll('.dpad').forEach(dpad => {
+        dpad.style.transform = `scale(${value / 100})`;
+    });
+
+    logger.log(`[Settings] Taille D-Pad: ${value}%`);
+}
+
+
+
+/**
+ * Charger les paramètres de contrôles
+ */
+export function loadControlsSettings() {
+    // Sensibilité
+    const sensitivity = parseInt(localStorage.getItem('touchSensitivity')) || 5;
+    const sensitivitySlider = document.getElementById('touch-sensitivity');
+    const sensitivityValue = document.getElementById('sensitivity-value');
+    if (sensitivitySlider) sensitivitySlider.value = sensitivity;
+    if (sensitivityValue) sensitivityValue.textContent = sensitivity;
+
+    // Taille D-Pad
+    const dpadSize = parseInt(localStorage.getItem('dpadSize')) || 100;
+    const dpadSizeSlider = document.getElementById('dpad-size');
+    const dpadSizeValue = document.getElementById('dpad-size-value');
+    if (dpadSizeSlider) dpadSizeSlider.value = dpadSize;
+    if (dpadSizeValue) dpadSizeValue.textContent = dpadSize + '%';
+
+    // Appliquer la taille à tous les D-Pads
+    if (dpadSize !== 100) {
+        document.querySelectorAll('.dpad').forEach(dpad => {
+            dpad.style.transform = `scale(${dpadSize / 100})`;
+        });
+    }
+
+    // Appliquer la sensibilité au TouchControls
+    if (window.touchControls) {
+        const minSwipeDistance = 110 - (sensitivity * 10);
+        window.touchControls.minSwipeDistance = minSwipeDistance;
     }
 }
 
@@ -192,5 +319,13 @@ window.updateSFXVolume = updateSFXVolume;
 window.toggleMute = toggleMute;
 window.toggleDarkMode = toggleDarkMode;
 window.setLanguage = setLanguage;
+
+// Vibration
+window.toggleVibration = toggleVibration;
+window.vibrate = vibrate;
+
+// Contrôles
+window.updateTouchSensitivity = updateTouchSensitivity;
+window.updateDpadSize = updateDpadSize;
 
 logger.log('✅ Module settings.js chargé');
