@@ -309,7 +309,7 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         // Mode classique : progression par niveau
         const baseSpeed = this.difficulty === 0 ? 2.5 : this.difficulty === 1 ? 5 : 8;
-        let speed = 1000 / (baseSpeed + (this.level - 1) * 0.5);
+        let speed = 1000 / baseSpeed; // Vitesse constante (pas d'accélération)
 
         // ⚡ Boost boss (priorité maximale) - vitesse x2
         if (this.bossSystem.isActive && this.bossSystem.isBoostActive) {
@@ -541,7 +541,7 @@ class SoloSnakeGame extends BaseSnakeGame {
 
         if (hasVampire && isGhostActive) {
             // VAMPIRE : Vole +1 segment au crâne, +1 combo (comme une pomme)
-            if (this.audio) this.audio.eatSound();
+            if (this.audio) this.audio.eatGolden();
             this.createParticles(head.x, head.y, '#9932CC', 10); // Particules violettes vampire
             this.snake.unshift(head);
             // Ne pas faire pop() = +1 segment

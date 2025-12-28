@@ -173,7 +173,7 @@ export class BossFightSystem {
 
         // Effets visuels (particules + son)
         this.game.createParticles(box.x, box.y, '#FFD700', 8);
-        if (window.audio) window.audio.powerupSound?.();
+        if (window.audio) window.audio?.powerup();
 
         // Retirer cette box du tableau
         const index = this.mysteryBoxes.findIndex(b => b.x === box.x && b.y === box.y);
@@ -237,7 +237,7 @@ export class BossFightSystem {
         this.storedItem = finalType;
 
         // Son de révélation
-        if (window.audio) window.audio.powerupSound?.();
+        if (window.audio) window.audio?.powerup();
 
         // Flash de révélation
         setTimeout(() => {
@@ -264,7 +264,7 @@ export class BossFightSystem {
             // Activer l'épée comme si on l'avait ramassée
             this.swordActive = true;
             this.swordTimer = this.swordDuration;
-            if (window.audio) window.audio.swordPickup?.();
+            if (window.audio) window.audio?.powerupSword();
             logger.log(`[BossFight] ⚔️ Épée activée! Durée: ${this.swordDuration}s`);
         } else {
             // Power-up - activer via PowerUpSystem.activate()
@@ -1666,7 +1666,7 @@ export class BossFightSystem {
         }
 
         // Effets
-        if (this.game.audio) this.game.audio.eatSound();
+        if (this.game.audio) window.audio?.eatGolden();
         this.game.createParticles(head.x, head.y, '#9932CC', 10);
 
         // Tracking achievement Maîtrise Légendaire
@@ -1746,7 +1746,7 @@ export class BossFightSystem {
         this.game.triggerScreenShake(8);
         this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#FF4444', 8);
         this.game.createParticles(this.boss.snake[0].x, this.boss.snake[0].y, '#FF4444', 8);
-        if (window.audio) window.audio.hit?.();
+        if (window.audio) window.audio?.swordHit();
 
         // Vérifier défaite/victoire
         if (this.game.snake.length <= 3) {
@@ -1856,7 +1856,7 @@ export class BossFightSystem {
             }, 100);
         }
 
-        if (window.audio) window.audio.hit?.();
+        if (window.audio) window.audio?.swordHit();
     }
 
     bossBlockedByPlayer() {

@@ -679,61 +679,14 @@ class RoguelikeManager {
      * Soumet le score au leaderboard en ligne
      */
     async submitScoreToLeaderboard(stats) {
-        try {
-            const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
-            const sm = getSecurityManager();
-
-            // Validation anti-triche côté client (si disponible)
-            let validation = { valid: true, trustScore: 100 };
-            let verifyToken = null;
-
-            if (sm) {
-                validation = sm.validateRunStats(stats);
-                if (!validation.valid) {
-                    logger.warn('[RoguelikeManager] Stats suspectes détectées:', validation.issues);
-                }
-                verifyToken = sm.generateVerificationToken(stats);
-            }
-
-            const response = await fetch('/api/roguelike/scores', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    pseudo: pseudo,
-                    score: stats.score,
-                    level: stats.level,
-                    apples: stats.applesEaten,
-                    time: Math.floor(stats.timePlayed),
-                    upgrades: stats.upgradesCollected,
-                    // Données de sécurité
-                    trustScore: validation.trustScore,
-                    verifyToken: verifyToken,
-                    sessionId: sm?.sessionId || null
-                })
+        // Soumettre au leaderboard mondial Firebase
+        if (window.firebaseUI) {
+            window.firebaseUI.submitAndShowResult('roguelike', stats.score, {
+                level: stats.level,
+                applesEaten: stats.applesEaten,
+                upgradesCollected: stats.upgradesCollected,
+                timePlayed: Math.floor(stats.timePlayed)
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                logger.log('[RoguelikeManager] Score soumis au leaderboard:', result);
-
-                // Stocker le dernier rang pour affichage
-                this.lastLeaderboardRank = result.entry?.rank || null;
-                this.lastLeaderboardMessage = result.message;
-
-                // Émettre un événement pour l'UI
-                if (window.dispatchEvent) {
-                    window.dispatchEvent(new CustomEvent('leaderboard-score-submitted', {
-                        detail: result
-                    }));
-                }
-            } else {
-                logger.warn('[RoguelikeManager] Échec soumission leaderboard:', result.error);
-            }
-        } catch (error) {
-            logger.error('[RoguelikeManager] Erreur soumission leaderboard:', error);
         }
     }
 

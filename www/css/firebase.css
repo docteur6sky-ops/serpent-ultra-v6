@@ -1,0 +1,490 @@
+/* ============================================
+   FIREBASE UI STYLES - SNAKE ULTRA
+   ============================================ */
+
+/* ============================================
+   LOGIN BUTTON & USER INFO
+   ============================================ */
+
+/* Placeholder dans le hub-header */
+.firebase-login-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.firebase-login-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.firebase-login-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(180deg, #4285f4 0%, #3367d6 100%);
+    border: none;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+
+.firebase-login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+}
+
+.firebase-login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.firebase-login-btn.floating {
+    padding: 12px;
+    border-radius: 50%;
+}
+
+.firebase-login-btn.floating span {
+    display: none;
+}
+
+.firebase-floating-login {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.firebase-user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px 4px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.firebase-user-info.hidden {
+    display: none;
+}
+
+.firebase-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #4CAF50;
+}
+
+.firebase-user-name {
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.firebase-logout-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: #ff6b6b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.firebase-logout-btn:hover {
+    background: rgba(255, 107, 107, 0.2);
+    transform: scale(1.1);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ============================================
+   LEADERBOARD MODAL
+   ============================================ */
+
+.leaderboard-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+.leaderboard-modal.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.leaderboard-modal-content {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-header h2 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 1.4em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.leaderboard-header h2::before {
+    content: '🏆';
+}
+
+.leaderboard-close-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaderboard-close-btn:hover {
+    background: rgba(255, 107, 107, 0.3);
+    transform: rotate(90deg);
+}
+
+/* Tabs */
+.leaderboard-tabs {
+    display: flex;
+    padding: 10px 20px;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-tab {
+    flex: 1;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #888;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.leaderboard-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.leaderboard-tab.active {
+    background: linear-gradient(180deg, #4CAF50 0%, #388E3C 100%);
+    border-color: #4CAF50;
+    color: white;
+}
+
+/* Content */
+.leaderboard-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px 20px;
+    min-height: 300px;
+}
+
+.leaderboard-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #888;
+    font-size: 16px;
+}
+
+.leaderboard-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    text-align: center;
+    color: #888;
+}
+
+.leaderboard-empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.leaderboard-empty-hint {
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leaderboard-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s;
+}
+
+.leaderboard-entry:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.leaderboard-entry.current-user {
+    background: rgba(76, 175, 80, 0.15);
+    border-color: rgba(76, 175, 80, 0.3);
+}
+
+.leaderboard-entry.top-3 {
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.2);
+}
+
+.leaderboard-rank {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #888;
+}
+
+.leaderboard-entry.top-3 .leaderboard-rank {
+    font-size: 20px;
+}
+
+.leaderboard-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.leaderboard-entry.top-3 .leaderboard-avatar {
+    border-color: #ffd700;
+}
+
+.leaderboard-entry.current-user .leaderboard-avatar {
+    border-color: #4CAF50;
+}
+
+.leaderboard-name {
+    flex: 1;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.leaderboard-score {
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+/* User rank footer */
+.leaderboard-user-rank {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 16px 16px;
+}
+
+.leaderboard-user-rank.hidden {
+    display: none;
+}
+
+.user-rank-info {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+}
+
+.user-rank-info strong {
+    color: #4CAF50;
+    font-size: 18px;
+}
+
+/* ============================================
+   NOTIFICATIONS
+   ============================================ */
+
+.firebase-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 25px;
+    background: linear-gradient(180deg, #2a2a4a 0%, #1a1a3a 100%);
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+    z-index: 20000;
+    transition: all 0.3s ease;
+}
+
+.firebase-notification.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.firebase-notification.new-record {
+    border-color: #ffd700;
+}
+
+.notification-icon {
+    font-size: 32px;
+    animation: bounce 0.5s ease infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+}
+
+.notification-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.notification-title {
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.notification-score {
+    color: white;
+    font-size: 14px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 480px) {
+    .firebase-login-btn span {
+        display: none;
+    }
+
+    .firebase-login-btn {
+        padding: 10px;
+        border-radius: 50%;
+    }
+
+    .firebase-user-name {
+        display: none;
+    }
+
+    .leaderboard-modal-content {
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+
+    .leaderboard-tabs {
+        padding: 8px 15px;
+    }
+
+    .leaderboard-tab {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    .leaderboard-entry {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .leaderboard-avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .leaderboard-name {
+        font-size: 13px;
+    }
+
+    .leaderboard-score {
+        font-size: 14px;
+    }
+}

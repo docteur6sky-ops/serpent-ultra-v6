@@ -2041,6 +2041,9 @@ canvas {
     text-shadow: 0 1px 2px rgba(255,255,255,0.6);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 100;
 }
 
 .dpad-btn:hover {
@@ -4065,6 +4068,36 @@ body.dark-mode .xp-bar {
     font-size: 14px;
     font-weight: 700;
     color: var(--text-secondary);
+}
+
+/* Position Selector (D-Pad) */
+.position-selector {
+    display: flex;
+    gap: 10px;
+}
+
+.position-btn {
+    padding: 8px 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.position-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.position-btn.active {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-color: var(--accent-primary);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0, 200, 83, 0.4);
 }
 
 /* Mute Toggle */
@@ -9147,7 +9180,7 @@ body.dark-mode .hub-chest-timer {
 
 .hub-bottom-nav {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     background: var(--hub-card-bg);
     backdrop-filter: blur(20px);
@@ -9678,6 +9711,7 @@ body.dark-mode .hub-chest-timer {
 }
 
 .box-item:has(.fullsize-preview) .box-item-info,
+.box-item:has(.fullsize-preview) .box-item-footer,
 .box-item:has(.fullsize-preview) .box-item-actions {
     position: relative;
     z-index: 2;
@@ -12823,4 +12857,60 @@ body.dark-mode .chest-modal-overlay {
 /* Helper class */
 .hidden {
     display: none !important;
+}
+
+/* ============================================ */
+/* 💥 BOSS FIGHT DAMAGE FEEDBACK ANIMATIONS    */
+/* ============================================ */
+
+/* Animation subtile pour texte flottant de dégâts */
+@keyframes floatUpSubtle {
+    0% {
+        opacity: 0.9;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-30px);
+    }
+}
+
+/* Animation pour Mystery Box notification */
+@keyframes mysteryBoxPop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Classe pour le texte flottant */
+.floating-damage {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    user-select: none;
+}
+
+/* États du bouton boost (dans le pad) */
+#boost-btn.boost-active {
+    background: linear-gradient(135deg, #00FF00, #00AA00) !important;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5) !important;
+}
+
+#boost-btn.boost-cooldown {
+    background: linear-gradient(135deg, #666, #444) !important;
+    opacity: 0.6 !important;
+}
+
+/* Style item stocké quand il contient un item */
+#stored-item-slot.has-item {
+    background: linear-gradient(135deg, #FFD700, #FF8C00) !important;
+    animation: pulseItem 1.5s infinite;
+}
+
+@keyframes pulseItem {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); }
 }

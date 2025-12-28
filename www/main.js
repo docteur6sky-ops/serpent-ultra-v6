@@ -126,6 +126,20 @@ logger.log('🐍 Snake Ultra - Deluxe Edition');
 logger.log('📦 Bundled with Vite');
 logger.log('✅ All modules loaded');
 
+// ============================================
+// FIREBASE UI - Initialisation
+// ============================================
+import { firebaseUI } from './services/FirebaseUI.js';
+
+// Initialiser Firebase UI après le chargement du DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => firebaseUI.init());
+} else {
+    setTimeout(() => firebaseUI.init(), 100);
+}
+logger.log('🔥 Firebase UI module loaded');
+
+
 // ✅ FIX: S'assurer que l'initialisation se fait après tous les imports dynamiques
 // Le DOM est probablement déjà prêt à ce stade
 if (window.init) {

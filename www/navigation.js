@@ -400,6 +400,16 @@ window.handleSoloGameOver = function(stats) {
         window.boxManager.checkLevelUnlocks(playerLevel);
     }
 
+    // Soumettre au leaderboard mondial Firebase
+    if (window.firebaseUI) {
+        window.firebaseUI.submitAndShowResult('solo', stats.score, {
+            level: stats.level,
+            maxCombo: stats.maxCombo || 0,
+            difficulty: stats.difficulty || 'easy',
+            time: stats.timeString || '0:00'
+        });
+    }
+
     // Sauvegarder dans le classement (via LeaderboardManager)
     leaderboardManager.saveScore(stats);
 
@@ -780,19 +790,18 @@ window.leaveLobby = function() {
  * Marquer le joueur comme prêt dans le lobby
  */
 window.setReady = function() {
+    // Utiliser window.multiGame qui est toujours à jour
+    const game = window.multiGame || multiGameInstance;
 
-    // Vérifier la connexion
-    if (!multiGameInstance || !multiGameInstance.client || !multiGameInstance.client.connected) {
+    if (!game || !game.client) {
         if (window.ModalManager) {
             window.ModalManager.error('Non connecté au serveur');
         }
         return;
     }
 
-    // Envoyer au serveur
-    multiGameInstance.client.ws.send(JSON.stringify({
-        type: 'player_ready'
-    }));
+    // Utiliser sendReady() qui gère la vérification de connexion
+    game.client.sendReady();
 
     // Désactiver le bouton
     const btn = document.getElementById('btn-ready');

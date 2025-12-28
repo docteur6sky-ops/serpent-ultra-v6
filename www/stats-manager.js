@@ -6,6 +6,20 @@ import { logger } from './services/logger.js';
 import { achievementManager } from './roguelike/achievements.js';
 import roguelikeManager from './roguelike/RoguelikeManager.js';
 
+// Import Firebase dynamique pour éviter les erreurs si non initialisé
+let firebaseModule = null;
+async function getFirebaseFunctions() {
+    if (!firebaseModule) {
+        try {
+            firebaseModule = await import('./services/firebase.js');
+        } catch (e) {
+            logger.warn('[StatsManager] Firebase non disponible:', e.message);
+            return null;
+        }
+    }
+    return firebaseModule;
+}
+
 class StatsManager {
     constructor() {
         this.currentMode = 'aventure'; // 'aventure' (Solo+Roguelike) ou 'arene' (Multi+BossRush)
@@ -281,13 +295,13 @@ class StatsManager {
         `;
         this.dom.gridUnified.innerHTML = gridHTML;
 
-        // Bouton leaderboard roguelike (utilise cache)
+        // Bouton leaderboard Aventure (Solo + Roguelike)
         const { rankingBtn } = this.dom;
-        rankingBtn.textContent = '🏆 Leaderboard Roguelike';
+        rankingBtn.textContent = '🏆 Classement Mondial';
         rankingBtn.style.display = '';
         rankingBtn.onclick = () => {
             window.audio?.buttonClick();
-            this.showRoguelikeLeaderboard();
+            this.showAventureLeaderboard();
         };
     }
 
@@ -426,12 +440,12 @@ class StatsManager {
         `;
         gridUnified.innerHTML = gridHTML;
 
-        // Bouton leaderboard multi (utilise cache)
-        rankingBtn.textContent = '🏆 Classement Online';
+        // Bouton leaderboard Arène (Multi + Boss Rush)
+        rankingBtn.textContent = '🏆 Classement Mondial';
         rankingBtn.style.display = '';
         rankingBtn.onclick = () => {
             window.audio?.buttonClick();
-            window.showLeaderboardOverlay?.();
+            this.showAreneLeaderboard();
         };
     }
 
@@ -452,69 +466,227 @@ class StatsManager {
     }
 
     /**
-     * Affiche le leaderboard roguelike
+     * Affiche le leaderboard pour une catégorie (aventure ou arène)
      */
-    async showRoguelikeLeaderboard() {
-        logger.log('[StatsManager] Affichage leaderboard roguelike');
+    async showLeaderboard(category = 'aventure') {
+        logger.log(`[StatsManager] Affichage leaderboard ${category}`);
+        this.currentLeaderboardCategory = category;
 
-        // Créer le modal s'il n'existe pas
-        let modal = document.getElementById('leaderboard-modal');
-        if (!modal) {
-            modal = this.createLeaderboardModal();
-            document.body.appendChild(modal);
-        }
+        // Supprimer l'ancien modal s'il existe
+        const oldModal = document.getElementById('stats-leaderboard-modal');
+        if (oldModal) oldModal.remove();
 
-        // Afficher le modal avec loading
+        // Créer le nouveau modal
+        const modal = this.createLeaderboardModal(category);
+        document.body.appendChild(modal);
+
+        // Afficher le modal
         modal.style.display = 'flex';
+
+        // Charger le premier onglet
+        const firstTab = category === 'aventure' ? 'solo' : 'multi';
+        await this.loadLeaderboardData(firstTab);
+    }
+
+    /**
+     * Change d'onglet dans le leaderboard
+     */
+    async switchLeaderboardTab(mode) {
+        const modal = document.getElementById('stats-leaderboard-modal');
+        if (!modal) return;
+
+        // Mettre à jour les onglets actifs
+        modal.querySelectorAll('.leaderboard-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.mode === mode);
+        });
+
+        // Charger les données
+        await this.loadLeaderboardData(mode);
+    }
+
+    /**
+     * Charge les données du leaderboard pour un mode
+     */
+    async loadLeaderboardData(mode) {
+        const modal = document.getElementById('stats-leaderboard-modal');
+        if (!modal) return;
+
         const content = modal.querySelector('.leaderboard-content');
         content.innerHTML = `
             <div class="leaderboard-loading">
                 <div class="loading-spinner"></div>
-                <p>Chargement du classement...</p>
+                <p>Chargement du classement mondial...</p>
             </div>
         `;
 
-        try {
-            // Récupérer les données
-            const response = await fetch('/api/roguelike/leaderboard?limit=50');
-            const data = await response.json();
+        // Mapper les modes vers les noms Firebase
+        const firebaseMode = {
+            'solo': 'solo',
+            'roguelike': 'roguelike',
+            'multi': 'multi',
+            'bossrush': 'bossrush'
+        }[mode] || mode;
 
-            if (data.success) {
-                this.renderLeaderboard(content, data.data, data.total);
-            } else {
+        try {
+            // Récupérer les fonctions Firebase
+            const firebase = await getFirebaseFunctions();
+
+            if (!firebase) {
                 content.innerHTML = `
                     <div class="leaderboard-error">
-                        <span class="error-icon">⚠️</span>
-                        <p>Erreur lors du chargement</p>
-                        <button class="btn-retry" onclick="window.statsManager.showRoguelikeLeaderboard()">Réessayer</button>
+                        <span class="error-icon">🔌</span>
+                        <p>Firebase non disponible</p>
+                        <p class="error-hint">Connecte-toi pour voir le classement mondial</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Récupérer les données depuis Firebase
+            const entries = await firebase.getLeaderboard(firebaseMode, 50);
+            const userRank = await firebase.getUserRank(firebaseMode);
+            const loggedIn = firebase.isLoggedIn();
+
+            if (entries.length > 0) {
+                this.renderFirebaseLeaderboard(content, entries, userRank, loggedIn, mode);
+            } else {
+                content.innerHTML = `
+                    <div class="leaderboard-empty">
+                        <span class="empty-icon">🏆</span>
+                        <p>Aucun score pour le moment</p>
+                        <p class="empty-hint">Sois le premier à te classer !</p>
                     </div>
                 `;
             }
         } catch (error) {
-            logger.error('[StatsManager] Erreur fetch leaderboard:', error);
+            logger.error(`[StatsManager] Erreur fetch leaderboard ${mode}:`, error);
             content.innerHTML = `
                 <div class="leaderboard-error">
                     <span class="error-icon">🔌</span>
-                    <p>Impossible de se connecter au serveur</p>
-                    <button class="btn-retry" onclick="window.statsManager.showRoguelikeLeaderboard()">Réessayer</button>
+                    <p>Impossible de charger le classement</p>
+                    <button class="btn-retry" onclick="window.statsManager.loadLeaderboardData('${mode}')">Réessayer</button>
                 </div>
             `;
         }
     }
 
     /**
-     * Crée le modal du leaderboard
+     * Raccourci pour le leaderboard Aventure (Solo + Roguelike)
      */
-    createLeaderboardModal() {
+    showAventureLeaderboard() {
+        this.showLeaderboard('aventure');
+    }
+
+    /**
+     * Raccourci pour le leaderboard Arène (Multi + Boss Rush)
+     */
+    showAreneLeaderboard() {
+        this.showLeaderboard('arene');
+    }
+
+    /**
+     * Alias pour compatibilité (ancien nom)
+     */
+    showRoguelikeLeaderboard() {
+        this.showLeaderboard('aventure');
+    }
+
+    /**
+     * Affiche le leaderboard Firebase
+     */
+    renderFirebaseLeaderboard(container, entries, userRank, loggedIn = false, mode = 'solo') {
+        // Définir les colonnes selon le mode
+        const columns = {
+            solo: { detail: 'Niveau', key: 'level' },
+            roguelike: { detail: 'Niveau', key: 'level' },
+            multi: { detail: 'Victoires', key: 'wins' },
+            bossrush: { detail: 'Stage', key: 'stageReached' }
+        };
+        const col = columns[mode] || columns.solo;
+
+        let html = `
+            <div class="leaderboard-stats">
+                <span>Top ${entries.length} mondial</span>
+                ${userRank ? `<span class="player-rank">Ton rang: #${userRank}</span>` : ''}
+            </div>
+            <div class="leaderboard-table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th class="col-pseudo">Joueur</th>
+                            <th class="col-score">Score</th>
+                            <th class="col-detail">${col.detail}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        entries.forEach((entry, index) => {
+            const isCurrentUser = entry.isCurrentUser;
+            const rankDisplay = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : entry.rank;
+            const detailValue = entry.details?.[col.key] || '-';
+
+            html += `
+                <tr class="${isCurrentUser ? 'current-user' : ''} ${index < 3 ? 'top-3' : ''}">
+                    <td class="col-rank">${rankDisplay}</td>
+                    <td class="col-pseudo">
+                        <div class="player-info">
+                            ${entry.photoURL ? `<img class="player-avatar" src="${entry.photoURL}" alt="">` : ''}
+                            <span>${entry.displayName || 'Anonyme'}</span>
+                        </div>
+                    </td>
+                    <td class="col-score">${entry.score.toLocaleString()}</td>
+                    <td class="col-detail">${detailValue}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        if (!loggedIn) {
+            html += `
+                <div class="leaderboard-login-hint">
+                    <p>Connecte-toi pour apparaître dans le classement !</p>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    /**
+     * Crée le modal du leaderboard avec onglets
+     */
+    createLeaderboardModal(category = 'aventure') {
         const modal = document.createElement('div');
-        modal.id = 'leaderboard-modal';
-        modal.className = 'leaderboard-modal';
+        modal.id = 'stats-leaderboard-modal';
+        modal.className = 'stats-leaderboard-modal';
+
+        const isAventure = category === 'aventure';
+        const tabs = isAventure
+            ? [{ id: 'solo', label: 'Solo' }, { id: 'roguelike', label: 'Roguelike' }]
+            : [{ id: 'multi', label: 'Online' }, { id: 'bossrush', label: 'Boss Rush' }];
+
         modal.innerHTML = `
             <div class="leaderboard-backdrop" onclick="window.statsManager.closeLeaderboard()"></div>
             <div class="leaderboard-container">
                 <div class="leaderboard-header">
-                    <h2>🏆 Leaderboard Roguelike</h2>
+                    <h2>🏆 Classement ${isAventure ? 'Aventure' : 'Arène'}</h2>
                     <button class="leaderboard-close" onclick="window.statsManager.closeLeaderboard()">✕</button>
+                </div>
+                <div class="leaderboard-tabs">
+                    ${tabs.map((tab, i) => `
+                        <button class="leaderboard-tab ${i === 0 ? 'active' : ''}"
+                                data-mode="${tab.id}"
+                                onclick="window.statsManager.switchLeaderboardTab('${tab.id}')">
+                            ${tab.label}
+                        </button>
+                    `).join('')}
                 </div>
                 <div class="leaderboard-content">
                     <!-- Contenu dynamique -->
@@ -532,7 +704,7 @@ class StatsManager {
      * Ferme le modal leaderboard
      */
     closeLeaderboard() {
-        const modal = document.getElementById('leaderboard-modal');
+        const modal = document.getElementById('stats-leaderboard-modal');
         if (modal) {
             modal.style.display = 'none';
         }
@@ -654,7 +826,7 @@ class StatsManager {
         const styles = document.createElement('style');
         styles.id = 'leaderboard-styles';
         styles.textContent = `
-            .leaderboard-modal {
+            .stats-leaderboard-modal {
                 display: none;
                 position: fixed;
                 top: 0;
@@ -721,6 +893,38 @@ class StatsManager {
             .leaderboard-close:hover {
                 background: rgba(255,255,255,0.3);
                 transform: scale(1.1);
+            }
+
+            .leaderboard-tabs {
+                display: flex;
+                padding: 10px 15px;
+                gap: 8px;
+                background: rgba(0,0,0,0.2);
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .leaderboard-tab {
+                flex: 1;
+                padding: 10px 15px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px;
+                color: #888;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .leaderboard-tab:hover {
+                background: rgba(255,255,255,0.1);
+                color: white;
+            }
+
+            .leaderboard-tab.active {
+                background: linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%);
+                border-color: #9c27b0;
+                color: white;
             }
 
             .leaderboard-content {
@@ -841,6 +1045,7 @@ class StatsManager {
             .col-pseudo { min-width: 100px; }
             .col-score { width: 80px; text-align: right; font-family: monospace; }
             .col-level { width: 60px; text-align: center; }
+            .col-detail { width: 70px; text-align: center; }
             .col-date { width: 80px; text-align: right; font-size: 0.8rem; color: #888; }
 
             .rank-icon {
@@ -866,6 +1071,61 @@ class StatsManager {
                 font-size: 0.85rem;
                 color: #666;
                 margin-top: 8px;
+            }
+
+            /* Styles Firebase leaderboard */
+            .player-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .player-avatar {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                border: 2px solid rgba(255,255,255,0.2);
+            }
+
+            .top-3 .player-avatar {
+                border-color: #ffd700;
+            }
+
+            .current-user {
+                background: rgba(76, 175, 80, 0.2) !important;
+            }
+
+            .current-user td {
+                color: #4CAF50 !important;
+                font-weight: bold;
+            }
+
+            .leaderboard-empty {
+                text-align: center;
+                padding: 40px;
+                color: #888;
+            }
+
+            .leaderboard-empty .empty-icon {
+                font-size: 48px;
+                display: block;
+                margin-bottom: 15px;
+            }
+
+            .leaderboard-empty .empty-hint {
+                font-size: 0.85rem;
+                color: #666;
+                margin-top: 8px;
+            }
+
+            .leaderboard-login-hint {
+                text-align: center;
+                padding: 15px;
+                background: rgba(66, 133, 244, 0.1);
+                border-radius: 8px;
+                margin-top: 15px;
+                color: #4285f4;
+                font-size: 0.9rem;
             }
         `;
         document.head.appendChild(styles);

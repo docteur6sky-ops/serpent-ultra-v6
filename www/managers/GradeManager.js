@@ -15,8 +15,10 @@ import { RANKS } from '../data/trophies.js';
 // ============================================
 
 const MULTI_GRADES = {
-    LEGEND: { min: 50, emoji: '👑', color: '#9400D3', label: 'LÉGENDE' },
-    PLATINUM: { min: 30, emoji: '💎', color: '#E5E4E2', label: 'PLATINE' },
+    LEGEND: { min: 60, emoji: '👑', color: '#9400D3', label: 'LÉGENDE' },
+    PLATINUM: { min: 50, emoji: '💎', color: '#E5E4E2', label: 'PLATINE' },
+    ELITE: { min: 40, emoji: '⭐', color: '#4169E1', label: 'ÉLITE' },
+    CHAMPION: { min: 30, emoji: '🏆', color: '#FF8C00', label: 'CHAMPION' },
     GOLD: { min: 20, emoji: '🥇', color: '#FFD700', label: 'OR' },
     SILVER: { min: 10, emoji: '🥈', color: '#C0C0C0', label: 'ARGENT' },
     BRONZE: { min: 0, emoji: '🥉', color: '#CD7F32', label: 'BRONZE' }
@@ -45,7 +47,6 @@ class GradeManager {
         // Parcourir les grades triés
         for (const rank of sortedRanks) {
             if (level >= rank.minLevel && level <= rank.maxLevel) {
-                logger.log(`[GradeManager] Grade Solo: ${rank.title} (niveau ${level})`);
                 return {
                     emoji: rank.emoji,
                     color: rank.color,
