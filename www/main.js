@@ -27,6 +27,20 @@ window.addEventListener('unhandledrejection', (event) => {
     logger.error('[UNHANDLED PROMISE]', event.reason?.message || event.reason);
 });
 
+// ============================================
+// ACCESSIBILITÉ CLAVIER
+// Permet d'activer les éléments role="button" avec Entrée/Espace
+// ============================================
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+        const target = event.target;
+        if (target.getAttribute('role') === 'button' && target.onclick) {
+            event.preventDefault();
+            target.click();
+        }
+    }
+});
+
 /**
  * Import dynamique avec gestion d'erreur
  * @param {string} modulePath - Chemin du module

@@ -119,26 +119,26 @@
             </div>
 
             <!-- Boutons principaux -->
-            <div class="main-buttons">
-                <button class="primary-btn-unified" onclick="window.audio.buttonClick();showMultiplayer()">
-                    <span class="btn-icon">🌐</span>
+            <div class="main-buttons" role="navigation" aria-label="Menu principal">
+                <button class="primary-btn-unified" onclick="window.audio.buttonClick();showMultiplayer()" aria-label="Jouer en réseau multijoueur">
+                    <span class="btn-icon" aria-hidden="true">🌐</span>
                     <span class="btn-text">JOUER EN RÉSEAU</span>
                 </button>
 
                 <!-- Bouton Jouer contre l'IA -->
-                <button class="primary-btn-unified btn-ai" id="btn-ai" onclick="window.audio.buttonClick();startAIGame()">
-                    <span class="btn-icon">🤖</span>
+                <button class="primary-btn-unified btn-ai" id="btn-ai" onclick="window.audio.buttonClick();startAIGame()" aria-label="Jouer contre intelligence artificielle">
+                    <span class="btn-icon" aria-hidden="true">🤖</span>
                     <span class="btn-text">JOUER CONTRE L'IA</span>
                 </button>
 
                 <!-- Bouton Jouer Solo (Simple - Ancien Menu) -->
-                <button class="primary-btn-unified" id="solo-btn" onclick="window.audio.buttonClick();startSolo(0)">
-                    <span class="btn-icon">🎮</span>
+                <button class="primary-btn-unified" id="solo-btn" onclick="window.audio.buttonClick();startSolo(0)" aria-label="Jouer en mode solo">
+                    <span class="btn-icon" aria-hidden="true">🎮</span>
                     <span class="btn-text">JOUER SOLO</span>
                 </button>
 
-                <button class="options-btn-small" onclick="window.audio.buttonClick();showOptions()">
-                    <span class="btn-icon">⚙️</span>
+                <button class="options-btn-small" onclick="window.audio.buttonClick();showOptions()" aria-label="Ouvrir les options">
+                    <span class="btn-icon" aria-hidden="true">⚙️</span>
                     <span class="btn-text">Options</span>
                 </button>
             </div>
@@ -224,8 +224,6 @@
                     </div>
                     <div class="hub-xp-text" id="hub-xp-text">0% → 2</div>
                 </div>
-                <!-- Container Firebase Login (centre) -->
-                <div id="firebase-login-placeholder" class="firebase-login-placeholder"></div>
                 <!-- Grades (droite) -->
                 <div class="hub-grades">
                     <div class="hub-grade-solo">
@@ -242,12 +240,12 @@
 
             <!-- Stats Zone (Coffre + Ma Box) -->
             <div class="hub-stats-zone">
-                <div class="hub-chest-card" id="hub-chest-card" onclick="window.audio.buttonClick();window.openChest()">
+                <div class="hub-chest-card" id="hub-chest-card" role="button" tabindex="0" aria-label="Ouvrir le coffre quotidien" onclick="window.audio.buttonClick();window.openChest()">
                     <img src="assets/hub_pictures/hub_chess.webp" alt="Coffre" class="hub-chest-icon">
                     <div class="hub-chest-timer" id="hub-chest-timer">02:34</div>
                     <div class="hub-chest-info" onclick="event.stopPropagation();window.showChestDropRates()">ℹ️</div>
                 </div>
-                <div class="hub-box-card" id="hub-box-card" onclick="window.audio.buttonClick();window.openBox()">
+                <div class="hub-box-card" id="hub-box-card" role="button" tabindex="0" aria-label="Ouvrir la collection" onclick="window.audio.buttonClick();window.openBox()">
                     <img src="assets/hub_pictures/hub_boxe.webp" alt="Box" class="hub-box-icon">
                     <div class="hub-box-label">Ma Box</div>
                 </div>
@@ -262,11 +260,11 @@
 
             <!-- Boosters XP disponibles -->
             <div class="hub-boosters-row" id="hub-boosters">
-                <div class="hub-booster-item" id="hub-booster-25" onclick="window.activateBooster(25)" title="Activer Boost +25% XP">
+                <div class="hub-booster-item" id="hub-booster-25" role="button" tabindex="0" aria-label="Activer boost 25 pourcent XP" onclick="window.activateBooster(25)" title="Activer Boost +25% XP">
                     <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25%" class="hub-booster-icon">
                     <span class="hub-booster-count" id="hub-booster-25-count">0</span>
                 </div>
-                <div class="hub-booster-item" id="hub-booster-50" onclick="window.activateBooster(50)" title="Activer Boost +50% XP">
+                <div class="hub-booster-item" id="hub-booster-50" role="button" tabindex="0" aria-label="Activer boost 50 pourcent XP" onclick="window.activateBooster(50)" title="Activer Boost +50% XP">
                     <img src="assets/items_chess_pictures/xp_boost_epic2.webp" alt="+50%" class="hub-booster-icon">
                     <span class="hub-booster-count" id="hub-booster-50-count">0</span>
                 </div>
@@ -291,16 +289,16 @@
             <!-- Modes Secondaires (3 cartes) -->
             <div class="hub-modes hub-modes-three">
                 <!-- Mode Solo (descendu) -->
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();showDifficultySelection()">
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode solo roguelike" onclick="window.audio.buttonClick();showDifficultySelection()">
                     <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="mode-icon-img"></div>
                     <div class="hub-mode-text">Solo</div>
                 </div>
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();window.showMultiplayer()">
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode multijoueur en ligne" onclick="window.audio.buttonClick();window.showMultiplayer()">
                     <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Multi" class="mode-icon-img"></div>
                     <div class="hub-mode-text">Online</div>
                     <div class="hub-mode-badge">NEW</div>
                 </div>
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" onclick="window.audio.buttonClick();startBossRush()">
+                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode Boss Rush" onclick="window.audio.buttonClick();startBossRush()">
                     <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="Boss Rush" class="mode-icon-img"></div>
                     <div class="hub-mode-text">Boss Rush</div>
                     <div class="hub-mode-badge boss-rush">4 BOSS</div>
@@ -325,7 +323,7 @@
                     <div class="hub-nav-icon">👥</div>
                     <div class="hub-nav-label">Amis</div>
                 </button>
-                <button class="hub-nav-btn" onclick="window.audio.buttonClick();showOptions()">
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();showOptions()" aria-label="Ouvrir les options">
                     <div class="hub-nav-icon">⚙️</div>
                     <div class="hub-nav-label">Settings</div>
                 </button>
@@ -395,7 +393,7 @@
 
             <div class="multiplayer-buttons">
                 <button class="primary-btn-unified" onclick="window.audio.buttonClick();savePseudoAndGoToMenu()">
-                    <span class="btn-icon">✅</span>
+                    <span class="btn-icon" aria-hidden="true">✅</span>
                     <span class="btn-text">VALIDER</span>
                 </button>
             </div>
@@ -524,39 +522,45 @@
             <div class="options-buttons">
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();window.showTutorial()">
-                    <span class="btn-icon">🎓</span>
+                    <span class="btn-icon" aria-hidden="true">🎓</span>
                     <span class="btn-text">TUTORIEL</span>
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showSound()">
-                    <span class="btn-icon">&#x1F50A;</span>
+                    <span class="btn-icon" aria-hidden="true">&#x1F50A;</span>
                     <span class="btn-text">SON</span>
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();toggleDarkMode()">
-                    <span class="btn-icon">🌓</span>
+                    <span class="btn-icon" aria-hidden="true">🌓</span>
                     <span class="btn-text">MODE SOMBRE</span>
                     <span class="toggle-indicator" id="dark-mode-indicator">OFF</span>
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showCredits()">
-                    <span class="btn-icon">ℹ️</span>
+                    <span class="btn-icon" aria-hidden="true">ℹ️</span>
                     <span class="btn-text">CRÉDITS</span>
                 </button>
 
                 <button class="option-btn-compact" onclick="window.audio.buttonClick();showLanguage()">
-                    <span class="btn-icon">🌍</span>
+                    <span class="btn-icon" aria-hidden="true">🌍</span>
                     <span class="btn-text">LANGUE</span>
                 </button>
 
-                <button class="option-btn-compact" style="background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%); border-color: #FF4444;" onclick="window.audio.buttonClick();resetAllStats()">
-                    <span class="btn-icon">⚠️</span>
+                                <button class="option-btn-compact" id="google-account-btn" onclick="window.audio.buttonClick();showGoogleAccount()">
+                    <span class="btn-icon" aria-hidden="true">👤</span>
+                    <span class="btn-text">COMPTE GOOGLE</span>
+                    <span class="toggle-indicator" id="google-account-status">-</span>
+                </button>
+
+<button class="option-btn-compact" style="background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%); border-color: #FF4444;" onclick="window.audio.buttonClick();resetAllStats()">
+                    <span class="btn-icon" aria-hidden="true">⚠️</span>
                     <span class="btn-text">RÉINITIALISER</span>
                 </button>
             </div>
 
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToMain()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -591,7 +595,49 @@
             </div>
 
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
+                <span class="btn-text">RETOUR</span>
+            </button>
+        </div>
+
+
+        <!-- Menu Compte Google -->
+        <div class="screen hidden" id="google-account-menu">
+            <h2>👤 COMPTE GOOGLE</h2>
+
+            <div class="google-account-container">
+                <!-- État déconnecté -->
+                <div id="google-logged-out" class="google-account-section">
+                    <p class="google-info-text">Connecte-toi pour sauvegarder tes scores dans le classement mondial !</p>
+                    <button class="google-login-btn" id="google-login-btn" onclick="window.audio.buttonClick();window.firebaseUI?.loginFromOptions()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        <span>Se connecter avec Google</span>
+                    </button>
+                </div>
+
+                <!-- État connecté -->
+                <div id="google-logged-in" class="google-account-section hidden">
+                    <div class="google-user-card">
+                        <img id="google-user-avatar" class="google-avatar" src="" alt="Avatar">
+                        <div class="google-user-details">
+                            <span id="google-user-name" class="google-user-name">Joueur</span>
+                            <span id="google-user-email" class="google-user-email">email@example.com</span>
+                        </div>
+                    </div>
+                    <button class="google-logout-btn" onclick="window.audio.buttonClick();window.firebaseUI?.logoutFromOptions()">
+                        <span>🚪</span>
+                        <span>Se déconnecter</span>
+                    </button>
+                </div>
+            </div>
+
+            <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -654,7 +700,7 @@
             </div>
 
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -668,12 +714,12 @@
 
             <!-- Bouton Changer de pseudo -->
             <button class="pseudo-edit-btn-career" onclick="window.audio.buttonClick();window.editPseudoFromCareer()">
-                <span class="btn-icon">✏️</span>
+                <span class="btn-icon" aria-hidden="true">✏️</span>
                 <span class="btn-text">Changer de pseudo</span>
             </button>
 
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -750,7 +796,7 @@
                 <p>Règles du jeu à venir...</p>
             </div>
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -803,7 +849,7 @@
             </div>
 
             <button class="back-btn-compact" onclick="window.audio.buttonClick();backToOptions()">
-                <span class="btn-icon">⬅️</span>
+                <span class="btn-icon" aria-hidden="true">⬅️</span>
                 <span class="btn-text">RETOUR</span>
             </button>
         </div>
@@ -961,11 +1007,11 @@
                     </div>
                     <div class="game-controls">
                         <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.pauseSolo()" aria-label="Mettre le jeu en pause">
-                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-icon" aria-hidden="true">⏸️</span>
                             <span class="btn-text">PAUSE</span>
                         </button>
                         <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.quitSolo()" aria-label="Revenir au menu">
-                            <span class="btn-icon">🏠</span>
+                            <span class="btn-icon" aria-hidden="true">🏠</span>
                             <span class="btn-text">MENU</span>
                         </button>
                     </div>
@@ -1065,7 +1111,7 @@
 
                     <div class="game-controls" style="margin-top: 8px; display: flex; justify-content: center;">
                         <button class="control-btn game-control-btn" onclick="window.audio.buttonClick();window.abandonMulti()" aria-label="Abandonner la partie">
-                            <span class="btn-icon">🚫</span>
+                            <span class="btn-icon" aria-hidden="true">🚫</span>
                             <span class="btn-text">ABANDONNER</span>
                         </button>
                     </div>
@@ -1120,11 +1166,11 @@
 
                     <div class="game-controls" style="margin-top: 16px;">
                         <button class="control-btn game-control-btn" onclick="window.pauseAI()" aria-label="Mettre le jeu en pause">
-                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-icon" aria-hidden="true">⏸️</span>
                             <span class="btn-text">PAUSE</span>
                         </button>
                         <button class="control-btn game-control-btn" onclick="window.quitAI()" aria-label="Revenir au menu">
-                            <span class="btn-icon">🏠</span>
+                            <span class="btn-icon" aria-hidden="true">🏠</span>
                             <span class="btn-text">MENU</span>
                         </button>
                     </div>
