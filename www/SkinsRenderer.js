@@ -525,20 +525,19 @@ export function drawSkinPreview(ctx, skinId, size = 100) {
     // Effacer le canvas
     ctx.clearRect(0, 0, size, size);
 
-    // Taille d'un segment - plus petit pour un look plus élégant
-    const segmentSize = size / 8;
+    // Taille d'un segment - GRAND pour remplir le cadre
+    const segmentSize = size / 5;
     const centerX = size / 2;
     const centerY = size / 2;
 
-    // Forme en S avec 7 segments - plus joli et dynamique
+    // Forme en S compacte avec 6 segments - remplit mieux l'espace
     const snakeShape = [
-        { x: 0.72, y: 0.35 },  // Tête
-        { x: 0.58, y: 0.38 },
-        { x: 0.45, y: 0.45 },
-        { x: 0.38, y: 0.55 },
-        { x: 0.42, y: 0.65 },
-        { x: 0.55, y: 0.68 },
-        { x: 0.68, y: 0.65 },  // Queue
+        { x: 0.70, y: 0.30 },  // Tête
+        { x: 0.55, y: 0.35 },
+        { x: 0.40, y: 0.50 },
+        { x: 0.45, y: 0.65 },
+        { x: 0.60, y: 0.72 },
+        { x: 0.75, y: 0.68 },  // Queue
     ];
 
     // Dessiner le glow d'abord (arrière-plan)

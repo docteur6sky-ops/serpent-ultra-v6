@@ -4,9 +4,16 @@
 // ============================================
 
 class Snake {
-    constructor(x, y, playerId) {
+    constructor(x, y, playerId, initialLength = 1) {
         this.playerId = playerId;
-        this.body = [{ x, y }];
+        // Créer le serpent avec la longueur initiale selon le grade
+        // Segments créés vers la gauche avec wrapping (grille 30x30)
+        this.body = [];
+        for (let i = 0; i < initialLength; i++) {
+            let segX = x - i;
+            if (segX < 0) segX += 30; // Wrapping pour positions négatives
+            this.body.push({ x: segX, y });
+        }
         this.direction = { dx: 1, dy: 0 };
         this.nextDirection = { dx: 1, dy: 0 };
         this.score = 0;
@@ -76,17 +83,25 @@ class Snake {
         this.body.push({ ...tail });
     }
 
-    // Rétrécir (manger un crâne)
+    // Rétrécir (perdre des segments)
+    // Le serpent meurt quand il perd son dernier segment (passe à 0)
     shrink(amount) {
         if (!this.alive) return;
 
-        for (let i = 0; i < amount && this.body.length > 1; i++) {
-            this.body.pop();
-        }
-
-        // Mourir si trop petit
-        if (this.body.length <= 1) {
-            this.die();
+        for (let i = 0; i < amount; i++) {
+            if (this.body.length > 1) {
+                // Retirer un segment du corps (pas la tête)
+                this.body.pop();
+            } else if (this.body.length === 1) {
+                // Retirer le dernier segment (la tête) et mourir
+                this.body.pop();  // body devient vide (length = 0)
+                this.die();
+                return;
+            } else {
+                // Déjà à 0, juste mourir
+                this.die();
+                return;
+            }
         }
     }
 
@@ -150,9 +165,19 @@ class Snake {
         this.alive = false;
     }
 
-    // Réinitialiser le serpent
-    reset(x, y, direction = { dx: 1, dy: 0 }) {
-        this.body = [{ x, y }];
+    // Réinitialiser le serpent (avec longueur initiale selon grade)
+    reset(x, y, direction = { dx: 1, dy: 0 }, initialLength = null) {
+        // Utiliser la longueur passée ou conserver la longueur actuelle
+        const length = initialLength || this.body.length || 1;
+
+        // Recréer le corps avec la bonne longueur
+        this.body = [];
+        for (let i = 0; i < length; i++) {
+            let segX = x - i;
+            if (segX < 0) segX += 30; // Wrapping pour positions négatives
+            this.body.push({ x: segX, y });
+        }
+
         this.direction = direction;
         this.nextDirection = direction;
         this.score = 0;

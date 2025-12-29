@@ -1,27 +1,5 @@
 {
-  "date": "2025-12-05",
-  "leaderboard": [
-    {
-      "id": "mitb0dpisnn6f",
-      "pseudo": "ProDaily",
-      "score": 2500,
-      "level": 10,
-      "time": 420,
-      "attempt": 1,
-      "date": "2025-12-05T20:15:04.806Z"
-    },
-    {
-      "id": "mitb06qb741tt",
-      "pseudo": "TestDaily",
-      "score": 1200,
-      "level": 7,
-      "time": 240,
-      "attempt": 1,
-      "date": "2025-12-05T20:14:55.763Z"
-    }
-  ],
-  "attempts": {
-    "TestDaily": 1,
-    "ProDaily": 1
-  }
+  "date": "2025-12-29",
+  "leaderboard": [],
+  "attempts": {}
 }

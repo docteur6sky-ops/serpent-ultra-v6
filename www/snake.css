@@ -12914,3 +12914,113 @@ body.dark-mode .chest-modal-overlay {
     0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
     50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); }
 }
+
+/* ============================================
+   GOOGLE ACCOUNT MENU STYLES
+   ============================================ */
+
+.google-account-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.google-account-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.google-info-text {
+    color: #aaa;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.google-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: #fff;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.google-login-btn:hover {
+    background: #f5f5f5;
+    transform: translateY(-1px);
+}
+
+.google-login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.google-user-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.google-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #4CAF50;
+}
+
+.google-user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.google-user-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.google-user-email {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.google-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
+    color: #fff;
+    border: 2px solid #FF4444;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.google-logout-btn:hover {
+    background: linear-gradient(135deg, #A00000 0%, #FF2020 100%);
+    transform: translateY(-1px);
+}
+
+/* Fix: s'assurer que les modals cachées ne bloquent pas les clics */
+.leaderboard-modal.hidden,
+.firebase-notification:not(.show) {
+    pointer-events: none !important;
+}

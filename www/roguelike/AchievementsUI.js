@@ -7,6 +7,7 @@
 import { achievementManager, ACHIEVEMENTS } from './achievements.js';
 
 const CATEGORY_INFO = {
+    career: { name: 'Carrière Globale', icon: '🏆' },
     progression: { name: 'Progression', icon: '📈' },
     combat: { name: 'Combat', icon: '⚔️' },
     collection: { name: 'Collection', icon: '📦' },

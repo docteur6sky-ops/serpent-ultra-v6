@@ -8,6 +8,7 @@
  */
 
 import { logger } from '../services/logger.js';
+import { SnakeUltra } from '../SnakeUltra.js';
 
 // ============================================
 // CLASSE LEADERBOARD MANAGER
@@ -149,6 +150,9 @@ const leaderboardManager = new LeaderboardManager();
 window.leaderboardManager = leaderboardManager;
 window.saveScore = (stats) => leaderboardManager.saveScore(stats);
 window.getLeaderboard = () => leaderboardManager.getLeaderboard();
+
+// Enregistrer dans SnakeUltra
+SnakeUltra.registerManager('leaderboard', leaderboardManager);
 
 logger.log('✅ LeaderboardManager chargé');
 

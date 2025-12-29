@@ -1,37 +1,48 @@
-# Node
+# ============================================
+# GITIGNORE SNAKE MULTIPLAYER
+# ============================================
+
+# Node modules
 node_modules/
-npm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
 *.log
 
-# Cordova
-platforms/
-plugins/
-
 # Backups
+backup*/
 *backup*/
-*Backup*/
-*.backup
-.backup/
-www_backup/
 www-backup*/
+*-backup-*/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-.DS_Store
+*~
 
-# Build
-build/
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
 dist/
+build/
 
-# Logs
-logs/
-*.json.log
-snake-ultra-logs-*.json
+# Coverage
+coverage/
+.nyc_output/
 
-# Temporary files
-nul
-*.tmp
-.tmp/
+# Optional: Uncomment if you don't want to track these
+# package-lock.json

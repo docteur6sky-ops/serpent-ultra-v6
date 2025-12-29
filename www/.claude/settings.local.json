@@ -8,7 +8,10 @@
       "Bash(node server.js:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(git commit --no-verify -m \"$(cat <<''EOF''\nfeat: add mobile controls (AppLifecycle + TouchControls)\n\nNOUVELLES FONCTIONNALITÉS:\n• TouchControls: Détection swipe pour mobile (complémente D-pad)\n• AppLifecycle: Auto-pause/resume sur changement app mobile\n\nFICHIERS AJOUTÉS:\n• www/TouchControls.js (257 lignes)\n  - Détection swipe sur canvas solo/multi\n  - Support vibration tactile\n  - Protection contre double-init\n  - Cleanup listeners automatique\n\n• www/AppLifecycle.js (162 lignes)\n  - Détection Capacitor (Android/iOS)\n  - Fallback web (visibilitychange, blur/focus)\n  - Auto-pause jeu solo si app en background\n  - Pas de reprise auto (sécurité)\n\nMODIFICATIONS:\n• www/index.html: Scripts ajoutés avant snake.js\n• Renommage const log → logTouch/logLife (éviter conflits)\n\n🎮 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

@@ -206,8 +206,13 @@ class ChestManager {
         if (window.chestOpening) {
             await window.chestOpening.open(rewardData);
         } else {
-            logger.warn('[ChestManager] ChestOpening non disponible, fallback alert()');
-            alert(`🎁 Coffre ouvert!\n+${rewardData.xp} XP${rewardData.coins ? `\n+${rewardData.coins} coins` : ''}${rewardData.item ? `\n${rewardData.item.emoji} ${rewardData.item.name}` : ''}`);
+            logger.warn('[ChestManager] ChestOpening non disponible, fallback modale');
+            if (window.ModalManager) {
+                window.ModalManager.success(
+                    `+${rewardData.xp} XP${rewardData.coins ? `\n+${rewardData.coins} coins` : ''}${rewardData.item ? `\n${rewardData.item.emoji} ${rewardData.item.name}` : ''}`,
+                    { title: 'Coffre ouvert !' }
+                );
+            }
         }
 
         // 4. RESET LE TIMER

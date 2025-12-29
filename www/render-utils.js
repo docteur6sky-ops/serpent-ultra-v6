@@ -36,18 +36,19 @@ const RenderUtils = {
     },
 
     /**
-     * Dessine une étoile (pomme 🍎) - Version solo
+     * Dessine une étoile (pomme 🍎 ou 🍏) - Version solo
      * @param {CanvasRenderingContext2D} ctx - Contexte du canvas
      * @param {number} x - Position X en coordonnées grille
      * @param {number} y - Position Y en coordonnées grille
      * @param {number} cellSize - Taille d'une cellule
+     * @param {boolean} isGreen - Si true, dessine pomme verte (Gourmandise)
      */
-    drawStar(ctx, x, y, cellSize) {
+    drawStar(ctx, x, y, cellSize, isGreen = false) {
         const center = cellSize / 2;
 
-        // Effet de lueur dorée
+        // Effet de lueur (dorée ou verte)
         ctx.shadowBlur = 10;
-        ctx.shadowColor = '#FFD700';
+        ctx.shadowColor = isGreen ? '#39FF14' : '#FFD700';
 
         // Fond noir
         ctx.fillStyle = '#000000ff';
@@ -56,11 +57,11 @@ const RenderUtils = {
         // Réinitialiser l'ombre
         ctx.shadowBlur = 0;
 
-        // Emoji pomme (taille adaptée à la cellule)
+        // Emoji pomme (rouge ou verte selon Gourmandise)
         ctx.font = `${Math.floor(cellSize * 0.85)}px Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🍎', x * cellSize + center, y * cellSize + center);
+        ctx.fillText(isGreen ? '🍏' : '🍎', x * cellSize + center, y * cellSize + center);
     },
 
     /**

@@ -536,7 +536,7 @@ class ChestOpeningExperience {
     close() {
         logger.log('[ChestOpening] Fermeture');
 
-        // Marquer comme fermé (arrête la boucle particules)
+        // Marquer comme ferme (arrete la boucle particules)
         this.isOpen = false;
 
         // Annuler la boucle d'animation
@@ -545,9 +545,17 @@ class ChestOpeningExperience {
             this.animationFrame = null;
         }
 
+        // Nettoyer les overlays de skin unlock residuels
+        const skinOverlay = document.querySelector('.skin-unlock-overlay');
+        const skinNotification = document.querySelector('.skin-unlock-notification');
+        const confetti = document.querySelector('.confetti-overlay');
+        if (skinOverlay) skinOverlay.remove();
+        if (skinNotification) skinNotification.remove();
+        if (confetti) confetti.remove();
+
         const modal = document.getElementById('chest-modal');
         if (modal) {
-            // ✅ FIX: Désactiver immédiatement les interactions pour éviter le blocage
+            // FIX: Desactiver immediatement les interactions pour eviter le blocage
             modal.style.pointerEvents = 'none';
 
             // Animation de sortie
@@ -557,7 +565,7 @@ class ChestOpeningExperience {
                 modal.remove();
                 this.currentRewards = null;
                 this.particles = []; // Nettoyer les particules
-                logger.log('[ChestOpening] Modal supprimé du DOM');
+                logger.log('[ChestOpening] Modal supprime du DOM');
             }, 300);
         }
     }

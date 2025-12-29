@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test localStorage</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test {
+            margin: 10px 0;
+            padding: 10px;
+            background: #2a2a2a;
+            border-left: 3px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #000;
+            border: 1px solid #444;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test localStorage - Snake Ultra</h1>
+
+    <button onclick="testWrite()">✅ Test Écriture</button>
+    <button onclick="testRead()">📖 Test Lecture</button>
+    <button onclick="showAll()">📋 Afficher tout</button>
+    <button onclick="clearTest()">🗑️ Vider test</button>
+    <button onclick="showCareer()">🎮 Données carrière</button>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'test' + (isError ? ' error' : '');
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            output.insertBefore(div, output.firstChild);
+        }
+
+        function testWrite() {
+            try {
+                const testData = {
+                    test: true,
+                    timestamp: Date.now(),
+                    message: 'Test localStorage'
+                };
+                localStorage.setItem('snake_test', JSON.stringify(testData));
+                log('✅ Écriture réussie : ' + JSON.stringify(testData));
+            } catch (e) {
+                log('❌ Erreur écriture : ' + e.message, true);
+            }
+        }
+
+        function testRead() {
+            try {
+                const data = localStorage.getItem('snake_test');
+                if (data) {
+                    log('✅ Lecture réussie : ' + data);
+                } else {
+                    log('⚠️ Aucune donnée test trouvée', true);
+                }
+            } catch (e) {
+                log('❌ Erreur lecture : ' + e.message, true);
+            }
+        }
+
+        function showAll() {
+            try {
+                log('📋 Contenu localStorage :');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    log(`  ${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`);
+                }
+                if (localStorage.length === 0) {
+                    log('⚠️ localStorage vide !', true);
+                }
+            } catch (e) {
+                log('❌ Erreur listage : ' + e.message, true);
+            }
+        }
+
+        function clearTest() {
+            try {
+                localStorage.removeItem('snake_test');
+                log('✅ Test data supprimée');
+            } catch (e) {
+                log('❌ Erreur suppression : ' + e.message, true);
+            }
+        }
+
+        function showCareer() {
+            try {
+                const career = localStorage.getItem('career');
+                const tr = localStorage.getItem('tr');
+                const ss = localStorage.getItem('ss');
+                const hi = localStorage.getItem('hi');
+
+                log('🎮 Données carrière :');
+                log('  career: ' + (career ? career.substring(0, 200) : 'VIDE'));
+                log('  trophies (tr): ' + (tr ? tr.substring(0, 100) : 'VIDE'));
+                log('  stats (ss): ' + (ss ? ss.substring(0, 100) : 'VIDE'));
+                log('  high scores (hi): ' + (hi ? hi.substring(0, 100) : 'VIDE'));
+            } catch (e) {
+                log('❌ Erreur lecture carrière : ' + e.message, true);
+            }
+        }
+
+        // Test automatique au chargement
+        log('🚀 Page chargée - URL: ' + window.location.href);
+        log('📍 localStorage disponible: ' + (typeof localStorage !== 'undefined'));
+    </script>
+</body>
+</html>

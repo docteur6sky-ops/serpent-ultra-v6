@@ -3,8 +3,9 @@
 // ═══════════════════════════════════════════════════════════
 
 // Debug mode (mettre à true pour activer les logs)
+import { logger } from './services/logger.js';
 const DEBUG_TOUCH = false;
-const logTouch = (...args) => DEBUG_TOUCH && console.log(...args);
+const logTouch = (...args) => DEBUG_TOUCH && logger.log(...args);
 
 class TouchControls {
     constructor() {
@@ -84,8 +85,8 @@ class TouchControls {
         }
 
         if (foundCount === 0) {
-            logTouch('⏳ Aucun canvas trouvé, attente...');
-            setTimeout(() => this.init(), 1000);
+            logTouch('⏳ Aucun canvas trouvé, attente du chargement complet');
+            // ✅ FIX #6: Pas de retry automatique (géré par auto-init ou appel manuel)
             return;
         }
 

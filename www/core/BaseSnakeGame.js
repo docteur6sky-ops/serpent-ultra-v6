@@ -1,7 +1,8 @@
 /**
  * Classe de base pour tous les modes de jeu Snake
  * Contient la logique commune entre Solo et Multi
- * Les classes enfants doivent implémenter: reset(), update(), draw()
+ * Les classes enfants peuvent surcharger: reset(), update(), draw(), start(), stop()
+ * Pour les jeux réseau, ces méthodes sont optionnelles.
  */
 
 import { CONFIG, COLORS } from '../config/constants.js';
@@ -32,8 +33,10 @@ export class BaseSnakeGame {
         this.raf = null;
         this.lastTime = 0;
 
-        // Particules
+        // Particules avec limite et pooling
         this.particles = [];
+        this.MAX_PARTICLES = 100;  // Limite pour performance mobile
+        this.particlePool = [];     // Pool de particules recyclables
 
         // 💥 JUICE EFFECTS
         this.shakeIntensity = 0;
@@ -75,7 +78,7 @@ export class BaseSnakeGame {
      * À IMPLÉMENTER par les classes enfants
      */
     reset() {
-        throw new Error('reset() doit être implémenté par la classe enfant');
+        // Méthode optionnelle - les jeux réseau n'en ont pas besoin
     }
 
     /**
@@ -134,7 +137,7 @@ export class BaseSnakeGame {
      * À IMPLÉMENTER par les classes enfants
      */
     update() {
-        throw new Error('update() doit être implémenté par la classe enfant');
+        // Méthode optionnelle - les jeux réseau reçoivent l'état du serveur
     }
 
     /**
@@ -142,7 +145,7 @@ export class BaseSnakeGame {
      * À IMPLÉMENTER par les classes enfants
      */
     draw() {
-        throw new Error('draw() doit être implémenté par la classe enfant');
+        // Méthode à surcharger par les classes enfants
     }
 
     /**
@@ -290,38 +293,69 @@ export class BaseSnakeGame {
     }
 
     /**
-     * Crée des particules d'effet
+     * Crée des particules d'effet avec pooling et limite
      * @param {number} x - Position X en coordonnées grille
      * @param {number} y - Position Y en coordonnées grille
      * @param {string} color - Couleur des particules
      * @param {number} count - Nombre de particules
      */
     createParticles(x, y, color, count = 10) {
-        for (let i = 0; i < count; i++) {
-            this.particles.push({
-                x: x * this.CELL_SIZE + this.CELL_SIZE / 2,
-                y: y * this.CELL_SIZE + this.CELL_SIZE / 2,
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                life: 1.0,
-                color: color
-            });
+        // Limiter le nombre de nouvelles particules si on approche du max
+        const availableSlots = this.MAX_PARTICLES - this.particles.length;
+        const actualCount = Math.min(count, availableSlots);
+
+        if (actualCount <= 0) return;
+
+        const centerX = x * this.CELL_SIZE + this.CELL_SIZE / 2;
+        const centerY = y * this.CELL_SIZE + this.CELL_SIZE / 2;
+
+        for (let i = 0; i < actualCount; i++) {
+            let particle;
+
+            // Réutiliser une particule du pool si disponible
+            if (this.particlePool.length > 0) {
+                particle = this.particlePool.pop();
+                particle.x = centerX;
+                particle.y = centerY;
+                particle.vx = (Math.random() - 0.5) * 4;
+                particle.vy = (Math.random() - 0.5) * 4;
+                particle.life = 1.0;
+                particle.color = color;
+            } else {
+                // Créer une nouvelle particule
+                particle = {
+                    x: centerX,
+                    y: centerY,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 1.0,
+                    color: color
+                };
+            }
+
+            this.particles.push(particle);
         }
     }
 
     /**
-     * Met à jour toutes les particules
+     * Met à jour toutes les particules avec recyclage
      */
     updateParticles() {
-        this.particles.forEach(p => {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
             p.vy += 0.2; // Gravité
             p.life -= 0.02;
-        });
 
-        // Retirer particules mortes
-        this.particles = this.particles.filter(p => p.life > 0);
+            // Si morte, recycler dans le pool (max 50 dans le pool)
+            if (p.life <= 0) {
+                this.particles.splice(i, 1);
+                if (this.particlePool.length < 50) {
+                    this.particlePool.push(p);
+                }
+            }
+        }
     }
 
     /**

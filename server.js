@@ -27,16 +27,47 @@ const wss = new WebSocket.Server({ server });
 const CONFIG = {
     PORT: process.env.PORT || 3000,
     GRID_SIZE: 30,
-    BASE_TICK_RATE: 275,         // ✅ Vitesse normale (275ms)
-    FIRE_TICK_RATE: 140,         // ✅ FIRE: x2 vitesse (275/2)
-    ICE_TICK_RATE: 550,          // ✅ ICE: ÷2 vitesse (275*2)
-    LIGHTNING_TICK_RATE: 140,    // ✅ LIGHTNING: x2 vitesse (comme fire) + contrôles inversés
-    BOOST_TICK_RATE: 140,        // ⚡ BOOST: x2 vitesse temporaire
-    BOOST_DURATION: 3000,        // ⚡ BOOST: 3 secondes
-    BOOST_COOLDOWN: 10000,       // ⚡ BOOST: 10 secondes de cooldown
+
+    // === TICK RATES (vitesses) ===
+    BASE_TICK_RATE: 175,         // Vitesse normale (175ms)
+    FIRE_TICK_RATE: 88,          // FIRE: x2 vitesse (175/2)
+    ICE_TICK_RATE: 350,          // ICE: ÷2 vitesse (175*2)
+    LIGHTNING_TICK_RATE: 88,     // LIGHTNING: x2 vitesse + contrôles inversés
+    BOOST_TICK_RATE: 88,         // BOOST: x2 vitesse temporaire
+
+    // === DUREES (en ms) ===
+    BOOST_DURATION: 3000,        // BOOST: 3 secondes
+    BOOST_COOLDOWN: 10000,       // BOOST: 10 secondes de cooldown
+    FREEZE_DURATION: 3000,       // ICE: Durée du gel (3s)
+    VICTIM_INVINCIBILITY: 3000,  // Invincibilité après perte de segments (3s)
+    HEAD_TO_HEAD_INVINCIBILITY: 500,  // Invincibilité après éjection tête-à-tête (500ms)
+    BODY_STEAL_INTERVAL: 600,    // Intervalle vol de segments (600ms)
+    MYSTERY_BOX_RESPAWN: 5000,   // Respawn mystery box (5s)
+    COUNTDOWN_TO_GAME_DELAY: 500, // Délai après countdown avant init jeu (500ms)
+    READY_TO_COUNTDOWN_DELAY: 3000, // Délai après ready avant countdown (3s)
+    SWORD_DURATION: 6000,        // ÉPÉE: Durée active (6 secondes)
+    SWORD_STEAL_GRACE_PERIOD: 500, // ÉPÉE: Période de grâce après vol (500ms)
+
+    // === LIMITES ===
     MAX_PLAYERS_PER_ROOM: 2,
-    ROOM_TIMEOUT: 300000,
-    MATCH_DURATION: 300000       // 5 minutes
+    ROOM_TIMEOUT: 300000,        // Timeout salle (5 min) - pour match en cours
+    ROOM_INACTIVITY_TIMEOUT: 120000, // Timeout inactivité salle (2 min) - avant démarrage
+    MATCH_DURATION: 300000,      // Durée match (5 min)
+    MAX_SNAKE_LENGTH: 15,        // Longueur max du serpent
+    MAX_BODY_STEAL_COUNT: 3      // Max segments volés par contact
+};
+
+// ============================================
+// GRADES MULTI - Mapping grade → longueur initiale
+// ============================================
+const GRADE_LENGTHS = {
+    'LEGEND': 15,    // Légende: 60+ wins - Max dès le départ
+    'PLATINUM': 14,  // Platine: 50+ wins
+    'ELITE': 13,     // Élite: 40+ wins
+    'CHAMPION': 12,  // Champion: 30+ wins
+    'GOLD': 11,      // Or: 20+ wins
+    'SILVER': 10,    // Argent: 10+ wins
+    'BRONZE': 9      // Bronze: 0+ wins - Minimum
 };
 
 const POWERUP_TYPES = {
@@ -128,6 +159,7 @@ class Room {
             scores: {},
             segments: {},
             gameStarted: false,
+            gameInitializing: false,  // État intermédiaire pendant le countdown
             matchStartTime: null,
             matchTimeRemaining: CONFIG.MATCH_DURATION
         };
@@ -193,7 +225,7 @@ class Room {
         return false;
     }
 
-    addPlayer(playerId, ws, pseudo = null) {
+    addPlayer(playerId, ws, pseudo = null, grade = 'BRONZE') {
         if (this.players.size >= CONFIG.MAX_PLAYERS_PER_ROOM) {
             return false;
         }
@@ -203,12 +235,17 @@ class Room {
             ? { x: 5, y: 15 }
             : { x: 24, y: 15 };
 
-        // Créer une instance de Snake
-        const snake = new Snake(startPos.x, startPos.y, playerId);
+        // 🐍 Longueur initiale selon le grade (9-15)
+        const initialLength = GRADE_LENGTHS[grade] || GRADE_LENGTHS['BRONZE'];
+        logger.info('GAME', `🎖️ Joueur ${playerNumber} grade ${grade} → ${initialLength} segments`);
+
+        // Créer une instance de Snake avec la longueur selon le grade
+        const snake = new Snake(startPos.x, startPos.y, playerId, initialLength);
 
         this.players.set(playerId, {
             id: playerId,
             pseudo: pseudo || `Joueur ${playerNumber}`, // ✅ NOUVEAU - Pseudo du joueur
+            grade: grade,                // 🎖️ Grade du joueur
             ws: ws,
             number: playerNumber,
             snake: snake,
@@ -237,8 +274,12 @@ class Room {
             victimInvincibleUntil: 0,   // ✅ NOUVEAU - Timestamp fin invincibilité victime
             headToHeadProcessed: false, // ✅ NOUVEAU - Flag pour éviter double traitement tête-à-tête
             storedItem: null,           // 🎁 ROULETTE - Item stocké (ice/fire/rock/ghost/lightning/sword)
-            health: 15,                 // ❤️ VIE - Barre de vie (15 segments max)
+            health: initialLength,      // ❤️ VIE - Barre de vie = longueur du serpent
             swordCharge: 0,             // ⚔️ ÉPÉE - Charge de l'épée (pommes mangées avec épée stockée, max 15)
+            hasSword: false,            // ⚔️ ÉPÉE - Épée active (dégainée)?
+            swordEndTime: 0,            // ⚔️ ÉPÉE - Timestamp fin épée active
+            swordStealGraceUntil: 0,    // ⚔️ ÉPÉE - Période de grâce après vol
+            lastMoveTime: Date.now(),   // ⏱️ Timer individuel de mouvement
             boostActive: false,         // ⚡ BOOST - Boost actif?
             boostEndTime: 0,            // ⚡ BOOST - Timestamp fin boost
             boostCooldownEnd: 0,        // ⚡ BOOST - Timestamp fin cooldown
@@ -252,7 +293,7 @@ class Room {
         });
 
         this.gameState.scores[playerId] = 0;
-        this.gameState.segments[playerId] = 1;
+        this.gameState.segments[playerId] = initialLength;
         this.lastActivity = Date.now();
 
         logger.info('ROOM', `Joueur ${playerNumber} rejoint la salle ${this.id}`);
@@ -332,10 +373,10 @@ class Room {
                 roomId: this.id
             });
 
-            // ✅ Démarrer après 3 secondes (sera countdown à l'étape 3)
+            // Démarrer le countdown après le délai configuré
             setTimeout(() => {
                 this.startGame();
-            }, 3000);
+            }, CONFIG.READY_TO_COUNTDOWN_DELAY);
         }
     }
 
@@ -423,6 +464,111 @@ class Room {
         return count;
     }
 
+    /**
+     * Construit les infos des joueurs pour les messages game_over
+     * Evite la duplication de code (DRY)
+     * @returns {{ scores: Object, players: Object }}
+     */
+    buildGameOverData() {
+        const scores = {};
+        const players = {};
+        for (let player of this.players.values()) {
+            scores[player.id] = player.snake.length;
+            players[player.id] = {
+                pseudo: player.pseudo || `Joueur ${player.number}`,
+                number: player.number
+            };
+        }
+        return { scores, players };
+    }
+
+    // ============================================
+    // GESTION CENTRALISÉE DES EFFETS TEMPORAIRES
+    // ============================================
+
+    /**
+     * Applique l'effet de gel (ICE) à un joueur
+     * @param {Object} player - Le joueur à geler
+     */
+    applyFreezeEffect(player) {
+        const now = Date.now();
+        player.frozen = true;
+        player.frozenUntil = now + CONFIG.FREEZE_DURATION;
+    }
+
+    /**
+     * Applique l'invincibilité victime à un joueur
+     * @param {Object} player - Le joueur qui reçoit l'invincibilité
+     */
+    applyVictimInvincibility(player) {
+        const now = Date.now();
+        player.victimInvincible = true;
+        player.victimInvincibleUntil = now + CONFIG.VICTIM_INVINCIBILITY;
+    }
+
+    /**
+     * Applique l'invincibilité tête-à-tête aux deux joueurs
+     * @param {Object} player1 - Premier joueur
+     * @param {Object} player2 - Deuxième joueur
+     */
+    applyHeadToHeadInvincibility(player1, player2) {
+        player1.invincible = true;
+        player2.invincible = true;
+
+        setTimeout(() => {
+            player1.invincible = false;
+            player2.invincible = false;
+        }, CONFIG.HEAD_TO_HEAD_INVINCIBILITY);
+    }
+
+    /**
+     * Met à jour tous les effets temporaires des joueurs
+     * Appelée au début de chaque update()
+     */
+    updateTemporaryEffects() {
+        const now = Date.now();
+
+        for (let player of this.players.values()) {
+            // Dégeler les joueurs
+            if (player.frozen && now >= player.frozenUntil) {
+                player.frozen = false;
+                logger.debug('GAME', `❄️ Player ${player.number} dégelé`);
+            }
+
+            // Fin invincibilité victime
+            if (player.victimInvincible && now >= player.victimInvincibleUntil) {
+                player.victimInvincible = false;
+                logger.debug('GAME', `🛡️ Player ${player.number} perd invincibilité victime`);
+            }
+
+            // Expiration boost
+            if (player.boostActive && now >= player.boostEndTime) {
+                player.boostActive = false;
+                logger.debug('GAME', `⚡ Boost expiré pour Player ${player.number}`);
+            }
+
+            // Expiration power-up
+            if (player.activePowerup && now >= player.powerupEndTime) {
+                logger.debug('GAME', `⏱️ Power-up ${player.activePowerup} expiré pour Player ${player.number}`);
+                player.activePowerup = null;
+                player.powerupEndTime = 0;
+            }
+
+            // ⚔️ Expiration épée active
+            if (player.hasSword && now >= player.swordEndTime) {
+                player.hasSword = false;
+                player.swordEndTime = 0;
+                player.swordCharge = 0; // Reset charge si épée expire sans toucher
+                logger.info('GAME', `⚔️ Épée expirée pour Player ${player.number} (pas de contact)`);
+            }
+
+            // ⚔️ Fin période de grâce épée
+            if (player.swordStealGraceUntil > 0 && now >= player.swordStealGraceUntil) {
+                player.swordStealGraceUntil = 0;
+            }
+        }
+    }
+
     allPlayersReady() {
         if (this.players.size < CONFIG.MAX_PLAYERS_PER_ROOM) return false;
         for (let player of this.players.values()) {
@@ -479,12 +625,14 @@ class Room {
         // 1. Déterminer qui perd un segment
         if (player1.snake.length < player2.snake.length) {
             player1.snake.shrink(1);
+            player1.health = player1.snake.length; // ❤️ Sync health = longueur
             player1.stats.segmentsLost++;
             player1.swordCharge = 0; // ⚔️ Reset charge épée
             this.gameState.segments[player1.id] = player1.snake.length;
             logger.debug('GAME', `Player ${player1.number} perd 1 segment (plus petit)`);
         } else if (player2.snake.length < player1.snake.length) {
             player2.snake.shrink(1);
+            player2.health = player2.snake.length; // ❤️ Sync health = longueur
             player2.stats.segmentsLost++;
             player2.swordCharge = 0; // ⚔️ Reset charge épée
             this.gameState.segments[player2.id] = player2.snake.length;
@@ -516,14 +664,8 @@ class Room {
             player2.snake.move();
         }
 
-        // 6. Invincibilité temporaire (500ms au lieu de 300ms)
-        player1.invincible = true;
-        player2.invincible = true;
-
-        setTimeout(() => {
-            player1.invincible = false;
-            player2.invincible = false;
-        }, 500);
+        // 6. Invincibilité temporaire
+        this.applyHeadToHeadInvincibility(player1, player2);
 
         logger.info('GAME', `✅ Éjection 3 cases perpendiculaires`, {
             p1: { newPos: player1.snake.head, dir: leftDir },
@@ -552,15 +694,21 @@ class Room {
             logger.info('GAME', `🍴 Player ${attacker.number} commence à voler des segments de Player ${defender.number}`);
         }
 
-        // Vol progressif : 1er segment instantané, puis toutes les 600ms, max 3
+        // Vol progressif : 1er segment instantané, puis à intervalle régulier
         const timeSinceLastSteal = now - attacker.bodyContact.lastStealTime;
 
-        // Vol instantané au premier contact, puis toutes les 600ms
-        if ((attacker.bodyContact.stolenCount === 0 || timeSinceLastSteal >= 600) &&
-            attacker.bodyContact.stolenCount < 3) {
+        // Vol instantané au premier contact, puis toutes les BODY_STEAL_INTERVAL ms
+        if ((attacker.bodyContact.stolenCount === 0 || timeSinceLastSteal >= CONFIG.BODY_STEAL_INTERVAL) &&
+            attacker.bodyContact.stolenCount < CONFIG.MAX_BODY_STEAL_COUNT) {
             if (defender.snake.body.length > 3) {
                 defender.snake.shrink(1);
-                attacker.snake.grow();
+                defender.health = defender.snake.length; // ❤️ Sync health
+
+                // 🐍 Grandir seulement si pas au max
+                if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                    attacker.snake.grow();
+                    attacker.health = attacker.snake.length; // ❤️ Sync health
+                }
 
                 attacker.bodyContact.lastStealTime = now;
                 attacker.bodyContact.stolenCount++;
@@ -572,13 +720,10 @@ class Room {
                 this.gameState.segments[attacker.id] = attacker.snake.length;
                 this.gameState.segments[defender.id] = defender.snake.length;
 
-                logger.info('GAME', `🎯 Player ${attacker.number} vole segment #${attacker.bodyContact.stolenCount}/3 à Player ${defender.number}`);
+                logger.info('GAME', `🎯 Player ${attacker.number} vole segment #${attacker.bodyContact.stolenCount}/${CONFIG.MAX_BODY_STEAL_COUNT} à Player ${defender.number}`);
 
-                // Activer invincibilité victime pendant 3 secondes
-                defender.victimInvincible = true;
-                defender.victimInvincibleUntil = now + 3000;
-
-                logger.debug('GAME', `🛡️ Player ${defender.number} devient invincible 3 secondes`);
+                // Activer invincibilité victime
+                this.applyVictimInvincibility(defender);
 
                 if (!defender.snake.alive) {
                     logger.info('GAME', `💀 Player ${defender.number} éliminé (vol de segments)`);
@@ -588,18 +733,111 @@ class Room {
     }
 
     /**
-     * Gère l'effet du power-up ICE sur un adversaire
-     * Gèle l'adversaire pendant 3 secondes (immobile)
+     * ⚔️ Gère les collisions Tête vs Corps AVEC ÉPÉE ACTIVE
+     * Vol de segments basé sur swordCharge (3 + charge)
      */
-    handleIceEffect(attacker, defender) {
+    handleSwordBodyCollision(attacker, defender) {
         const now = Date.now();
 
-        // Geler l'adversaire
-        if (!defender.frozen) {
-            defender.frozen = true;
-            defender.frozenUntil = now + 3000;
+        // Vérifier période de grâce
+        if (attacker.swordStealGraceUntil > 0 && now < attacker.swordStealGraceUntil) {
+            logger.debug('GAME', `⚔️ Player ${attacker.number} en période de grâce, ignore collision`);
+            return;
+        }
 
-            logger.info('GAME', `❄️ Player ${attacker.number} gèle Player ${defender.number} pendant 3 secondes`);
+        // Vérifier si le défenseur est en Ghost (intangible)
+        if (defender.activePowerup === 'ghost') {
+            logger.info('GAME', `⚔️ Player ${defender.number} est GHOST - épée traverse!`);
+            return;
+        }
+
+        // Calculer dégâts: base 3 + charge (pommes mangées)
+        const baseDamage = 3;
+        const charge = attacker.swordCharge;
+        const totalDamage = baseDamage + charge;
+
+        // Limiter aux segments disponibles (garde 3 segments minimum à l'adversaire)
+        const maxDamage = Math.max(0, defender.snake.length - 3);
+        const actualDamage = Math.min(totalDamage, maxDamage);
+
+        if (actualDamage <= 0) {
+            logger.info('GAME', `⚔️ Player ${attacker.number} - Adversaire trop petit (${defender.snake.length} segments), pas de dégâts`);
+            // Désactiver quand même l'épée
+            attacker.hasSword = false;
+            attacker.swordEndTime = 0;
+            attacker.swordCharge = 0;
+            return;
+        }
+
+        logger.info('GAME', `⚔️ ATTAQUE ÉPÉE! Player ${attacker.number} vole ${actualDamage} segments à Player ${defender.number} (base:${baseDamage} + charge:${charge})`);
+
+        // Infliger les dégâts
+        defender.snake.shrink(actualDamage);
+        defender.health = defender.snake.length;
+        defender.swordCharge = 0; // Reset charge adversaire
+
+        // Transférer segments à l'attaquant (si pas au max)
+        let segmentsGained = 0;
+        for (let i = 0; i < actualDamage; i++) {
+            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                attacker.snake.grow();
+                segmentsGained++;
+            }
+        }
+        attacker.health = attacker.snake.length;
+
+        // Stats
+        attacker.stats.segmentsEaten += actualDamage;
+        attacker.stats.swordAttacks++;
+        defender.stats.segmentsLost += actualDamage;
+
+        // Mettre à jour segments
+        this.gameState.segments[attacker.id] = attacker.snake.length;
+        this.gameState.segments[defender.id] = defender.snake.length;
+
+        // Désactiver l'épée après utilisation (un seul vol)
+        attacker.hasSword = false;
+        attacker.swordEndTime = 0;
+        attacker.swordCharge = 0;
+
+        // Période de grâce pour éviter double collision
+        attacker.swordStealGraceUntil = now + CONFIG.SWORD_STEAL_GRACE_PERIOD;
+
+        // Notifier l'adversaire des dégâts
+        if (defender.ws && defender.ws.readyState === 1) {
+            defender.ws.send(JSON.stringify({
+                type: 'sword_damage',
+                damage: actualDamage,
+                health: defender.health,
+                attackerId: attacker.id
+            }));
+        }
+
+        // Notifier l'attaquant du succès
+        if (attacker.ws && attacker.ws.readyState === 1) {
+            attacker.ws.send(JSON.stringify({
+                type: 'sword_hit_success',
+                damage: actualDamage,
+                segmentsGained: segmentsGained
+            }));
+        }
+
+        // Vérifier mort
+        if (!defender.snake.alive) {
+            logger.info('GAME', `💀 Player ${defender.number} ÉLIMINÉ par ÉPÉE!`);
+            this.endGame(`player${attacker.number}_wins`);
+        }
+    }
+
+    /**
+     * Gère l'effet du power-up ICE sur un adversaire
+     * Gèle l'adversaire (immobile)
+     */
+    handleIceEffect(attacker, defender) {
+        // Geler l'adversaire s'il ne l'est pas déjà
+        if (!defender.frozen) {
+            this.applyFreezeEffect(defender);
+            logger.info('GAME', `❄️ Player ${attacker.number} gèle Player ${defender.number} pendant ${CONFIG.FREEZE_DURATION / 1000}s`);
         }
     }
 
@@ -610,7 +848,13 @@ class Room {
     handleFireEffect(attacker, defender) {
         if (defender.snake.body.length > 3) {
             defender.snake.shrink(1);
-            attacker.snake.grow();
+            defender.health = defender.snake.length; // ❤️ Sync health
+
+            // 🐍 Grandir seulement si pas au max
+            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                attacker.snake.grow();
+                attacker.health = attacker.snake.length; // ❤️ Sync health
+            }
 
             attacker.stats.segmentsEaten++;
             defender.stats.segmentsLost++;
@@ -622,10 +866,8 @@ class Room {
 
             logger.info('GAME', `🔥 Player ${attacker.number} brûle 1 segment de Player ${defender.number}`);
 
-            // Activer invincibilité victime pendant 3 secondes
-            const now = Date.now();
-            defender.victimInvincible = true;
-            defender.victimInvincibleUntil = now + 3000;
+            // Activer invincibilité victime
+            this.applyVictimInvincibility(defender);
 
             if (!defender.snake.alive) {
                 logger.info('GAME', `💀 Player ${defender.number} éliminé par FIRE`);
@@ -665,9 +907,16 @@ class Room {
     }
 
     startGame() {
+        // Empêcher le double démarrage
+        if (this.gameState.gameInitializing || this.gameState.gameStarted) {
+            logger.warn('GAME', `⚠️ startGame() ignoré - déjà en cours pour ${this.id}`);
+            return;
+        }
+
+        this.gameState.gameInitializing = true;
         logger.info('GAME', `🎮 Démarrage countdown - Salle ${this.id}`);
 
-        // ✅ Notifier les clients que le jeu va démarrer
+        // Notifier les clients que le jeu va démarrer
         this.notifyPlayers({
             type: 'game_starting'
         });
@@ -695,10 +944,10 @@ class Room {
                 });
                 logger.info('GAME', `🎮 GO! - Salle ${this.id}`);
 
-                // Initialiser le jeu après un petit délai
+                // Initialiser le jeu après le délai configuré
                 setTimeout(() => {
                     this.initializeGame();
-                }, 500);
+                }, CONFIG.COUNTDOWN_TO_GAME_DELAY);
             }
         }, 1000);
     }
@@ -706,21 +955,28 @@ class Room {
     initializeGame() {
         logger.info('GAME', `🎮 Partie initialisée - Salle ${this.id}`);
 
+        this.gameState.gameInitializing = false;  // Fin de l'état intermédiaire
         this.gameState.gameStarted = true;
         this.gameState.matchStartTime = Date.now();
         this.gameState.matchTimeRemaining = CONFIG.MATCH_DURATION;
 
-        // Réinitialiser les positions
+        // Réinitialiser les positions (avec longueur selon grade)
         let playerNum = 1;
         for (let player of this.players.values()) {
             const startPos = playerNum === 1
                 ? { x: 5, y: 15 }
                 : { x: 24, y: 15 };
 
-            player.snake.reset(startPos.x, startPos.y, { dx: 1, dy: 0 });
+            // 🎖️ Longueur initiale selon le grade du joueur
+            const initialLength = GRADE_LENGTHS[player.grade] || GRADE_LENGTHS['BRONZE'];
+
+            player.snake.reset(startPos.x, startPos.y, { dx: 1, dy: 0 }, initialLength);
+            player.health = initialLength; // ❤️ Réinitialiser la vie aussi
             this.gameState.scores[player.id] = 0;
-            this.gameState.segments[player.id] = 1;
+            this.gameState.segments[player.id] = initialLength;
             playerNum++;
+
+            logger.info('GAME', `🎖️ Joueur ${playerNum - 1} (${player.grade}) démarre avec ${initialLength} segments`);
         }
 
         // ⭐ Générer étoile uniquement
@@ -730,12 +986,20 @@ class Room {
         this.gameState.mysteryBox = this.generateMysteryBox();
 
         // Réinitialiser état des joueurs
+        const startTime = Date.now();
         for (let player of this.players.values()) {
             player.storedItem = null;
-            player.hasSword = false;
-            player.applesEatenWithSword = 0;
+            player.health = player.snake.length;  // Santé = longueur selon le grade
+            player.swordCharge = 0;
+            player.hasSword = false;              // ⚔️ Reset épée active
+            player.swordEndTime = 0;              // ⚔️ Reset timer épée
+            player.swordStealGraceUntil = 0;      // ⚔️ Reset période grâce
+            player.lastMoveTime = startTime;  // ⏱️ Sync les timers de mouvement
             player.activePowerup = null;
             player.powerupEndTime = 0;
+            player.boostActive = false;
+            player.boostEndTime = 0;
+            player.boostCooldownEnd = 0;
         }
 
         this.notifyPlayers({
@@ -789,23 +1053,15 @@ class Room {
             }
         }
 
-        const scores = {};
-        const players = {}; // ✅ FIX: Ajouter les infos des joueurs (pseudo, number)
-        for (let player of this.players.values()) {
-            scores[player.id] = player.snake.length;
-            players[player.id] = {
-                pseudo: player.pseudo || `Joueur ${player.number}`,
-                number: player.number
-            };
-        }
+        const { scores, players } = this.buildGameOverData();
 
         this.notifyPlayers({
             type: 'game_over',
             reason: 'time_up',
             winner: longestPlayer ? longestPlayer.id : null,
             winnerNumber: longestPlayer ? longestPlayer.number : null,
-            scores: scores,
-            players: players, // ✅ FIX: Envoyer les pseudos
+            scores,
+            players,
             message: longestPlayer
                 ? `🏆 Joueur ${longestPlayer.number} gagne avec ${maxLength} segments !`
                 : `⚔️ Match nul ! ${maxLength} segments chacun.`
@@ -854,6 +1110,7 @@ class Room {
         this.broadcastLobbyUpdate();
 
         this.gameState.gameStarted = false;
+        this.gameState.gameInitializing = false;
         this.gameState.matchStartTime = null;
         this.gameState.matchTimeRemaining = CONFIG.MATCH_DURATION;
     }
@@ -910,10 +1167,11 @@ class Room {
         // Réinitialiser l'état du jeu
         this.gameState = {
             food: null,
-            mysteryBox: null,  // 🎁 MYSTERY BOX
+            mysteryBox: null,
             scores: {},
             segments: {},
             gameStarted: false,
+            gameInitializing: false,
             matchStartTime: null,
             matchTimeRemaining: 0
         };
@@ -930,40 +1188,20 @@ class Room {
 
         const now = Date.now();
 
-        // ===== GÉRER LES EFFETS TEMPORAIRES =====
-        for (let player of this.players.values()) {
-            // Dégeler les joueurs
-            if (player.frozen && now >= player.frozenUntil) {
-                player.frozen = false;
-                logger.debug('GAME', `❄️ Player ${player.number} dégelé`);
-            }
-
-            // Fin invincibilité victime
-            if (player.victimInvincible && now >= player.victimInvincibleUntil) {
-                player.victimInvincible = false;
-                logger.debug('GAME', `🛡️ Player ${player.number} perd invincibilité victime`);
-            }
-        }
+        // Mettre à jour les effets temporaires (gel, invincibilité, power-ups)
+        this.updateTemporaryEffects();
 
         const alivePlayers = Array.from(this.players.values()).filter(p => p.snake.alive);
         
         if (alivePlayers.length === 0) {
-            const scores = {};
-            const players = {}; // ✅ FIX: Ajouter les infos des joueurs
-            for (let player of this.players.values()) {
-                scores[player.id] = player.snake.length;
-                players[player.id] = {
-                    pseudo: player.pseudo || `Joueur ${player.number}`,
-                    number: player.number
-                };
-            }
+            const { scores, players } = this.buildGameOverData();
 
             this.notifyPlayers({
                 type: 'game_over',
                 reason: 'both_dead',
                 winner: null,
-                scores: scores,
-                players: players, // ✅ FIX: Envoyer les pseudos
+                scores,
+                players,
                 message: '💀 Les deux joueurs sont morts !'
             });
             this.stopGame();
@@ -972,23 +1210,15 @@ class Room {
 
         if (alivePlayers.length === 1) {
             const winner = alivePlayers[0];
-            const scores = {};
-            const players = {}; // ✅ FIX: Ajouter les infos des joueurs
-            for (let player of this.players.values()) {
-                scores[player.id] = player.snake.length;
-                players[player.id] = {
-                    pseudo: player.pseudo || `Joueur ${player.number}`,
-                    number: player.number
-                };
-            }
+            const { scores, players } = this.buildGameOverData();
 
             this.notifyPlayers({
                 type: 'game_over',
                 reason: 'opponent_died',
                 winner: winner.id,
                 winnerNumber: winner.number,
-                scores: scores,
-                players: players, // ✅ FIX: Envoyer les pseudos
+                scores,
+                players,
                 message: `🏆 Joueur ${winner.number} gagne !`
             });
             this.stopGame();
@@ -1064,6 +1294,17 @@ class Room {
                 continue;
             }
 
+            // ⏱️ Vérifier le timer individuel du joueur
+            const playerTickRate = this.getCurrentTickRate(player);
+            const timeSinceLastMove = now - player.lastMoveTime;
+
+            if (timeSinceLastMove < playerTickRate) {
+                // Pas encore le moment de bouger pour ce joueur
+                continue;
+            }
+
+            // Mettre à jour le timer et déplacer
+            player.lastMoveTime = now;
             player.snake.move();
 
             // Vérifier collision avec soi-même
@@ -1075,16 +1316,22 @@ class Room {
 
             // Manger la nourriture
             if (player.snake.headAt(this.gameState.food.x, this.gameState.food.y)) {
-                player.snake.grow();
+                // 🐍 Grandir seulement si pas au max (15 segments)
+                if (player.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                    player.snake.grow();
+                    player.health = player.snake.length; // ❤️ Sync health = longueur
+                    logger.debug('GAME', `🐍 Player ${player.number} grandit: ${player.snake.length}/${CONFIG.MAX_SNAKE_LENGTH}`);
+                }
+
                 player.snake.addScore(10);
                 this.gameState.scores[player.id] = player.snake.score;
                 this.gameState.segments[player.id] = player.snake.length;
                 this.gameState.food = this.generateFood();
 
                 // ⚔️ CHARGE ÉPÉE - Si épée stockée, charger (max 15)
-                if (player.storedItem === 'sword' && player.swordCharge < 15) {
+                if (player.storedItem === 'sword' && player.swordCharge < CONFIG.MAX_SNAKE_LENGTH) {
                     player.swordCharge++;
-                    logger.debug('GAME', `⚔️ Player ${player.number} charge épée: ${player.swordCharge}/15`);
+                    logger.debug('GAME', `⚔️ Player ${player.number} charge épée: ${player.swordCharge}/${CONFIG.MAX_SNAKE_LENGTH}`);
                 }
 
                 logger.debug('GAME', `⭐ Player ${player.number} mange (score: ${player.snake.score})`);
@@ -1110,13 +1357,13 @@ class Room {
                     }));
                 }
 
-                // Respawn mystery box après 5 secondes
+                // Respawn mystery box après le délai configuré
                 setTimeout(() => {
                     if (this.running && this.gameState.gameStarted) {
                         this.gameState.mysteryBox = this.generateMysteryBox();
                         logger.info('GAME', `🎁 Mystery Box réapparaît!`);
                     }
-                }, 5000);
+                }, CONFIG.MYSTERY_BOX_RESPAWN);
             }
         }
 
@@ -1146,11 +1393,25 @@ class Room {
                 if (bodyCollision) {
                     logger.debug('COLLISION', `${player.id} touche corps de ${opponent.id} - MaTête(${myHead.x},${myHead.y}) vs Opponent(${opponentHead.x},${opponentHead.y})`);
 
+                    // ⚔️ ÉPÉE ACTIVE - Priorité maximale
+                    if (player.hasSword) {
+                        this.handleSwordBodyCollision(player, opponent);
+                        continue; // Épée consommée, pas de traitement normal
+                    }
+
                     if (player.activePowerup === 'rock') {
                         // ROCK : Mange 2 segments
                         opponent.snake.shrink(2);
-                        player.snake.grow();
-                        player.snake.grow();
+                        opponent.health = opponent.snake.length; // ❤️ Sync health
+
+                        // 🐍 Grandir seulement si pas au max (x2)
+                        for (let i = 0; i < 2; i++) {
+                            if (player.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                                player.snake.grow();
+                            }
+                        }
+                        player.health = player.snake.length; // ❤️ Sync health
+
                         player.stats.segmentsEaten += 2;
                         opponent.stats.segmentsLost += 2;
                         opponent.swordCharge = 0; // ⚔️ Reset charge épée
@@ -1252,10 +1513,15 @@ class Room {
     }
 
     handleInput(playerId, direction) {
+        // Ignorer les inputs si le jeu n'est pas en cours
+        if (!this.gameState.gameStarted || this.gameState.gameInitializing) {
+            return;
+        }
+
         const player = this.players.get(playerId);
         if (!player || !player.snake.alive) return;
 
-        // ✅ NOUVEAU : Ignorer les inputs pendant l'invincibilité
+        // Ignorer les inputs pendant l'invincibilité
         if (player.invincible) {
             logger.debug('INPUT', `🛡️ Input ignoré pour Player ${player.number} (invincible)`);
             return;
@@ -1308,50 +1574,26 @@ class Room {
         logger.info('GAME', `🎁 Player ${player.number} utilise l'item: ${item}`);
 
         if (item === 'sword') {
-            // ⚔️ ÉPÉE - ATTAQUE INSTANTANÉE basée sur la charge
-            const damage = player.swordCharge; // Dégâts = pommes mangées (max 15)
+            // ⚔️ ÉPÉE - NOUVEAU SYSTÈME: Activation avec durée + collision physique
+            const charge = player.swordCharge;
 
-            if (damage === 0) {
-                logger.info('GAME', `⚔️ Player ${player.number} utilise l'ÉPÉE sans charge (0 dégâts)!`);
-            } else {
-                // Trouver l'adversaire
-                let opponent = null;
-                for (let [id, p] of this.players) {
-                    if (id !== playerId && p.snake.alive) {
-                        opponent = p;
-                        break;
-                    }
-                }
+            // Activer l'épée (elle reste active pendant SWORD_DURATION)
+            player.hasSword = true;
+            player.swordEndTime = now + CONFIG.SWORD_DURATION;
 
-                if (opponent) {
-                    // Infliger les dégâts sur la health
-                    opponent.health = Math.max(0, opponent.health - damage);
-                    opponent.swordCharge = 0; // Reset charge adversaire quand il prend des dégâts
-                    player.stats.swordAttacks++;
+            logger.info('GAME', `⚔️ Player ${player.number} DÉGAINE L'ÉPÉE! Charge: ${charge}, Durée: ${CONFIG.SWORD_DURATION}ms`);
 
-                    logger.info('GAME', `⚔️ ATTAQUE ÉPÉE! Player ${player.number} inflige ${damage} dégâts à Player ${opponent.number} (health: ${opponent.health}/15)`);
-
-                    // Notifier l'adversaire des dégâts
-                    if (opponent.ws && opponent.ws.readyState === 1) {
-                        opponent.ws.send(JSON.stringify({
-                            type: 'sword_damage',
-                            damage: damage,
-                            health: opponent.health,
-                            attackerId: playerId
-                        }));
-                    }
-
-                    // Vérifier la mort
-                    if (opponent.health <= 0) {
-                        opponent.snake.kill();
-                        logger.info('GAME', `💀 Player ${opponent.number} ÉLIMINÉ par ÉPÉE!`);
-                        this.endGame(`player${player.number}_wins`);
-                    }
-                }
+            // Notifier le joueur que l'épée est activée
+            if (player.ws && player.ws.readyState === 1) {
+                player.ws.send(JSON.stringify({
+                    type: 'sword_activated',
+                    charge: charge,
+                    duration: CONFIG.SWORD_DURATION,
+                    endTime: player.swordEndTime
+                }));
             }
 
-            // Reset la charge de l'épée après utilisation
-            player.swordCharge = 0;
+            // NOTE: Les dégâts seront infligés sur collision physique dans handleSwordBodyCollision()
         } else {
             // POWER-UP - Activer le power-up
             const duration = POWERUP_TYPES[item.toUpperCase()]?.duration || 6000;
@@ -1418,6 +1660,8 @@ class Room {
                 storedItem: player.storedItem,          // 🎁 Item stocké (roulette)
                 health: player.health,                  // ❤️ VIE - Points de vie (max 15)
                 swordCharge: player.swordCharge,        // ⚔️ ÉPÉE - Charge (pommes mangées, max 15)
+                hasSword: player.hasSword,              // ⚔️ ÉPÉE - Épée active (dégainée)?
+                swordEndTime: player.swordEndTime,      // ⚔️ ÉPÉE - Timestamp fin épée
                 boostActive: player.boostActive,        // ⚡ BOOST - Actif?
                 boostCooldownEnd: player.boostCooldownEnd // ⚡ BOOST - Fin cooldown
             };
@@ -1451,6 +1695,58 @@ class RoomManager {
     constructor() {
         this.rooms = new Map();
         this.playerToRoom = new Map();
+
+        // Démarrer le nettoyage périodique des salles inactives
+        this.startInactivityCleanup();
+    }
+
+    /**
+     * Démarre un intervalle pour nettoyer les salles inactives
+     * Vérifie toutes les 30 secondes
+     */
+    startInactivityCleanup() {
+        this.cleanupInterval = setInterval(() => {
+            this.cleanupInactiveRooms();
+        }, 30000); // Vérifier toutes les 30 secondes
+    }
+
+    /**
+     * Nettoie les salles inactives (pas de jeu démarré + timeout dépassé)
+     */
+    cleanupInactiveRooms() {
+        const now = Date.now();
+        const roomsToDelete = [];
+
+        for (let [roomId, room] of this.rooms) {
+            // Ne pas toucher aux salles avec un jeu en cours
+            if (room.gameState.gameStarted) continue;
+
+            // Vérifier le timeout d'inactivité
+            const timeSinceActivity = now - room.lastActivity;
+            if (timeSinceActivity > CONFIG.ROOM_INACTIVITY_TIMEOUT) {
+                logger.info('MANAGER', `🗑️ Salle ${roomId} inactive depuis ${Math.round(timeSinceActivity / 1000)}s, nettoyage...`);
+                roomsToDelete.push(roomId);
+            }
+        }
+
+        // Supprimer les salles inactives
+        for (let roomId of roomsToDelete) {
+            const room = this.rooms.get(roomId);
+            if (room) {
+                // Notifier les joueurs avant de fermer
+                room.notifyPlayers({
+                    type: 'room_closed',
+                    reason: 'inactivity',
+                    message: 'Salle fermée pour inactivité'
+                });
+                room.cleanup();
+                this.rooms.delete(roomId);
+            }
+        }
+
+        if (roomsToDelete.length > 0) {
+            logger.info('MANAGER', `🧹 ${roomsToDelete.length} salle(s) inactive(s) nettoyée(s)`);
+        }
     }
 
     // ✅ ANCIENNE MÉTHODE - Conservée pour compatibilité (matchmaking auto)
@@ -1493,7 +1789,7 @@ class RoomManager {
     }
 
     // ✅ LOBBY PRINCIPAL - Rejoindre salon par ID
-    joinRoomById(playerId, ws, roomId, code = null) {
+    joinRoomById(playerId, ws, roomId, code = null, grade = 'BRONZE') {
         const room = this.rooms.get(roomId);
 
         if (!room) {
@@ -1508,7 +1804,7 @@ class RoomManager {
             return { success: false, error: 'Code incorrect' };
         }
 
-        if (room.addPlayer(playerId, ws)) {
+        if (room.addPlayer(playerId, ws, null, grade)) {
             this.playerToRoom.set(playerId, room.id);
             return {
                 success: true,
@@ -1660,8 +1956,11 @@ wss.on('connection', (ws, req) => {
                         message.code || null
                     );
 
-                    // Ajouter le créateur au salon
-                    if (newRoom.addPlayer(playerId, ws)) {
+                    // 🎖️ Grade du joueur (envoyé par le client)
+                    const createGrade = message.grade || 'BRONZE';
+
+                    // Ajouter le créateur au salon avec son grade
+                    if (newRoom.addPlayer(playerId, ws, null, createGrade)) {
                         roomManager.playerToRoom.set(playerId, newRoom.id);
                         ws.send(JSON.stringify({
                             type: 'room_created',
@@ -1669,17 +1968,21 @@ wss.on('connection', (ws, req) => {
                             playerNumber: newRoom.players.get(playerId).number,
                             playersInRoom: newRoom.players.size
                         }));
-                        logger.info('LOBBY', `🏠 Salon créé et rejoint par ${playerId}`, { roomId: newRoom.id });
+                        logger.info('LOBBY', `🏠 Salon créé et rejoint par ${playerId} (grade: ${createGrade})`, { roomId: newRoom.id });
                     }
                     return;
 
                 case 'join_room':
-                    // Rejoindre un salon existant par ID
+                    // 🎖️ Grade du joueur (envoyé par le client)
+                    const joinGrade = message.grade || 'BRONZE';
+
+                    // Rejoindre un salon existant par ID avec le grade
                     const joinResult = roomManager.joinRoomById(
                         playerId,
                         ws,
                         message.roomId,
-                        message.code
+                        message.code,
+                        joinGrade
                     );
 
                     if (joinResult.success) {
@@ -1689,7 +1992,7 @@ wss.on('connection', (ws, req) => {
                             playerNumber: joinResult.playerNumber,
                             playersInRoom: joinResult.playersInRoom
                         }));
-                        logger.info('LOBBY', `✅ ${playerId} a rejoint ${message.roomId}`);
+                        logger.info('LOBBY', `✅ ${playerId} a rejoint ${message.roomId} (grade: ${joinGrade})`);
                     } else {
                         ws.send(JSON.stringify({
                             type: 'join_error',
@@ -1702,6 +2005,9 @@ wss.on('connection', (ws, req) => {
                 case 'quick_play':
                     // ⚡ QUICK PLAY - Rejoindre automatiquement un salon ou en créer un
                     logger.info('LOBBY', `⚡ Quick Play demandé par ${playerId}`);
+
+                    // 🎖️ Grade du joueur (envoyé par le client)
+                    const quickGrade = message.grade || 'BRONZE';
 
                     // 1. Chercher un salon public disponible
                     let availableRoom = null;
@@ -1729,9 +2035,9 @@ wss.on('connection', (ws, req) => {
                         }
                     }
 
-                    // 2. Si salon trouvé, rejoindre
+                    // 2. Si salon trouvé, rejoindre avec le grade
                     if (availableRoom) {
-                        if (availableRoom.addPlayer(playerId, ws)) {
+                        if (availableRoom.addPlayer(playerId, ws, null, quickGrade)) {
                             roomManager.playerToRoom.set(playerId, availableRoom.id);
                             ws.send(JSON.stringify({
                                 type: 'room_joined',
@@ -1739,10 +2045,10 @@ wss.on('connection', (ws, req) => {
                                 playerNumber: availableRoom.players.get(playerId).number,
                                 playersInRoom: availableRoom.players.size
                             }));
-                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} rejoint ${availableRoom.id}`);
+                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} rejoint ${availableRoom.id} (grade: ${quickGrade})`);
                         }
                     } else {
-                        // 3. Sinon, créer un nouveau salon
+                        // 3. Sinon, créer un nouveau salon avec le grade
                         logger.info('LOBBY', `⚡ Aucun salon disponible, création d'un nouveau salon`);
                         const quickRoom = roomManager.createCustomRoom(
                             playerId,
@@ -1751,7 +2057,7 @@ wss.on('connection', (ws, req) => {
                             null
                         );
 
-                        if (quickRoom.addPlayer(playerId, ws)) {
+                        if (quickRoom.addPlayer(playerId, ws, null, quickGrade)) {
                             roomManager.playerToRoom.set(playerId, quickRoom.id);
                             ws.send(JSON.stringify({
                                 type: 'room_created',
@@ -1759,7 +2065,7 @@ wss.on('connection', (ws, req) => {
                                 playerNumber: quickRoom.players.get(playerId).number,
                                 playersInRoom: quickRoom.players.size
                             }));
-                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} crée ${quickRoom.id}`);
+                            logger.info('LOBBY', `⚡ Quick Play: ${playerId} crée ${quickRoom.id} (grade: ${quickGrade})`);
                         }
                     }
                     return;

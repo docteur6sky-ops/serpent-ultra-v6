@@ -1,13 +1,6 @@
 /**
  * SpawnSystem.js - Génération des éléments du jeu
- * Extrait de solo-game.js pour modularité
- *
- * Responsabilités:
- * - Spawn nourriture (pommes)
- * - Spawn crânes (bad)
- * - Spawn power-ups
- * - Spawn obstacles
- * - Logique de collision lors du spawn (éviter superposition)
+ * OPTIMISÉ avec cache O(1) pour les vérifications de position
  */
 
 import { logger } from '../services/logger.js';
@@ -15,296 +8,151 @@ import { logger } from '../services/logger.js';
 export class SpawnSystem {
     constructor(game) {
         this.game = game;
+        this._occupiedCache = null;
     }
 
-    /**
-     * Vérifie si une position est libre
-     * @param {number} x - Position X
-     * @param {number} y - Position Y
-     * @param {Array} excludePositions - Positions à exclure (optionnel)
-     * @returns {boolean} true si la position est libre
-     */
-    isPositionFree(x, y, excludePositions = []) {
-        // Vérifier collision avec le serpent
-        if (this.game.snake.some(s => s.x === x && s.y === y)) {
-            return false;
-        }
+    _posKey(x, y) {
+        return (x << 16) | y;
+    }
 
-        // Vérifier collision avec les obstacles
-        if (this.game.obstacles.some(o => o.x === x && o.y === y)) {
-            return false;
+    buildOccupiedCache(excludePositions = []) {
+        const cache = new Set();
+        for (const s of this.game.snake) cache.add(this._posKey(s.x, s.y));
+        for (const o of this.game.obstacles) cache.add(this._posKey(o.x, o.y));
+        if (this.game.bossSystem?.boss?.snake) {
+            for (const s of this.game.bossSystem.boss.snake) cache.add(this._posKey(s.x, s.y));
         }
-
-        // Vérifier collision avec la nourriture
-        if (this.game.food && x === this.game.food.x && y === this.game.food.y) {
-            return false;
-        }
-
-        // Vérifier collision avec le crâne
-        if (this.game.bad && x === this.game.bad.x && y === this.game.bad.y) {
-            return false;
-        }
-
-        // Vérifier collision avec la mystery box
+        if (this.game.food) cache.add(this._posKey(this.game.food.x, this.game.food.y));
+        if (this.game.bad) cache.add(this._posKey(this.game.bad.x, this.game.bad.y));
+        if (this.game.scissors) cache.add(this._posKey(this.game.scissors.x, this.game.scissors.y));
+        if (this.game.comboMaster) cache.add(this._posKey(this.game.comboMaster.x, this.game.comboMaster.y));
         const mysteryBox = this.game.powerUpSystem?.mysteryBox;
-        if (mysteryBox && x === mysteryBox.x && y === mysteryBox.y) {
-            return false;
-        }
+        if (mysteryBox) cache.add(this._posKey(mysteryBox.x, mysteryBox.y));
+        for (const p of excludePositions) cache.add(this._posKey(p.x, p.y));
+        this._occupiedCache = cache;
+        return cache;
+    }
 
-        // Vérifier collision avec les ciseaux
-        if (this.game.scissors && x === this.game.scissors.x && y === this.game.scissors.y) {
-            return false;
-        }
+    invalidateCache() { this._occupiedCache = null; }
 
-        // Vérifier collision avec le Combo Master (étoile)
-        if (this.game.comboMaster && x === this.game.comboMaster.x && y === this.game.comboMaster.y) {
-            return false;
-        }
-
-        // Vérifier collision avec le boss
-        if (this.game.bossSystem?.boss?.snake.some(s => s.x === x && s.y === y)) {
-            return false;
-        }
-
-        // Vérifier positions exclues additionnelles
-        if (excludePositions.some(p => p.x === x && p.y === y)) {
-            return false;
-        }
-
+    isPositionFree(x, y, excludePositions = []) {
+        if (this.game.snake.some(s => s.x === x && s.y === y)) return false;
+        if (this.game.obstacles.some(o => o.x === x && o.y === y)) return false;
+        if (this.game.food && x === this.game.food.x && y === this.game.food.y) return false;
+        if (this.game.bad && x === this.game.bad.x && y === this.game.bad.y) return false;
+        const mysteryBox = this.game.powerUpSystem?.mysteryBox;
+        if (mysteryBox && x === mysteryBox.x && y === mysteryBox.y) return false;
+        if (this.game.scissors && x === this.game.scissors.x && y === this.game.scissors.y) return false;
+        if (this.game.comboMaster && x === this.game.comboMaster.x && y === this.game.comboMaster.y) return false;
+        if (this.game.bossSystem?.boss?.snake.some(s => s.x === x && s.y === y)) return false;
+        if (excludePositions.some(p => p.x === x && p.y === y)) return false;
         return true;
     }
 
-    /**
-     * Trouve une position libre aléatoire
-     * @param {Object} options - Options de spawn
-     * @returns {Object|null} Position {x, y} ou null si impossible
-     */
     findFreePosition(options = {}) {
-        const {
-            margin = 0,           // Marge depuis les bords
-            maxAttempts = 200,    // Nombre max de tentatives
-            excludePositions = [], // Positions à exclure
-            safeZone = null       // Zone de sécurité {x, y, radius}
-        } = options;
-
+        const { margin = 0, maxAttempts = 200, excludePositions = [], safeZone = null } = options;
         const gridSize = this.game.GRID_SIZE;
+        const cache = this.buildOccupiedCache(excludePositions);
         let attempts = 0;
 
-        // Phase 1: Tentatives aléatoires
         while (attempts < maxAttempts) {
             const x = Math.floor(Math.random() * (gridSize - 2 * margin)) + margin;
             const y = Math.floor(Math.random() * (gridSize - 2 * margin)) + margin;
-
-            // Vérifier zone de sécurité
-            if (safeZone) {
-                const inSafeZone = Math.abs(x - safeZone.x) <= safeZone.radius &&
-                                   Math.abs(y - safeZone.y) <= safeZone.radius;
-                if (inSafeZone) {
-                    attempts++;
-                    continue;
-                }
+            if (safeZone && Math.abs(x - safeZone.x) <= safeZone.radius && Math.abs(y - safeZone.y) <= safeZone.radius) {
+                attempts++; continue;
             }
-
-            if (this.isPositionFree(x, y, excludePositions)) {
-                return { x, y };
-            }
+            if (!cache.has(this._posKey(x, y))) { this.invalidateCache(); return { x, y }; }
             attempts++;
         }
 
-        // Phase 2: Recherche exhaustive
         for (let y = margin; y < gridSize - margin; y++) {
             for (let x = margin; x < gridSize - margin; x++) {
-                // Vérifier zone de sécurité
-                if (safeZone) {
-                    const inSafeZone = Math.abs(x - safeZone.x) <= safeZone.radius &&
-                                       Math.abs(y - safeZone.y) <= safeZone.radius;
-                    if (inSafeZone) continue;
-                }
-
-                if (this.isPositionFree(x, y, excludePositions)) {
-                    return { x, y };
-                }
+                if (safeZone && Math.abs(x - safeZone.x) <= safeZone.radius && Math.abs(y - safeZone.y) <= safeZone.radius) continue;
+                if (!cache.has(this._posKey(x, y))) { this.invalidateCache(); return { x, y }; }
             }
         }
-
         logger.warn('[SpawnSystem] Impossible de trouver une position libre');
+        this.invalidateCache();
         return null;
     }
 
-    /**
-     * Spawn la nourriture (pomme), ciseaux ou étoile combo master si bonus actif
-     */
     spawnFood() {
-        // Vérifier si des ciseaux doivent spawn à la place de la pomme
         if (this.game.roguelikeSystem?.scissorsPending && !this.game.scissors) {
-            const position = this.findFreePosition();
-            if (position) {
-                this.game.scissors = position;
-                this.game.food = null;  // Pas de pomme tant que ciseaux pas mangés
-                logger.log('[SpawnSystem] ✂️ Ciseaux spawnés à', position);
-            }
+            const pos = this.findFreePosition();
+            if (pos) { this.game.scissors = pos; this.game.food = null; logger.log('[SpawnSystem] Ciseaux spawnes'); }
             return;
         }
-
-        // Vérifier si Combo Master doit spawn à la place de la pomme
         if (this.game.roguelikeSystem?.comboMasterPending && !this.game.comboMaster) {
-            const position = this.findFreePosition();
-            if (position) {
-                this.game.comboMaster = position;
-                this.game.food = null;  // Pas de pomme tant que combo master pas mangé
-                logger.log('[SpawnSystem] 🌟 Combo Master spawné à', position);
-            }
+            const pos = this.findFreePosition();
+            if (pos) { this.game.comboMaster = pos; this.game.food = null; logger.log('[SpawnSystem] Combo Master spawne'); }
             return;
         }
-
-        // Spawn normal de pomme (seulement si pas de ciseaux ni combo master)
         if (!this.game.scissors && !this.game.comboMaster) {
-            const position = this.findFreePosition();
-            if (position) {
-                this.game.food = position;
-            }
+            const pos = this.findFreePosition();
+            if (pos) this.game.food = pos;
         }
     }
 
-    /**
-     * Spawn le crâne (bad)
-     */
     spawnBad() {
-        const position = this.findFreePosition();
-        if (position) {
-            this.game.bad = position;
-        }
+        const pos = this.findFreePosition();
+        if (pos) this.game.bad = pos;
     }
 
-    /**
-     * Spawn une Mystery Box avec une certaine probabilité
-     * Le type est déterminé lors du ramassage, pas du spawn
-     */
     spawnPowerup() {
-        // Probabilité selon difficulté
-        let powerupChance = this.game.difficulty === 0 ? 0.08 :
-                           this.game.difficulty === 1 ? 0.15 : 0.25;
-
-        // Upgrade Dualité (roguelike) : 50% chance de doubler la probabilité
+        let chance = this.game.difficulty === 0 ? 0.08 : this.game.difficulty === 1 ? 0.15 : 0.25;
         if (this.game.isRoguelikeMode && this.game.roguelikeModifiers?.passives) {
-            const doubleSpawn = this.game.roguelikeModifiers.passives.find(p => p.type === 'double_spawn');
-            if (doubleSpawn && Math.random() < doubleSpawn.chance) {
-                powerupChance *= 2;
-            }
+            const ds = this.game.roguelikeModifiers.passives.find(p => p.type === 'double_spawn');
+            if (ds && Math.random() < ds.chance) chance *= 2;
         }
-
-        // Déléguer au système de mystery box
-        this.game.powerUpSystem.spawnMysteryBox(
-            (options) => this.findFreePosition(options),
-            powerupChance
-        );
+        this.game.powerUpSystem.spawnMysteryBox((opts) => this.findFreePosition(opts), chance);
     }
 
-    /**
-     * Spawn des obstacles selon la difficulté et le niveau
-     */
     spawnObstacles() {
-        let obsCount = 0;
-
-        if (this.game.difficulty === 0) {
-            obsCount = this.game.level > 8 ? Math.floor((this.game.level - 8) / 3) : 0;
-        } else if (this.game.difficulty === 1) {
-            obsCount = this.game.level > 3 ? Math.floor((this.game.level - 3) / 2) : 0;
-        } else {
-            obsCount = Math.max(0, this.game.level - 1);
-        }
-
-        for (let i = 0; i < obsCount; i++) {
-            const position = this.findFreePosition();
-            if (position) {
-                this.game.obstacles.push(position);
-            }
+        let count = 0;
+        if (this.game.difficulty === 0) count = this.game.level > 8 ? Math.floor((this.game.level - 8) / 3) : 0;
+        else if (this.game.difficulty === 1) count = this.game.level > 3 ? Math.floor((this.game.level - 3) / 2) : 0;
+        else count = Math.max(0, this.game.level - 1);
+        for (let i = 0; i < count; i++) {
+            const pos = this.findFreePosition();
+            if (pos) this.game.obstacles.push(pos);
         }
     }
 
-    /**
-     * Génère les murs de bordure (roguelike)
-     * Crée des trous à gauche et droite au niveau du spawn pour éviter game over immédiat
-     */
     generateBorderWalls() {
-        const gridSize = this.game.GRID_SIZE;
-        const spawnY = 15; // Y du spawn du serpent (centre)
-        const holeSize = 3; // Taille du trou (3 blocs de haut)
-
-        // Haut et bas
-        for (let x = 0; x < gridSize; x++) {
-            this.game.obstacles.push({ x: x, y: 0, isBorder: true });
-            this.game.obstacles.push({ x: x, y: gridSize - 1, isBorder: true });
+        const gs = this.game.GRID_SIZE, spawnY = 15, holeSize = 3;
+        for (let x = 0; x < gs; x++) {
+            this.game.obstacles.push({ x, y: 0, isBorder: true });
+            this.game.obstacles.push({ x, y: gs - 1, isBorder: true });
         }
-
-        // Gauche et droite (avec trous au niveau du spawn)
-        for (let y = 1; y < gridSize - 1; y++) {
-            // Vérifier si on est dans la zone du trou (spawnY ± holeSize/2)
-            const isInHoleZone = y >= spawnY - Math.floor(holeSize / 2) &&
-                                  y <= spawnY + Math.floor(holeSize / 2);
-
-            // Mur gauche (avec trou)
-            if (!isInHoleZone) {
-                this.game.obstacles.push({ x: 0, y: y, isBorder: true });
-            }
-
-            // Mur droit (avec trou)
-            if (!isInHoleZone) {
-                this.game.obstacles.push({ x: gridSize - 1, y: y, isBorder: true });
+        for (let y = 1; y < gs - 1; y++) {
+            const inHole = y >= spawnY - Math.floor(holeSize/2) && y <= spawnY + Math.floor(holeSize/2);
+            if (!inHole) {
+                this.game.obstacles.push({ x: 0, y, isBorder: true });
+                this.game.obstacles.push({ x: gs - 1, y, isBorder: true });
             }
         }
-
-        logger.log(`[SpawnSystem] Murs de bordure générés avec trous: ${this.game.obstacles.length} blocs (trou Y=${spawnY}±${Math.floor(holeSize/2)})`);
+        logger.log('[SpawnSystem] Murs de bordure generes: ' + this.game.obstacles.length);
     }
 
-    /**
-     * Génère les obstacles pour un niveau roguelike
-     * @param {Object} levelData - Données du niveau
-     * @param {boolean} hasTeleport - Le joueur a-t-il l'upgrade téléportation?
-     */
     generateRoguelikeObstacles(levelData, hasTeleport = false) {
         this.game.obstacles = [];
-
-        // Murs de bordure (sauf si upgrade Téléportation)
-        if (!hasTeleport) {
-            this.generateBorderWalls();
-        }
-
+        if (!hasTeleport) this.generateBorderWalls();
         if (!levelData?.obstacles) return;
-
-        // Zone de sécurité autour du serpent
         const head = this.game.snake[0];
-        const safeZone = {
-            x: head.x,
-            y: head.y,
-            radius: 5
-        };
-
-        // Vérifier si le skin Scanner est actif (danger_preview)
+        const safeZone = { x: head.x, y: head.y, radius: 5 };
         const run = window.roguelikeManager?.currentRun;
-        const dangerPreview = run?.dangerPreview || false;
-        const previewDuration = dangerPreview ? 1500 : 0; // 1.5s de clignotement
-
+        const preview = run?.dangerPreview ? 1500 : 0;
         for (const obs of levelData.obstacles) {
             if (obs.type === 'wall_static') {
                 for (let i = 0; i < obs.count; i++) {
-                    const position = this.findFreePosition({
-                        margin: 2,
-                        maxAttempts: 50,
-                        safeZone: safeZone
-                    });
-                    if (position) {
-                        // Ajouter le temps de preview si skin Scanner actif
-                        if (dangerPreview) {
-                            position.previewUntil = Date.now() + previewDuration;
-                        }
-                        this.game.obstacles.push(position);
+                    const pos = this.findFreePosition({ margin: 2, maxAttempts: 50, safeZone });
+                    if (pos) {
+                        if (preview) pos.previewUntil = Date.now() + preview;
+                        this.game.obstacles.push(pos);
                     }
                 }
             }
-            // TODO: Ajouter skull, wall_moving, etc.
         }
-
-        logger.log(`[SpawnSystem] ${this.game.obstacles.length} obstacles générés pour le niveau`);
+        logger.log('[SpawnSystem] ' + this.game.obstacles.length + ' obstacles generes');
     }
 }

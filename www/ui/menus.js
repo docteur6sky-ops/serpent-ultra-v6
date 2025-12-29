@@ -4,7 +4,7 @@
 // ============================================
 
 import { logger } from '../services/logger.js';
-import { loadSoundSettings, loadLanguageSettings } from './settings.js';
+import { loadSoundSettings, loadLanguageSettings, loadControlsSettings, loadVibrationSettings } from './settings.js';
 
 // ============================================
 // NAVIGATION MENUS
@@ -16,7 +16,8 @@ import { loadSoundSettings, loadLanguageSettings } from './settings.js';
 export function hideAllMenus() {
     const menus = [
         'menu', 'difficulty-menu', 'multiplayer-menu', 'options-menu',
-        'sound-menu', 'career-menu', 'rules-menu', 'credits-menu', 'language-menu'
+        'sound-menu', 'controls-menu', 'career-menu', 'rules-menu', 'credits-menu', 'language-menu',
+        'google-account-menu'
     ];
     menus.forEach(id => {
         const element = document.getElementById(id);
@@ -123,7 +124,9 @@ export function showMultiplayer() {
                 window.multiGame = new MultiplayerSnakeGame();
             } catch (error) {
                 logger.error('❌ Erreur création jeu multiplayer:', error);
-                alert('Erreur: Impossible de créer le jeu multijoueur');
+                if (window.ModalManager) {
+                    window.ModalManager.error('Impossible de créer le jeu multijoueur');
+                }
                 return;
             }
         }
@@ -140,7 +143,9 @@ export function showMultiplayer() {
 
     } catch (error) {
         logger.error('❌ Erreur showMultiplayer:', error);
-        alert('Erreur lors de la connexion multiplayer');
+        if (window.ModalManager) {
+            window.ModalManager.error('Erreur lors de la connexion multiplayer');
+        }
     }
 }
 
@@ -181,8 +186,26 @@ export function showCredits() {
  * Afficher le menu Langue
  */
 export function showLanguage() {
-    showMenu('language-menu', 'slide-in-right');
+    showMenu('language-menu',
+        'google-account-menu', 'slide-in-right');
     loadLanguageSettings();
+}
+
+/**
+ * Afficher le menu Contrôles
+ */
+export function showControls() {
+    showMenu('controls-menu', 'slide-in-right');
+    loadControlsSettings();
+    loadVibrationSettings();
+}
+
+
+/**
+ * Afficher le menu Compte Google
+ */
+export function showGoogleAccount() {
+    showMenu('google-account-menu', 'slide-in-right');
 }
 
 // ============================================
@@ -200,5 +223,7 @@ window.showSound = showSound;
 window.showRules = showRules;
 window.showCredits = showCredits;
 window.showLanguage = showLanguage;
+window.showControls = showControls;
+window.showGoogleAccount = showGoogleAccount;
 
 logger.log('✅ Module menus.js chargé');

@@ -1,11 +1,14 @@
 // ============================================
 // MULTIPLAYER SNAKE GAME - MODE MULTIJOUEUR ENCAPSULÉ
+// Hérite de BaseSnakeGame pour réutiliser: canvas, particules, effets
 // ============================================
 
-// ✅ Fonction placeholder pour le leaderboard (à implémenter plus tard)
 import { logger } from './services/logger.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+import { BaseSnakeGame } from './core/BaseSnakeGame.js';
+import { multiplayerUIManager } from './ui/MultiplayerUIManager.js';
 
+// ✅ Fonction placeholder pour le leaderboard (à implémenter plus tard)
 window.showLeaderboard = function() {
     if (window.ModalManager) {
         window.ModalManager.info('Leaderboard mondial - Fonctionnalité à venir !', { title: 'Leaderboard' });
@@ -13,19 +16,13 @@ window.showLeaderboard = function() {
     // TODO : Implémenter affichage leaderboard
 };
 
-class MultiplayerSnakeGame {
+class MultiplayerSnakeGame extends BaseSnakeGame {
     constructor() {
-        // Canvas dédié au multijoueur
-        this.canvas = document.getElementById('canvas-multi');
-        if (!this.canvas) {
-            throw new Error('Canvas canvas-multi introuvable!');
-        }
-        this.ctx = this.canvas.getContext('2d');
+        // Appeler le constructeur parent avec l'ID du canvas
+        super('canvas-multi');
 
-        // Configuration - utiliser la taille réelle du canvas
-        this.GRID_SIZE = 30;
-        this.CANVAS_SIZE = this.canvas.width; // 540 ou la taille définie dans HTML
-        this.CELL_SIZE = this.CANVAS_SIZE / this.GRID_SIZE; // 18px si 540/30
+        // ✅ Surcharger MAX_PARTICLES pour le multi (plus d'explosions simultanées)
+        this.MAX_PARTICLES = 500;
 
         // Client WebSocket
         this.client = new MultiplayerClient();
@@ -33,31 +30,30 @@ class MultiplayerSnakeGame {
         // État du serveur
         this.serverState = null;
 
-        // Contrôle
+        // Contrôle spécifique au multi
         this.isActive = false;
         this.renderRAF = null;
         this.timerInterval = null;
-        this.gameOverShown = false; // ✅ FIX: Track si game over affiché (pour éviter retour auto lobby)
+        this.gameOverShown = false; // ✅ FIX: Track si game over affiché
 
         // Tracking power-ups pour trophées
         this.powerupsCollectedThisGame = 0;
         this.lastPowerupState = null;
 
-        // 💥 Système de particules pour explosions
-        this.particles = [];
-        this.MAX_PARTICLES = 500;
+        // 💥 État des explosions multi-joueurs
         this.explodingPlayers = {}; // { playerId: true } pour cacher les serpents explosés
         this.pendingGameOver = null; // Message gameOver en attente (affichage après explosion)
 
-        // Couleurs
+        // Couleurs spécifiques au multi (surcharge)
         this.COLORS = {
+            ...this.COLORS,
             GOLD: '#D4AF37',
             BG_DARK: '#0f0f23',
             grid: '#404060',
             border: '#D4AF37'
         };
 
-        // Setup des callbacks
+        // Setup des callbacks WebSocket
         this.setupCallbacks();
     }
 
@@ -861,280 +857,56 @@ class MultiplayerSnakeGame {
     updateScoreBoard() {
         if (!this.serverState || !this.client?.playerId) return;
 
-        // ═══════════════════════════════════════════════════════════
-        // TIMER
-        // ═══════════════════════════════════════════════════════════
-        const timerElement = document.getElementById('multi-timer');
-        const timeRemaining = this.serverState.matchTimeRemaining || 0;
-        const minutes = Math.floor(timeRemaining / 60000);
-        const seconds = Math.floor((timeRemaining % 60000) / 1000);
-
-        if (timerElement) {
-            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-            // Temps critique (< 60s) - Rouge
-            if (timeRemaining < 60000) {
-                timerElement.style.color = '#FF4444';
-            } else {
-                timerElement.style.color = ''; // Reset
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        // DÉTERMINER QUEL JOUEUR EST QUEL ID
-        // ═══════════════════════════════════════════════════════════
-        const myId = this.client.playerId;
-        const players = this.serverState.players || {};
-        const playerIds = Object.keys(players);
-        const opponentId = playerIds.find(id => id !== myId);
-
-        if (!opponentId) return;
-
-        // Déterminer qui est P1 et P2 (le joueur local est toujours P1)
-        const p1Id = myId;
-        const p2Id = opponentId;
-
-        // ═══════════════════════════════════════════════════════════
-        // PSEUDOS
-        // ═══════════════════════════════════════════════════════════
-        const p1Name = document.getElementById('multi-player1-name');
-        const p2Name = document.getElementById('multi-player2-name');
-
-        if (p1Name) p1Name.textContent = players[p1Id]?.pseudo || 'Joueur 1';
-        if (p2Name) p2Name.textContent = players[p2Id]?.pseudo || 'Joueur 2';
-
-        // ═══════════════════════════════════════════════════════════
-        // POWER-UPS (MINI-BARRES)
-        // ═══════════════════════════════════════════════════════════
-        this.updatePlayerPowerup('multi-player1-powerup', players[p1Id]);
-        this.updatePlayerPowerup('multi-player2-powerup', players[p2Id]);
-
-        // ═══════════════════════════════════════════════════════════
-        // ❤️ BARRES DE VIE (selon grade du joueur)
-        // ═══════════════════════════════════════════════════════════
-        const p1Health = players[p1Id]?.health ?? 15;
-        const p2Health = players[p2Id]?.health ?? 15;
-        // DEBUG: Voir les valeurs de health reçues
-        if (this._lastP1Health !== p1Health || this._lastP2Health !== p2Health) {
-            logger.log(`[MultiGame] ❤️ Health update: P1=${p1Health}, P2=${p2Health}`);
-            this._lastP1Health = p1Health;
-            this._lastP2Health = p2Health;
-        }
-        this.updateHealthBar('multi-player1-health', p1Health);
-        this.updateHealthBar('multi-player2-health', p2Health);
-
-        // ═══════════════════════════════════════════════════════════
-        // ⚔️ CHARGE ÉPÉE (bordure slot)
-        // ═══════════════════════════════════════════════════════════
-        const myPlayer = players[this.client.playerId];
-        this.updateSwordSlotCharge(myPlayer);
+        // Déléguer au manager UI
+        multiplayerUIManager.updateScoreBoard(this.serverState, this.client.playerId);
     }
 
-    // ❤️ Mettre à jour une barre de vie
+    // ❤️ Délégué au manager UI
     updateHealthBar(barId, health) {
-        const bar = document.getElementById(barId);
-        if (!bar) return;
-
-        const segments = bar.querySelectorAll('.mp-health-segment');
-        segments.forEach((seg, index) => {
-            if (index < health) {
-                seg.classList.remove('empty');
-            } else {
-                seg.classList.add('empty');
-            }
-        });
-
-        // Classes de couleur selon niveau de vie
-        bar.classList.remove('low', 'critical');
-        if (health <= 3) {
-            bar.classList.add('critical');
-        } else if (health <= 7) {
-            bar.classList.add('low');
-        }
+        multiplayerUIManager.updateHealthBar(barId, health);
     }
 
-    // ⚔️ Mettre à jour la bordure du slot épée selon la charge
+    // ⚔️ Délégué au manager UI
     updateSwordSlotCharge(playerData) {
-        const slot = document.getElementById('multi-sword-slot');
-        if (!slot) return;
-
-        // Seulement si l'épée est stockée
-        if (playerData?.storedItem !== 'sword') {
-            slot.style.borderColor = '';
-            slot.style.boxShadow = '';
-            slot.removeAttribute('data-charge');
-            return;
-        }
-
-        const charge = playerData?.swordCharge ?? 0;
-        slot.setAttribute('data-charge', charge);
-
-        // Bordure grise (0) → verte progressive (15)
-        slot.style.boxShadow = ''; // Reset
-        if (charge === 0) {
-            slot.style.borderColor = '#6b7280'; // Gris
-        } else if (charge < 5) {
-            slot.style.borderColor = '#84cc16'; // Vert lime clair
-        } else if (charge < 10) {
-            slot.style.borderColor = '#22c55e'; // Vert
-        } else if (charge < 15) {
-            slot.style.borderColor = '#10b981'; // Vert émeraude
-        } else {
-            slot.style.borderColor = '#00ff88'; // Full charge - vert brillant
-            slot.style.boxShadow = '0 0 15px #00ff88, 0 0 30px #00ff88';
-        }
+        multiplayerUIManager.updateSwordSlotCharge(playerData);
     }
 
     // ⚔️ Effet visuel de dégâts (flash rouge)
     showDamageEffect(damage) {
-        const canvas = document.getElementById('multi-game-canvas');
-        if (!canvas) return;
-
-        // Flash rouge sur le canvas
-        canvas.style.boxShadow = `inset 0 0 100px rgba(255, 0, 0, 0.5), 0 0 50px rgba(255, 0, 0, 0.3)`;
-        canvas.style.animation = 'damageShake 0.3s ease-out';
-
-        setTimeout(() => {
-            canvas.style.boxShadow = '';
-            canvas.style.animation = '';
-        }, 300);
-
-        // Notification de dégâts
-        this.client.showMessage(`⚔️ -${damage} HP!`, 'error');
+        multiplayerUIManager.showDamageEffect(
+            this.canvas,
+            damage,
+            (msg, type) => this.client.showMessage(msg, type)
+        );
     }
 
     /**
-     * ⚔️ Démarre le timer visuel de l'épée active (barre circulaire SVG)
+     * ⚔️ Démarre le timer visuel de l'épée active
      */
     startSwordTimer(endTime, charge) {
-        const slot = document.getElementById('multi-sword-slot');
-        const icon = document.getElementById('multi-sword-icon');
-
-        if (!slot || !icon) return;
-
-        // Afficher l'icône épée
-        slot.classList.add('sword-active');
-        icon.textContent = '⚔️';
-
-        // Créer ou récupérer le SVG circulaire
-        let svgTimer = slot.querySelector('.sword-timer-svg');
-        if (!svgTimer) {
-            svgTimer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svgTimer.classList.add('sword-timer-svg');
-            svgTimer.setAttribute('viewBox', '0 0 100 100');
-            svgTimer.innerHTML = `
-                <circle class="sword-timer-bg" cx="50" cy="50" r="45" />
-                <circle class="sword-timer-progress" cx="50" cy="50" r="45" />
-            `;
-            slot.appendChild(svgTimer);
-        }
-
-        const progressCircle = svgTimer.querySelector('.sword-timer-progress');
-        const circumference = 2 * Math.PI * 45; // r=45
-        progressCircle.style.strokeDasharray = circumference;
-
-        // Calculer durée totale
-        const duration = endTime - Date.now();
-        const startTime = Date.now();
-
-        // Animation du timer
-        const updateTimer = () => {
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, duration - elapsed);
-            const progress = remaining / duration;
-
-            // Mettre à jour le cercle (sens anti-horaire)
-            progressCircle.style.strokeDashoffset = circumference * (1 - progress);
-
-            // Couleur selon temps restant
-            if (progress < 0.3) {
-                progressCircle.style.stroke = '#ff4444'; // Rouge
-            } else if (progress < 0.6) {
-                progressCircle.style.stroke = '#ffaa00'; // Orange
-            } else {
-                progressCircle.style.stroke = '#00ff88'; // Vert
-            }
-
-            if (remaining > 0) {
-                this.swordTimerRAF = requestAnimationFrame(updateTimer);
-            } else {
-                // Timer expiré - reset visuel
-                this.clearSwordTimer();
-            }
-        };
-
-        updateTimer();
+        multiplayerUIManager.startSwordTimer(endTime, charge);
     }
 
     /**
      * ⚔️ Nettoie le timer visuel de l'épée
      */
     clearSwordTimer() {
-        if (this.swordTimerRAF) {
-            cancelAnimationFrame(this.swordTimerRAF);
-            this.swordTimerRAF = null;
-        }
-
-        const slot = document.getElementById('multi-sword-slot');
-        if (slot) {
-            slot.classList.remove('sword-active');
-            const svgTimer = slot.querySelector('.sword-timer-svg');
-            if (svgTimer) {
-                svgTimer.remove();
-            }
-        }
+        multiplayerUIManager.clearSwordTimer();
     }
 
     /**
      * ⚔️ Effet visuel quand l'épée touche
      */
     showSwordHitEffect(damage) {
-        // Flash doré sur le canvas
-        const canvas = this.canvas;
-        if (canvas) {
-            canvas.style.boxShadow = `0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 30px rgba(255, 215, 0, 0.3)`;
-            setTimeout(() => {
-                canvas.style.boxShadow = '';
-            }, 300);
-        }
-
-        // Notification succès
-        this.client.showMessage(`⚔️ +${damage} segments volés!`, 'success');
+        multiplayerUIManager.showSwordHitEffect(
+            this.canvas,
+            damage,
+            (msg, type) => this.client.showMessage(msg, type)
+        );
     }
 
     updatePlayerPowerup(containerId, playerData) {
-        const container = document.getElementById(containerId);
-        if (!container || !playerData) return;
-
-        const emoji = container.querySelector('.mp-pw-emoji');
-        const fill = container.querySelector('.mp-pw-fill');
-
-        if (!emoji || !fill) return;
-
-        const powerupType = playerData.activePowerup;
-        const powerupEndTime = playerData.powerupEndTime;
-
-        const powerupEmojis = {
-            ice: '❄️',
-            fire: '🔥',
-            rock: '🪨',
-            ghost: '👻',
-            lightning: '⚡'
-        };
-
-        if (powerupType && powerupEndTime) {
-            const timeRemaining = Math.max(0, powerupEndTime - Date.now());
-            const duration = 5000;
-            const percentage = (timeRemaining / duration) * 100;
-
-            container.className = `mp-powerup-inline active ${powerupType}`;
-            emoji.textContent = powerupEmojis[powerupType] || '';
-            fill.style.width = Math.max(0, percentage) + '%';
-        } else {
-            container.className = 'mp-powerup-inline';
-            emoji.textContent = '\u00A0';
-            fill.style.width = '0%';
-        }
+        multiplayerUIManager.updatePlayerPowerup(containerId, playerData);
     }
 
     // ============================================
@@ -1164,41 +936,10 @@ class MultiplayerSnakeGame {
     // ============================================
 
     showWaitingOverlay() {
-        // Créer un overlay d'attente AAA (styles dans snake.css)
-        const overlay = document.createElement('div');
-        overlay.id = 'mp-waiting-overlay';
-        overlay.innerHTML = `
-            <div class="mp-waiting-content">
-                <div class="mp-waiting-icon">🎯</div>
-                <h2 class="mp-waiting-title">Recherche en cours</h2>
-                <p class="mp-waiting-subtitle">Connexion à un adversaire...</p>
-
-                <div class="mp-waiting-spinner-container">
-                    <div class="mp-spinner-outer"></div>
-                    <div class="mp-spinner-inner"></div>
-                    <div class="mp-spinner-dot"></div>
-                </div>
-
-                <div class="mp-waiting-status">
-                    <div class="mp-status-dot"></div>
-                    <span class="mp-status-text">Connecté au serveur</span>
-                </div>
-
-                <button class="mp-waiting-cancel" onclick="window.multiGame?.cancelMatchmaking()">
-                    Annuler
-                </button>
-            </div>
-        `;
-
-        // Ajouter au body (position fixed dans CSS)
-        document.body.appendChild(overlay);
-
-        // Enregistrer l'overlay dans le ScreenManager
-        window.screenManager.registerOverlay('mp-waiting-overlay');
+        multiplayerUIManager.showWaitingOverlay(() => this.cancelMatchmaking());
     }
 
     cancelMatchmaking() {
-        // Fermer la connexion et retourner au lobby
         this.hideWaitingOverlay();
         if (this.client) {
             this.client.disconnect();
@@ -1209,10 +950,7 @@ class MultiplayerSnakeGame {
     }
 
     hideWaitingOverlay() {
-        const overlay = document.getElementById('mp-waiting-overlay');
-        if (overlay) {
-            overlay.remove();
-        }
+        multiplayerUIManager.hideWaitingOverlay();
     }
 
     showGameOver(message) {
@@ -1220,111 +958,46 @@ class MultiplayerSnakeGame {
 
         const myId = this.client.playerId;
         const scores = message.scores || {};
-        const players = message.players || {}; // ✅ FIX: Récupérer les infos des joueurs
+        const players = message.players || {};
         const mySegments = scores[myId] || 0;
         const opponentId = Object.keys(scores).find(id => id !== myId);
         const opponentSegments = opponentId ? scores[opponentId] : 0;
 
-        // ✅ FIX: Récupérer les pseudos réels
         const myPseudo = players[myId]?.pseudo || 'Vous';
         const opponentPseudo = opponentId ? (players[opponentId]?.pseudo || 'Adversaire') : 'Adversaire';
 
-        // ✅ FIX ABANDON: Gérer winner booléen (abandon) ou ID (collision)
+        // Gérer winner booléen (abandon) ou ID (collision)
         const isWinner = typeof message.winner === 'boolean'
             ? message.winner
             : message.winner === myId;
+        const isDraw = !message.winner;
 
-        // ✅ TRACKING VICTOIRES MULTIJOUEUR (pour trophées)
+        // Tracking victoires multijoueur (pour trophées)
         this.trackMultiplayerVictory(isWinner);
 
-        const resultMessage = isWinner
-            ? '🏆 VICTOIRE !'
-            : message.winner
-                ? '💀 DÉFAITE'
-                : '⚔️ MATCH NUL';
-
-        const reasonText = message.reason === 'time_up'
-            ? '⏰ Temps écoulé !'
-            : message.reason === 'opponent_died'
-                ? '💀 Adversaire éliminé !'
-                : message.reason === 'abandon'
-                    ? '🏳️ Adversaire a abandonné !'
-                    : '💀 Les deux sont morts !';
-
-        // Créer l'overlay de game over (styles AAA dans snake.css)
-        const gameOverOverlay = document.createElement('div');
-        gameOverOverlay.id = 'mp-gameover-overlay';
-        gameOverOverlay.className = isWinner ? 'victory' : (message.winner ? 'defeat' : 'draw');
-
-        // Titre et icône selon le résultat
-        const titleText = isWinner ? 'VICTOIRE' : (message.winner ? 'DÉFAITE' : 'MATCH NUL');
-        const titleIcon = isWinner ? '🏆' : (message.winner ? '💀' : '⚔️');
-
-        gameOverOverlay.innerHTML = `
-            <div class="mp-gameover-content">
-                <div class="mp-gameover-icon">${titleIcon}</div>
-                <h1 class="mp-gameover-title ${isWinner ? 'victory' : ''}">${titleText}</h1>
-                <p class="mp-gameover-subtitle">${reasonText}</p>
-
-                <div class="mp-gameover-scores">
-                    <div class="mp-score-card ${mySegments > opponentSegments ? 'winner' : ''}">
-                        <div class="mp-score-avatar">🐍</div>
-                        <div class="mp-score-name">${myPseudo}</div>
-                        <div class="mp-score-value">${mySegments}</div>
-                        <div class="mp-score-label">segments</div>
-                    </div>
-                    <div class="mp-score-vs">VS</div>
-                    <div class="mp-score-card ${opponentSegments > mySegments ? 'winner' : ''}">
-                        <div class="mp-score-avatar">🐍</div>
-                        <div class="mp-score-name">${opponentPseudo}</div>
-                        <div class="mp-score-value">${opponentSegments}</div>
-                        <div class="mp-score-label">segments</div>
-                    </div>
-                </div>
-
-                <div class="mp-gameover-actions">
-                    <button id="mp-replay-btn" class="mp-btn-primary">
-                        <span class="btn-icon">🔄</span>
-                        <span class="btn-text">Rejouer</span>
-                    </button>
-                    <button id="mp-leaderboard-btn" class="mp-btn-secondary">
-                        <span class="btn-icon">🏆</span>
-                        <span class="btn-text">Leaderboard</span>
-                    </button>
-                    <button id="mp-menu-btn" class="mp-btn-tertiary">
-                        <span class="btn-icon">🏠</span>
-                        <span class="btn-text">Menu</span>
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(gameOverOverlay);
-
-        // Enregistrer l'overlay dans le ScreenManager
-        window.screenManager.registerOverlay('mp-gameover-overlay');
-
-        // Attacher les événements
-        document.getElementById('mp-replay-btn').onclick = () => {
-            gameOverOverlay.remove();
-
-            // ✅ FIX MUSIQUE: Forcer l'arrêt de la musique actuelle
-            if (window.audioManager) {
-                window.audioManager.stopAll();
+        // Afficher l'overlay via le manager UI
+        multiplayerUIManager.showGameOverOverlay({
+            isWinner,
+            isDraw,
+            reason: message.reason,
+            myPseudo,
+            opponentPseudo,
+            mySegments,
+            opponentSegments
+        }, {
+            onReplay: () => {
+                if (window.audioManager) {
+                    window.audioManager.stopAll();
+                }
+                window.screenManager.show('lobby-screen');
+            },
+            onLeaderboard: () => {
+                window.showLeaderboard();
+            },
+            onMenu: () => {
+                this.returnToMenu();
             }
-
-            // ✅ FIX BUG REJOUER: Retourner au lobby au lieu de disconnect/reconnect
-            window.screenManager.show('lobby-screen');
-        };
-
-        document.getElementById('mp-leaderboard-btn').onclick = () => {
-            window.showLeaderboard();
-        };
-
-        document.getElementById('mp-menu-btn').onclick = () => {
-            gameOverOverlay.remove();
-            this.returnToMenu();
-        };
+        });
     }
 
     /**

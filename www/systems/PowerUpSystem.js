@@ -42,6 +42,12 @@ export class PowerUpSystem {
         this.sprintSpeedBoost = 1;
         this.sprintCooldown = 0;
         this.lastDirectionTap = null;
+        this.sprintCooldownInterval = null;
+
+        // Boost cooldown tracking
+        this.boostCooldownStartTime = 0;
+        this.boostCooldownDuration = 0;
+        this.boostRAFId = null;
 
         // Emojis des power-ups
         this.powerupEmojis = {
@@ -237,6 +243,12 @@ export class PowerUpSystem {
         this.sprintSpeedBoost = 1;
         this.sprintCooldown = 0;
         this.lastDirectionTap = null;
+        if (this.sprintCooldownInterval) { clearInterval(this.sprintCooldownInterval); this.sprintCooldownInterval = null; }
+
+        // Boost cooldown tracking
+        this.boostCooldownStartTime = 0;
+        this.boostCooldownDuration = 0;
+        if (this.boostRAFId) { cancelAnimationFrame(this.boostRAFId); this.boostRAFId = null; }
         this.hideBar();
 
         // Reset Mystery Box
@@ -318,10 +330,11 @@ export class PowerUpSystem {
                 logger.log('[PowerUp] Sprint terminé, cooldown: ' + ability.cooldown + 's');
 
                 // Décrémenter le cooldown chaque seconde
-                const cooldownInterval = setInterval(() => {
+                if (this.sprintCooldownInterval) clearInterval(this.sprintCooldownInterval);
+                this.sprintCooldownInterval = setInterval(() => {
                     this.sprintCooldown--;
                     if (this.sprintCooldown <= 0) {
-                        clearInterval(cooldownInterval);
+                        clearInterval(this.sprintCooldownInterval); this.sprintCooldownInterval = null;
                     }
                 }, 1000);
             }
@@ -605,6 +618,9 @@ export class PowerUpSystem {
      * Démarre le décompte du cooldown
      */
     startBoostCooldown() {
+        // Annuler le RAF précédent si existant
+        if (this.boostRAFId) { cancelAnimationFrame(this.boostRAFId); this.boostRAFId = null; }
+
         const startTime = Date.now();
         const totalCooldown = this.boostCooldown * 1000;
 
@@ -616,11 +632,11 @@ export class PowerUpSystem {
             this.updateBoostUI();
 
             if (remaining > 0) {
-                requestAnimationFrame(updateCooldown);
+                this.boostRAFId = requestAnimationFrame(updateCooldown);
             }
         };
 
-        requestAnimationFrame(updateCooldown);
+        this.boostRAFId = requestAnimationFrame(updateCooldown);
     }
 
     /**

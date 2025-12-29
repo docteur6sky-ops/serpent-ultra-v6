@@ -1,5 +1,5 @@
 // Tests simplifiés SnakeServer - 40 tests essentiels
-const Snake = require('../../../SnakeServer.js');
+const Snake = require('../../SnakeServer.js');
 
 describe('Construction', () => {
     test('créer serpent', () => {

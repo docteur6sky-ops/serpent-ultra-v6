@@ -135,7 +135,9 @@ function showFriends() {
         message += `Erreur de chargement de la liste d'amis.`;
     }
 
-    alert(message);
+    if (window.ModalManager) {
+        window.ModalManager.info(message, { title: 'Amis' });
+    }
 }
 
 // ============================================
@@ -228,7 +230,17 @@ function initHubBanner() {
 function initHub() {
     logger.log('[HubManager] Initialisation du Hub...');
 
-    // Données joueur
+    // Nettoyer les overlays residuels (coffre, skin unlock, confetti)
+    const skinOverlay = document.querySelector('.skin-unlock-overlay');
+    const skinNotification = document.querySelector('.skin-unlock-notification');
+    const confetti = document.querySelector('.confetti-overlay');
+    const chestModal = document.getElementById('chest-modal');
+    if (skinOverlay) skinOverlay.remove();
+    if (skinNotification) skinNotification.remove();
+    if (confetti) confetti.remove();
+    if (chestModal) chestModal.remove();
+
+    // Donnees joueur
     updatePlayerInfo();
 
     // Grades (délégué à GradeManager)
@@ -245,6 +257,11 @@ function initHub() {
     // Apparence
     initHubBanner();
     applyHubBackground();
+
+    // ✅ Mettre a jour le bouton Roguelike (afficher "Reprendre" si run sauvegardee)
+    if (window.updateRoguelikeButton) {
+        window.updateRoguelikeButton();
+    }
 
     logger.log('[HubManager] Hub initialisé ✅');
 }

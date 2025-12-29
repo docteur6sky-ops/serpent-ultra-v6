@@ -80,11 +80,14 @@
 #game-solo .game-controls .game-control-btn,
 #game-ai .game-controls .game-control-btn,
 #game-multi .game-controls .game-control-btn {
-    padding: 8px 16px !important;
-    font-size: 11px !important;
-    min-width: 80px !important;
-    max-width: 100px !important;
+    padding: 8px 12px !important;
+    font-size: 10px !important;
+    min-width: 90px !important;
+    max-width: 120px !important;
     border-radius: 12px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
 }
 
 #game-solo .game-controls .game-control-btn .btn-icon,

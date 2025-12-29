@@ -943,91 +943,166 @@
     }
 }
 
-/* ===== BOSS UI - AAA COMPACT STYLE ===== */
-/* Design: Barre horizontale fine et élégante */
-.boss-ui {
+/* ===== BOSS HUD - ULTRA COMPACT AAA (1 ligne) ===== */
+.boss-hud-aaa {
     display: flex;
-    flex-direction: row !important;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 6px 12px;
-    background: linear-gradient(90deg, rgba(80, 0, 0, 0.9) 0%, rgba(40, 0, 0, 0.95) 50%, rgba(80, 0, 0, 0.9) 100%);
-    border-radius: 8px;
-    border: 1px solid #ff4444;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 0 10px rgba(255, 0, 0, 0.1);
-    width: 95%;
-    max-width: 400px;
+    gap: 8px;
+    padding: 5px 10px;
+    background: linear-gradient(90deg,
+        rgba(100, 0, 0, 0.95) 0%,
+        rgba(60, 0, 0, 0.98) 30%,
+        rgba(60, 0, 0, 0.98) 70%,
+        rgba(100, 0, 0, 0.95) 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 68, 68, 0.8);
+    box-shadow:
+        0 0 15px rgba(255, 0, 0, 0.5),
+        0 2px 8px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 100, 100, 0.3);
+    width: 100%;
+    max-width: 360px;
     margin: 0 auto;
+    position: relative;
+    overflow: hidden;
 }
 
-.boss-name {
-    font-size: 12px;
-    font-weight: bold;
+/* Effet de shine animé sur le HUD */
+.boss-hud-aaa::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: bossHudShine 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes bossHudShine {
+    0%, 100% { left: -100%; }
+    50% { left: 150%; }
+}
+
+/* Nom du boss - compact */
+.boss-hud-name {
+    font-size: 11px;
+    font-weight: 800;
     color: #ff6666;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
     white-space: nowrap;
-    animation: bossNamePulse 2s ease-in-out infinite;
 }
 
-@keyframes bossNamePulse {
-    0%, 100% { text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
-    50% { text-shadow: 0 0 15px rgba(255, 0, 0, 1); }
-}
-
-.boss-health-bar {
-    flex: 1;
-    min-width: 80px;
-    max-width: 150px;
-    height: 12px;
+/* Phase du boss - badge compact */
+.boss-hud-phase {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
     background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
-    border: 1px solid rgba(255, 68, 68, 0.5);
-    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.boss-hud-phase:empty {
+    display: none;
+}
+
+/* Container barre de vie AAA */
+.boss-hud-bar {
+    flex: 1;
+    min-width: 60px;
+    max-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     position: relative;
 }
 
-.boss-health-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #ff4444, #ff6666);
+/* Fond de la barre de vie */
+.boss-hud-bar-bg {
+    flex: 1;
+    height: 10px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(20, 0, 0, 0.9) 100%);
     border-radius: 5px;
-    transition: width 0.3s ease-out, background-color 0.3s ease;
-    box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+    border: 1px solid rgba(255, 68, 68, 0.6);
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.boss-health-text {
+/* Remplissage AAA avec dégradé premium */
+.boss-hud-bar-fill {
+    height: 100%;
+    background: linear-gradient(180deg,
+        #ff6666 0%,
+        #ff4444 30%,
+        #cc2222 70%,
+        #aa1111 100%);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    box-shadow:
+        0 0 8px rgba(255, 68, 68, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Effet de shine animé sur la barre */
+.boss-hud-bar-shine {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 9px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 3px #000, 0 0 3px #000;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+    border-radius: 4px 4px 0 0;
+    pointer-events: none;
 }
 
-.boss-timer {
-    font-size: 14px;
-    font-weight: bold;
+/* Texte HP à côté de la barre */
+.boss-hud-hp {
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    min-width: 28px;
+    text-align: right;
+}
+
+/* Timer compact (à gauche) */
+.boss-hud-timer {
+    font-size: 12px;
+    font-weight: 800;
     color: #ffffff;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.8);
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 3px;
+    padding-right: 6px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.boss-timer.critical {
+.boss-hud-timer.timer-critical {
     color: #ff4444;
-    animation: timerCritical 0.5s ease-in-out infinite;
+    animation: timerCriticalPulse 0.5s ease-in-out infinite;
 }
 
-@keyframes timerCritical {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+@keyframes timerCriticalPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.9; }
 }
+
+/* Ancien code gardé pour compatibilité */
+.boss-ui { display: none !important; }
+.boss-name, .boss-health-bar, .boss-health-fill, .boss-health-text, .boss-timer { display: none !important; }
 
 /* ===== ÉCRAN INTRO BOSS ===== */
 .boss-intro-screen {
@@ -1249,46 +1324,9 @@
     margin-bottom: 4px;
 }
 
-/* ===== BOSS UI - PHASES (AAA Compact Override) ===== */
-/* Ces styles sont maintenant définis plus haut en version AAA */
-
-.boss-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-}
-
-.boss-phase {
-    font-size: 9px;
-    font-weight: bold;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    border: 1px solid currentColor;
-    white-space: nowrap;
-}
-
-.boss-phase.phase-active {
-    animation: phaseGlow 1s ease-in-out infinite alternate;
-}
-
-@keyframes phasePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-@keyframes phaseGlow {
-    0% { box-shadow: 0 0 3px currentColor; }
-    100% { box-shadow: 0 0 8px currentColor; }
-}
-
-@keyframes timerCritical {
-    0% { transform: scale(1); color: #ff4444; }
-    100% { transform: scale(1.1); color: #ff0000; }
-}
+/* ===== ANCIEN BOSS UI - DÉSACTIVÉ (remplacé par boss-hud-aaa) ===== */
+.boss-header { display: none !important; }
+.boss-phase { display: none !important; }
 
 /* Animation de transition de phase */
 @keyframes phaseAnnounce {
@@ -1360,29 +1398,40 @@
     50% { filter: hue-rotate(30deg); }
 }
 
-/* Responsive */
+/* Responsive Boss HUD AAA - Mobile */
 @media (max-width: 480px) {
-    .boss-header {
-        flex-direction: column;
-        gap: 4px;
+    .boss-hud-aaa {
+        gap: 6px;
+        padding: 4px 8px;
+        max-width: 95%;
     }
 
-    .boss-name {
-        font-size: 16px;
+    .boss-hud-name {
+        font-size: 10px;
     }
 
-    .boss-phase {
+    .boss-hud-phase {
+        font-size: 7px;
+        padding: 1px 4px;
+    }
+
+    .boss-hud-bar {
+        min-width: 50px;
+        max-width: 100px;
+    }
+
+    .boss-hud-bar-bg {
+        height: 8px;
+    }
+
+    .boss-hud-hp {
+        font-size: 9px;
+        min-width: 24px;
+    }
+
+    .boss-hud-timer {
         font-size: 11px;
-        padding: 2px 8px;
-    }
-
-    .boss-health-bar {
-        width: 160px;
-        height: 16px;
-    }
-
-    .boss-timer {
-        font-size: 18px;
+        padding-left: 4px;
     }
 }
 

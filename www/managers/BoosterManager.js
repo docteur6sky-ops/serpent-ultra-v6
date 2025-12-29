@@ -28,34 +28,36 @@ class BoosterManager {
         const boosters = window.boxManager.getBoosters();
         const activeBooster = window.boxManager.getActiveBooster();
 
-        // Mettre à jour les compteurs
-        const count25El = document.getElementById('box-booster-25-count');
-        const count50El = document.getElementById('box-booster-50-count');
-        const item25El = document.getElementById('box-booster-25');
-        const item50El = document.getElementById('box-booster-50');
+        // Mettre à jour les compteurs (Hub + Box - mêmes IDs maintenant)
+        const hubCount25El = document.getElementById('hub-booster-25-count');
+        const hubCount50El = document.getElementById('hub-booster-50-count');
+        const hubItem25El = document.getElementById('hub-booster-25');
+        const hubItem50El = document.getElementById('hub-booster-50');
 
-        if (count25El) count25El.textContent = boosters.boost25;
-        if (count50El) count50El.textContent = boosters.boost50;
+        if (hubCount25El) hubCount25El.textContent = boosters.boost25;
+        if (hubCount50El) hubCount50El.textContent = boosters.boost50;
 
-        // Désactiver si pas de booster ou booster actif
-        if (item25El) {
-            item25El.classList.toggle('disabled', boosters.boost25 === 0 || activeBooster !== null);
+        // Gérer l'opacité selon le count (via data-attribute)
+        if (hubItem25El) {
+            hubItem25El.setAttribute('data-count', boosters.boost25);
+            hubItem25El.classList.toggle('disabled', boosters.boost25 === 0 || activeBooster !== null);
         }
-        if (item50El) {
-            item50El.classList.toggle('disabled', boosters.boost50 === 0 || activeBooster !== null);
+        if (hubItem50El) {
+            hubItem50El.setAttribute('data-count', boosters.boost50);
+            hubItem50El.classList.toggle('disabled', boosters.boost50 === 0 || activeBooster !== null);
         }
 
         // Afficher indicateur booster actif
         if (activeBooster) {
-            if (item25El && activeBooster.percent === 25) {
-                item25El.classList.add('active-glow');
+            if (hubItem25El && activeBooster.percent === 25) {
+                hubItem25El.classList.add('active-glow');
             }
-            if (item50El && activeBooster.percent === 50) {
-                item50El.classList.add('active-glow');
+            if (hubItem50El && activeBooster.percent === 50) {
+                hubItem50El.classList.add('active-glow');
             }
         } else {
-            if (item25El) item25El.classList.remove('active-glow');
-            if (item50El) item50El.classList.remove('active-glow');
+            if (hubItem25El) hubItem25El.classList.remove('active-glow');
+            if (hubItem50El) hubItem50El.classList.remove('active-glow');
         }
     }
 

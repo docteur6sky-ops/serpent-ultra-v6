@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Ultra - Test Audio</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { text-align: center; color: #00ff88; margin-bottom: 10px; }
+        p.info { text-align: center; color: #888; margin-bottom: 30px; }
+        .category {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .category h2 {
+            margin: 0 0 15px 0;
+            color: #ffd700;
+            font-size: 1.2em;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            background: linear-gradient(180deg, #4a4a6a 0%, #2a2a4a 100%);
+            border: 1px solid #5a5a8a;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(180deg, #6a6a8a 0%, #4a4a6a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,255,136,0.1);
+            border-radius: 8px;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Audio - Snake Ultra</h1>
+    <p class="info">Clique sur un bouton pour tester le son correspondant</p>
+
+    <div class="category">
+        <h2>Interface</h2>
+        <div class="buttons">
+            <button onclick="sfx.buttonClick()">buttonClick</button>
+            <button onclick="sfx.dpadClick()">dpadClick</button>
+            <button onclick="sfx.buttonHover()">buttonHover</button>
+            <button onclick="sfx.confirm()">confirm</button>
+            <button onclick="sfx.cancel()">cancel</button>
+            <button onclick="sfx.error()">error</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Jeu - Serpent</h2>
+        <div class="buttons">
+            <button onclick="sfx.eat()">eat</button>
+            <button onclick="sfx.eatGolden()">eatGolden</button>
+            <button onclick="sfx.bad()">bad (crane)</button>
+            <button onclick="sfx.obstacle()">obstacle</button>
+            <button onclick="sfx.breakWall()">breakWall</button>
+            <button onclick="sfx.die()">die</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Progression</h2>
+        <div class="buttons">
+            <button onclick="sfx.lvlup()">lvlup</button>
+            <button onclick="sfx.xpGain()">xpGain</button>
+            <button onclick="sfx.combo(1)">combo x1</button>
+            <button onclick="sfx.combo(3)">combo x3</button>
+            <button onclick="sfx.combo(5)">combo x5</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Power-Ups</h2>
+        <div class="buttons">
+            <button onclick="sfx.powerup()">powerup (general)</button>
+            <button onclick="sfx.powerupFire()">powerupFire</button>
+            <button onclick="sfx.powerupIce()">powerupIce</button>
+            <button onclick="sfx.powerupGhost()">powerupGhost</button>
+            <button onclick="sfx.powerupLightning()">powerupLightning</button>
+            <button onclick="sfx.powerupSword()">powerupSword</button>
+            <button onclick="sfx.powerupEnd()">powerupEnd</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Combat</h2>
+        <div class="buttons">
+            <button onclick="sfx.swordSwing()">swordSwing</button>
+            <button onclick="sfx.swordHit()">swordHit</button>
+            <button onclick="sfx.takeDamage()">takeDamage</button>
+            <button onclick="sfx.block()">block</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Boss</h2>
+        <div class="buttons">
+            <button onclick="sfx.bossAppear()">bossAppear</button>
+            <button onclick="sfx.bossAttack()">bossAttack</button>
+            <button onclick="sfx.bossHurt()">bossHurt</button>
+            <button onclick="sfx.bossDefeat()">bossDefeat</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Ambiance / Alertes</h2>
+        <div class="buttons">
+            <button onclick="sfx.danger()">danger</button>
+            <button onclick="sfx.countdownTick()">countdownTick</button>
+            <button onclick="sfx.countdownGo()">countdownGo</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Victoire / Defaite</h2>
+        <div class="buttons">
+            <button onclick="sfx.victory()">victory</button>
+            <button onclick="sfx.defeat()">defeat</button>
+            <button onclick="sfx.newRecord()">newRecord</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Coffre</h2>
+        <div class="buttons">
+            <button onclick="sfx.chestPulse()">chestPulse</button>
+            <button onclick="sfx.chestOpen()">chestOpen</button>
+            <button onclick="sfx.rewardCommon()">rewardCommon</button>
+            <button onclick="sfx.rewardRare()">rewardRare</button>
+            <button onclick="sfx.rewardEpic()">rewardEpic</button>
+            <button onclick="sfx.rewardLegendary()">rewardLegendary</button>
+            <button onclick="sfx.chestCollect()">chestCollect</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Roguelike</h2>
+        <div class="buttons">
+            <button onclick="sfx.selectUpgrade()">selectUpgrade</button>
+            <button onclick="sfx.newFloor()">newFloor</button>
+            <button onclick="sfx.achievementUnlock()">achievementUnlock</button>
+        </div>
+    </div>
+
+    <div class="category">
+        <h2>Multijoueur</h2>
+        <div class="buttons">
+            <button onclick="sfx.playerJoin()">playerJoin</button>
+            <button onclick="sfx.playerLeave()">playerLeave</button>
+            <button onclick="sfx.matchFound()">matchFound</button>
+            <button onclick="sfx.notification()">notification</button>
+        </div>
+    </div>
+
+    <div class="status" id="status">
+        Clique sur "Initialiser" pour activer l'audio
+        <br><br>
+        <button onclick="initAudio()" style="background: linear-gradient(180deg, #00aa66 0%, #006644 100%); border-color: #00ff88;">
+            Initialiser Audio
+        </button>
+    </div>
+
+    <script type="module">
+        import { soundEffects } from './services/SoundEffects.js';
+
+        window.sfx = soundEffects;
+
+        window.initAudio = function() {
+            soundEffects.init();
+            document.getElementById('status').innerHTML = 'Audio initialise! Teste les sons.';
+            document.getElementById('status').style.background = 'rgba(0,255,136,0.2)';
+        };
+    </script>
+</body>
+</html>

@@ -95,7 +95,6 @@ function updateTabs() {
     ).length;
 
     // Mettre à jour les compteurs
-    document.getElementById('tab-count-all').textContent = `(${allUnlocked}/${allItems.length})`;
     document.getElementById('tab-count-skins').textContent = `(${skinsUnlocked}/${skins.length})`;
     document.getElementById('tab-count-banners').textContent = `(${bannersUnlocked}/${banners.length})`;
     document.getElementById('tab-count-backgrounds').textContent = `(${backgroundsUnlocked}/${backgrounds.length})`;
