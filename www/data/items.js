@@ -383,10 +383,10 @@ export const ITEMS = {
             }
         },
 
-        void: {
-            id: 'void',
-            name: 'Néant',
-            emoji: '🕳️',
+        univers: {
+            id: 'univers',
+            name: 'Univers',
+            emoji: '🌌',
             image: 'assets/skins/skin_void.webp',
             type: 'skin',
             rarity: 'legendary',
@@ -395,7 +395,7 @@ export const ITEMS = {
             unlockType: 'achievement',
             unlockAchievement: 'world_4_clear',
             unlockLabel: '👑 Conquérant du Néant (finir le jeu)',
-            effect: 'void', // Effet spécial: aura sombre
+            effect: 'universe', // Effet spécial: aura sombre
             colors: {
                 head: { light: '#4B0082', dark: '#1A0033' },
                 body: { from: '#4B0082', to: '#0D001A' },
@@ -403,12 +403,12 @@ export const ITEMS = {
                 outline: '#000000',
                 glow: '#8B00FF'
             },
-            description: 'Né des ténèbres, maître du vide',
+            description: 'Voyageur des galaxies infinies',
             roguelikeBonus: {
                 type: 'combo',
                 upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended'],
                 shield: 3,
-                bonusName: 'Maître du Néant',
+                bonusName: 'Maître de l Univers',
                 bonusDesc: 'Rainbow + Diamond : Élémentaires x2 + 3 boucliers'
             }
         },
@@ -593,7 +593,7 @@ export const ITEMS = {
             type: 'background',
             rarity: 'rare',
             unlocked: false,
-            price: 500,
+            price: 2000,
             unlockType: 'coins',
             bgType: 'image',
             bgValue: 'assets/backgrounds/backgrounds_glace_hub.webp',
@@ -608,7 +608,7 @@ export const ITEMS = {
             type: 'background',
             rarity: 'rare',
             unlocked: false,
-            price: 500,
+            price: 2000,
             unlockType: 'coins',
             bgType: 'image',
             bgValue: 'assets/backgrounds/backgrounds_feu_hub.webp',
@@ -623,7 +623,7 @@ export const ITEMS = {
             type: 'background',
             rarity: 'epic',
             unlocked: false,
-            price: 800,
+            price: 3000,
             unlockType: 'coins',
             bgType: 'image',
             bgValue: 'assets/backgrounds/backgrounds_foudre_hub.webp',
@@ -638,11 +638,220 @@ export const ITEMS = {
             type: 'background',
             rarity: 'epic',
             unlocked: false,
-            price: 800,
+            price: 3000,
             unlockType: 'coins',
             bgType: 'image',
             bgValue: 'assets/backgrounds/backgrounds_roche_hub.webp',
             description: 'Ambiance minérale'
+        },
+
+        // Backgrounds Premium (déblocables)
+        bg_rainbow: {
+            id: 'bg_rainbow',
+            name: 'Arc-en-ciel',
+            emoji: '🌈',
+            image: 'assets/backgrounds/backgrounds_raimbow_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_raimbow_hub.webp',
+            description: 'Un festival de couleurs éclatantes'
+        },
+
+        bg_diamond: {
+            id: 'bg_diamond',
+            name: 'Diamant',
+            emoji: '💎',
+            image: 'assets/backgrounds/backgrounds_diams_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_diams_hub.webp',
+            description: 'Brillance cristalline pure'
+        },
+
+        bg_gold: {
+            id: 'bg_gold',
+            name: 'Or',
+            emoji: '✨',
+            image: 'assets/backgrounds/backgrounds_gold_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_gold_hub.webp',
+            description: 'Opulence dorée étincelante'
+        },
+
+        bg_phoenix: {
+            id: 'bg_phoenix',
+            name: 'Phoenix',
+            emoji: '🔥',
+            image: 'assets/backgrounds/backgrounds_phoenix_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_phoenix_hub.webp',
+            description: 'Renaître des flammes éternelles'
+        },
+
+        bg_sanglant: {
+            id: 'bg_sanglant',
+            name: 'Sanglant',
+            emoji: '🩸',
+            image: 'assets/backgrounds/backgrounds_sanglant_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_sanglant_hub.webp',
+            description: 'Ambiance rouge intense'
+        },
+
+        bg_royal: {
+            id: 'bg_royal',
+            name: 'Royal',
+            emoji: '👑',
+            image: 'assets/backgrounds/backgrounds_royal_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_royal_hub.webp',
+            description: 'Majesté et prestige royal'
+        },
+        bg_cyber: {
+            id: 'bg_cyber',
+            name: 'Cyber',
+            emoji: '🤖',
+            image: 'assets/backgrounds/backgrouds_cyber_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrouds_cyber_hub.webp',
+            description: 'Ambiance cyberpunk futuriste'
+        },
+
+        bg_neon: {
+            id: 'bg_neon',
+            name: 'Néon',
+            emoji: '💡',
+            image: 'assets/backgrounds/backgrounds_neon_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_neon_hub.webp',
+            description: 'Lumières néon vibrantes'
+        },
+
+        bg_ghost: {
+            id: 'bg_ghost',
+            name: 'Fantôme',
+            emoji: '👻',
+            image: 'assets/backgrounds/backgrounds_ghost_hub.webp',
+            type: 'background',
+            rarity: 'rare',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_ghost_hub.webp',
+            description: 'Ambiance spectrale mystérieuse'
+        },
+
+        bg_universe: {
+            id: 'bg_universe',
+            name: 'Univers',
+            emoji: '🌌',
+            image: 'assets/backgrounds/backgrounds_univer_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_univer_hub.webp',
+            description: 'Voyage à travers les étoiles'
+        },
+
+        bg_prismatic: {
+            id: 'bg_prismatic',
+            name: 'Prismatique',
+            emoji: '🔮',
+            image: 'assets/backgrounds/backgrounds_prismatique_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_prismatique_hub.webp',
+            description: 'Réfractions de lumière colorées'
+        },
+
+        bg_scanner: {
+            id: 'bg_scanner',
+            name: 'Scanner',
+            emoji: '📡',
+            image: 'assets/backgrounds/backgrounds_scanner_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_scanner_hub.webp',
+            description: 'Interface de détection high-tech'
+        },
+        bg_glitch: {
+            id: 'bg_glitch',
+            name: 'Glitch',
+            emoji: '📺',
+            image: 'assets/backgrounds/backgrounds_glitch_hub.webp',
+            type: 'background',
+            rarity: 'epic',
+            unlocked: false,
+            price: 3000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_glitch_hub.webp',
+            description: 'Réalité corrompue et distordue'
+        },
+
+        bg_spectral: {
+            id: 'bg_spectral',
+            name: 'Spectral',
+            emoji: '💀',
+            image: 'assets/backgrounds/backgrounds_spectral_hub.webp',
+            type: 'background',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 4000,
+            unlockType: 'coins',
+            bgType: 'image',
+            bgValue: 'assets/backgrounds/backgrounds_spectral_hub.webp',
+            description: 'Entre les mondes, au-delà du visible'
         }
     },
 
@@ -699,7 +908,7 @@ export const ITEMS = {
             type: 'banner',
             rarity: 'epic',
             unlocked: false,
-            price: 1000,
+            price: 1500,
             unlockType: 'coins',
             image: 'assets/banners/banniere_foudre.webp',
             description: 'Bannière électrique chargée d\'énergie'
@@ -712,10 +921,192 @@ export const ITEMS = {
             type: 'banner',
             rarity: 'epic',
             unlocked: false,
-            price: 1000,
+            price: 1500,
             unlockType: 'coins',
             image: 'assets/banners/banniere_roche.webp',
             description: 'Bannière minérale aux textures rocheuses'
+        },
+        // Bannières supplémentaires
+        banner_ghost: {
+            id: 'banner_ghost',
+            name: 'Fantôme',
+            emoji: '👻',
+            type: 'banner',
+            rarity: 'rare',
+            unlocked: false,
+            price: 1000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_ghost.webp',
+            description: 'Bannière spectrale et mystérieuse'
+        },
+
+        banner_rainbow: {
+            id: 'banner_rainbow',
+            name: 'Arc-en-ciel',
+            emoji: '🌈',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_rainbow.webp',
+            description: 'Bannière aux couleurs vibrantes'
+        },
+
+        banner_diamond: {
+            id: 'banner_diamond',
+            name: 'Diamant',
+            emoji: '💎',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_diamond.webp',
+            description: 'Bannière cristalline étincelante'
+        },
+
+        banner_neon: {
+            id: 'banner_neon',
+            name: 'Néon',
+            emoji: '💡',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_neon.webp',
+            description: 'Bannière aux lumières fluorescentes'
+        },
+
+        banner_scanner: {
+            id: 'banner_scanner',
+            name: 'Scanner',
+            emoji: '📡',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_scanner.webp',
+            description: 'Bannière high-tech de détection'
+        },
+
+        banner_prismatic: {
+            id: 'banner_prismatic',
+            name: 'Prismatique',
+            emoji: '🔮',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_prismatic.webp',
+            description: 'Bannière aux reflets irisés'
+        },
+
+        banner_royal: {
+            id: 'banner_royal',
+            name: 'Royal',
+            emoji: '👑',
+            type: 'banner',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_royal.webp',
+            description: 'Bannière majestueuse et prestigieuse'
+        },
+
+        banner_sanglant: {
+            id: 'banner_sanglant',
+            name: 'Sanglant',
+            emoji: '🩸',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_sanglant.webp',
+            description: 'Bannière rouge intense et sombre'
+        },
+
+        banner_gold: {
+            id: 'banner_gold',
+            name: 'Or',
+            emoji: '✨',
+            type: 'banner',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_gold.webp',
+            description: 'Bannière dorée luxueuse'
+        },
+
+        banner_phoenix: {
+            id: 'banner_phoenix',
+            name: 'Phoenix',
+            emoji: '🔥',
+            type: 'banner',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_phoenix.webp',
+            description: 'Bannière de l oiseau de feu légendaire'
+        },
+
+        banner_cyber: {
+            id: 'banner_cyber',
+            name: 'Cyber',
+            emoji: '🤖',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_cyber.webp',
+            description: 'Bannière technologique futuriste'
+        },
+
+        banner_univers: {
+            id: 'banner_univers',
+            name: 'Univers',
+            emoji: '🌌',
+            type: 'banner',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_univers.webp',
+            description: 'Bannière cosmique infinie'
+        },
+
+        banner_glitch: {
+            id: 'banner_glitch',
+            name: 'Glitch',
+            emoji: '📺',
+            type: 'banner',
+            rarity: 'epic',
+            unlocked: false,
+            price: 1500,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_glitch.webp',
+            description: 'Bannière corrompue et distordue'
+        },
+
+        banner_spectral: {
+            id: 'banner_spectral',
+            name: 'Spectral',
+            emoji: '💀',
+            type: 'banner',
+            rarity: 'legendary',
+            unlocked: false,
+            price: 2000,
+            unlockType: 'coins',
+            image: 'assets/banners/banniere_spectral.webp',
+            description: 'Bannière entre les mondes'
         }
     }
 };
