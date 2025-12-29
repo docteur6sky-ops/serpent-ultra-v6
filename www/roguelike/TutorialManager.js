@@ -27,6 +27,7 @@ class TutorialManager {
         this.applesEaten = 0;
         this.sceneApplesEaten = 0;
         this.skullHit = false;
+        this.wallHit = false;
 
         // Grid config (petit pour tuto)
         this.gridSize = 10;
@@ -36,6 +37,7 @@ class TutorialManager {
         this.currentDialogueIndex = 0;
         this.currentDialogues = null;
         this.onDialogueComplete = null;
+        this.isTyping = false;
 
         // Scenes définition (simplifié)
         this.scenes = [
@@ -69,8 +71,8 @@ class TutorialManager {
             ],
             rock_intro: [
                 { text: "Heureusement, tu as des allies...", emotion: 'happy' },
-                { text: "Le mode Roche te rend INVINCIBLE !", emotion: 'excited' },
-                { text: "Attrape-la et traverse le crane sans danger !", emotion: 'normal' }
+                { text: "Le mode Roche te protege des MURS !", emotion: 'excited' },
+                { text: "Attrape-la et fonce dans les murs sans danger !", emotion: 'normal' }
             ],
             rock_success: [
                 { text: "Parfait ! Tu maitrises la Roche !", emotion: 'happy' }
@@ -370,12 +372,15 @@ class TutorialManager {
 
         // Typewriter effect
         textEl.textContent = '';
+        this.isTyping = true;
         let i = 0;
         const typeWriter = () => {
             if (i < dialogue.text.length && this.isActive) {
                 textEl.textContent += dialogue.text.charAt(i);
                 i++;
                 setTimeout(typeWriter, 25);
+            } else {
+                this.isTyping = false;
             }
         };
         typeWriter();
@@ -387,7 +392,7 @@ class TutorialManager {
      * Dialogue suivant
      */
     nextDialogue() {
-        if (!this.currentDialogues) return;
+        if (!this.currentDialogues || this.isTyping) return;
 
         this.currentDialogueIndex++;
 
@@ -417,7 +422,9 @@ class TutorialManager {
         this.skulls = [];
         this.powerup = null;
         this.skullHit = false;
+        this.wallHit = false;
         this.food = null;
+        this.walls = [];
 
         this.updateComboDisplay();
     }
@@ -437,22 +444,21 @@ class TutorialManager {
     }
 
     /**
-     * Jeu ghost : attraper ghost et traverser crane
+     * Jeu roche : attraper roche et casser un mur
      */
     startRockGame() {
         document.getElementById('tuto-game-area')?.classList.remove('hidden');
         document.getElementById('tuto-character')?.classList.add('hidden');
         this.hideHint(); // Pas de hint sur le gameplay
-        this.updateObjective(0, 1, 'G');
+        this.updateObjective(0, 1, 'M');
 
         this.initMiniGame();
         this.combo = 5; // Commencer avec un combo pour montrer l'enjeu
         this.updateComboDisplay();
 
-        // Placer le ghost et le crane
+        // Placer la roche et un mur
         this.spawnRockPowerup();
-        this.spawnSkull();
-        this.spawnFood(); // Une pomme aussi
+        this.spawnWall();
 
         this.startGameLoop();
     }
@@ -493,7 +499,21 @@ class TutorialManager {
             attempts++;
         } while (this.isOccupied(pos) && attempts < 50);
 
-        this.powerup = pos;
+this.powerup = pos;
+    }
+
+    spawnWall() {
+        // Placer un mur devant le serpent pour démontrer la protection
+        let pos, attempts = 0;
+        do {
+            pos = {
+                x: Math.floor(Math.random() * this.gridSize),
+                y: Math.floor(Math.random() * this.gridSize)
+            };
+            attempts++;
+        } while (this.isOccupied(pos) && attempts < 50);
+
+        this.walls = [pos];
     }
 
     isOccupied(pos) {
@@ -501,6 +521,7 @@ class TutorialManager {
         if (this.food && this.food.x === pos.x && this.food.y === pos.y) return true;
         if (this.skulls.some(s => s.x === pos.x && s.y === pos.y)) return true;
         if (this.powerup && this.powerup.x === pos.x && this.powerup.y === pos.y) return true;
+        if (this.walls && this.walls.some(w => w.x === pos.x && w.y === pos.y)) return true;
         return false;
     }
 
@@ -534,8 +555,7 @@ class TutorialManager {
         const head = { ...this.snake[0] };
         head.x += this.direction.x;
         head.y += this.direction.y;
-
-        // Wrap around
+// Wrap around
         if (head.x < 0) head.x = this.gridSize - 1;
         if (head.x >= this.gridSize) head.x = 0;
         if (head.y < 0) head.y = this.gridSize - 1;
@@ -583,6 +603,29 @@ class TutorialManager {
             }
         }
 
+        // Check wall collision
+        const hitWallBlock = this.walls && this.walls.some(w => w.x === head.x && w.y === head.y);
+        if (hitWallBlock) {
+            if (this.isRock) {
+                // Roche mode: casse le mur - VICTOIRE
+                this.wallHit = true;
+                this.walls = this.walls.filter(w => !(w.x === head.x && w.y === head.y));
+                if (window.audio?.powerup) window.audio.powerup();
+                this.checkRockObjective();
+            } else {
+                // Pas de roche = GAME OVER, restart le mini-jeu
+                if (window.audio?.hitSkull) window.audio.hitSkull();
+                this.updateObjective(0, 1, 'X');
+                this.walls = [];
+                setTimeout(() => {
+                    if (this.isActive) {
+                        this.restartRockGame();
+                    }
+                }, 1200);
+                return;
+            }
+        }
+
         // Check powerup
         if (this.powerup && head.x === this.powerup.x && head.y === this.powerup.y) {
             this.isRock = true;
@@ -591,7 +634,7 @@ class TutorialManager {
             if (window.audio?.powerup) window.audio.powerup();
 
             // Objectif change quand ghost attrape
-            this.updateObjective(1, 1, 'G');
+            this.updateObjective(0, 1, 'M');
         }
 
         // Ghost timer
@@ -641,7 +684,7 @@ class TutorialManager {
     }
 
     checkRockObjective() {
-        if (this.skullHit) {
+        if (this.wallHit) {
             this.stopGameLoop();
             this.hideHint();
 
@@ -655,7 +698,7 @@ class TutorialManager {
     }
 
     /**
-     * Restart le mini-jeu ghost apres echec
+     * Restart le mini-jeu roche apres echec
      */
     restartRockGame() {
         this.stopGameLoop();
@@ -665,13 +708,12 @@ class TutorialManager {
         this.combo = 5;
         this.updateComboDisplay();
 
-        // Replacer ghost, skull et food
+        // Replacer roche et mur
         this.spawnRockPowerup();
-        this.spawnSkull();
-        this.spawnFood();
+        this.spawnWall();
 
         // Reset objectif
-        this.updateObjective(0, 1, 'G');
+        this.updateObjective(0, 1, 'M');
 
         // Redessiner et relancer
         this.drawMiniGame();
@@ -721,9 +763,16 @@ class TutorialManager {
             ctx.fillText('💀', skull.x * cell + cell/2, skull.y * cell + cell/2);
         });
 
+        // Walls (murs)
+        if (this.walls) {
+            this.walls.forEach(wall => {
+                ctx.fillText('🧱', wall.x * cell + cell/2, wall.y * cell + cell/2);
+            });
+        }
+
         // Powerup
         if (this.powerup) {
-            ctx.fillText('👻', this.powerup.x * cell + cell/2, this.powerup.y * cell + cell/2);
+            ctx.fillText('🪨', this.powerup.x * cell + cell/2, this.powerup.y * cell + cell/2);
         }
 
         // Snake
