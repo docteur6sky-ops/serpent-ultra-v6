@@ -961,7 +961,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         if (this.roguelikeSystem.isActive && window.roguelikeManager?.currentRun) {
             const run = window.roguelikeManager.currentRun;
             const xpMultiplier = run.modifiers?.xpMultiplier || 1;
-            const baseXP = run.score + (run.level * 50) + (run.applesEaten * 2);
+            const baseXP = Math.floor((run.score + (run.level * 30) + run.applesEaten) * 0.6);
             newScore = Math.floor(baseXP * xpMultiplier);
             newLevel = this.roguelikeSystem.levelData?.level || 1;
             newSegments = this.combo;

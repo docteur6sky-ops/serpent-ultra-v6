@@ -85,14 +85,14 @@ class CareerManager {
         const career = { ...defaultCareer, ...saved };
 
         // Recalculer xpNext selon la formule linéaire
-        career.xpNext = 100 + (career.level * 100);
+        career.xpNext = this.calculateXPRequired(career.level);
 
         // Vérifier si level up nécessaire (au cas où XP > xpNext)
         let needsSave = false;
         while (career.xp >= career.xpNext && career.level < 100) {
             career.xp -= career.xpNext;
             career.level++;
-            career.xpNext = 100 + (career.level * 100);
+            career.xpNext = this.calculateXPRequired(career.level);
             needsSave = true;
         }
 
@@ -108,6 +108,20 @@ class CareerManager {
         save('career', this.career);
     }
 
+    /**
+     * Calcule l'XP requis pour le prochain niveau
+     * Formule adoucie apres niveau 40
+     */
+    calculateXPRequired(level) {
+        if (level <= 40) {
+            return 100 + (level * 100);
+        } else {
+            const baseAt40 = 100 + (40 * 100);
+            const extraLevels = level - 40;
+            return baseAt40 + (extraLevels * 50);
+        }
+    }
+
     // ============================================
     // MISE À JOUR CARRIÈRE
     // ============================================
@@ -121,7 +135,18 @@ class CareerManager {
         const oldLevel = this.career.level;
 
         // Calcul XP de base
-        const baseXP = Math.floor((stats.score || 0) / 5);
+        let baseXP = Math.floor((stats.score || 0) / 3);
+
+        // Multiplicateur de difficulte
+        const difficulty = stats.difficulty || 'normal';
+        const difficultyMultipliers = {
+            'easy': 1.0,
+            'normal': 1.2,
+            'hard': 1.5
+        };
+        const diffMultiplier = difficultyMultipliers[difficulty] || 1.0;
+        const difficultyBonus = Math.floor(baseXP * (diffMultiplier - 1));
+        baseXP = baseXP + difficultyBonus;
 
         // Appliquer le bonus booster si actif
         let boosterBonus = 0;
@@ -158,7 +183,7 @@ class CareerManager {
         while (this.career.xp >= this.career.xpNext && this.career.level < 100) {
             this.career.xp -= this.career.xpNext;
             this.career.level++;
-            this.career.xpNext = 100 + (this.career.level * 100);
+            this.career.xpNext = this.calculateXPRequired(this.career.level);
             leveledUp = true;
         }
 
@@ -186,7 +211,7 @@ class CareerManager {
         while (this.career.xp >= this.career.xpNext && this.career.level < 100) {
             this.career.xp -= this.career.xpNext;
             this.career.level++;
-            this.career.xpNext = 100 + (this.career.level * 100);
+            this.career.xpNext = this.calculateXPRequired(this.career.level);
             leveledUp = true;
         }
 

@@ -597,7 +597,7 @@ class RoguelikeManager {
 
         // Calculer XP gagné
         const xpMultiplier = this.currentRun.modifiers.xpMultiplier;
-        const baseXP = finalStats.score + (finalStats.level * 50) + (finalStats.applesEaten * 2);
+        const baseXP = Math.floor((finalStats.score + (finalStats.level * 30) + finalStats.applesEaten) * 0.6);
         const earnedXP = Math.floor(baseXP * xpMultiplier);
 
         finalStats.earnedXP = earnedXP;
