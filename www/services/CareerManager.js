@@ -34,6 +34,10 @@ const defaultCareer = {
     bestStreak: 0,
     totalMultiGames: 0,
     multiCompleted: 0,
+    multiPowerups: 0,           // Power-ups collectés en multi
+    phoenixRisesMulti: 0,       // Victoires après défaite
+    lastMultiResult: null,      // 'win' ou 'loss'
+    roomsCreated: 0,            // Salons créés (Hospitalité)
 
     // Stats IA
     aiWins: 0,
@@ -57,7 +61,9 @@ const defaultCareer = {
 
     // Secrets
     screensVisited: [],
-    rankHistory: []
+    rankHistory: [],
+    nightOwlGames: 0,           // Parties jouées 20h-8h (Nocturne)
+    patienceAchieved: 0         // Attente 30s avant jeu (Patience)
 };
 
 // ============================================

@@ -141,7 +141,7 @@ const RenderUtils = {
 
         // Couleur de fond (noir pour tous les types)
         const color = '#000000ff';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 8;
         ctx.shadowColor = color;
         ctx.fillStyle = color;
 
@@ -183,7 +183,7 @@ const RenderUtils = {
 
         // Animation arc-en-ciel pour le glow
         const hue = (time / 10) % 360;
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 10;
         ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
 
         // Fond qui pulse

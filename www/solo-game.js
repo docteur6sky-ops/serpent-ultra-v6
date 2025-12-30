@@ -268,10 +268,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         // Update power-ups
         this.powerUpSystem.update();
 
-        // Update particules (limiter à 100 max)
-        if (this.particles && this.particles.length > 100) {
-            this.particles.splice(0, this.particles.length - 100);
-        }
+        // Update particules (le pool gère automatiquement le recyclage)
         this.updateParticles();
 
         // Dessiner
@@ -704,15 +701,34 @@ class SoloSnakeGame extends BaseSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
-        // Grille
+        // Grille avec cache offscreen (évite 60+ draw calls/frame)
         // Check isDarkMode toutes les 60 frames seulement
         if (++this._darkModeCheckCounter >= 60) {
-            this._isDarkMode = document.body.classList.contains('dark-mode');
+            const newDarkMode = document.body.classList.contains('dark-mode');
+            if (newDarkMode !== this._isDarkMode) {
+                this._isDarkMode = newDarkMode;
+                this._gridCacheValid = false; // Invalider le cache
+            }
             this._darkModeCheckCounter = 0;
         }
-        const isDarkMode = this._isDarkMode;
-        const borderColor = isDarkMode ? '#00A5A5' : '#d8d800ff';
-        RenderUtils.drawGrid(this.ctx, this.GRID_SIZE, this.CELL_SIZE, this.CANVAS_SIZE, { grid: '#404060', border: borderColor });
+
+        // Créer/mettre à jour le cache de grille si nécessaire
+        if (!this._gridCache || !this._gridCacheValid) {
+            if (!this._gridCache) {
+                this._gridCache = document.createElement('canvas');
+                this._gridCache.width = this.CANVAS_SIZE;
+                this._gridCache.height = this.CANVAS_SIZE;
+            }
+            const gridCtx = this._gridCache.getContext('2d');
+            gridCtx.fillStyle = this.COLORS.BG_DARK;
+            gridCtx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
+            const borderColor = this._isDarkMode ? '#00A5A5' : '#d8d800ff';
+            RenderUtils.drawGrid(gridCtx, this.GRID_SIZE, this.CELL_SIZE, this.CANVAS_SIZE, { grid: '#404060', border: borderColor });
+            this._gridCacheValid = true;
+        }
+
+        // Dessiner le cache de grille (1 seul drawImage vs 60+ lignes)
+        this.ctx.drawImage(this._gridCache, 0, 0);
 
         // Nourriture (verte si Gourmandise actif)
         if (this.food) {
@@ -824,7 +840,20 @@ class SoloSnakeGame extends BaseSnakeGame {
                 this.drawSprintAura();
             }
 
+            // 🛡️ FIX: Effet de flash pendant invincibilité tête-à-tête boss
+            const isInvincibleFlash = this.bossSystem?.headToHeadInvincible;
+            if (isInvincibleFlash) {
+                // Flash rapide (alternance 100ms)
+                const flashPhase = Math.floor(this._frameNow / 100) % 2;
+                this.ctx.globalAlpha = flashPhase === 0 ? 1.0 : 0.4;
+            }
+            
             drawSnakeEnhanced(this.ctx, this.snake, getDirectionString(this.dx, this.dy), this.CELL_SIZE, skinColors, this._frameNow);
+            
+            // Reset alpha après le dessin
+            if (isInvincibleFlash) {
+                this.ctx.globalAlpha = 1.0;
+            }
         }
 
         // Particules
@@ -836,9 +865,9 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.ctx.font = 'bold 120px "Courier New", monospace';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            const pauseColor = isDarkMode ? '#FFFFFF' : '#000000';
-            this.ctx.shadowColor = isDarkMode ? '#000000' : '#FFFFFF';
-            this.ctx.shadowBlur = 30;
+            const pauseColor = this._isDarkMode ? '#FFFFFF' : '#000000';
+            this.ctx.shadowColor = this._isDarkMode ? '#000000' : '#FFFFFF';
+            this.ctx.shadowBlur = 15;
             this.ctx.fillStyle = pauseColor;
             this.ctx.fillText('⏸️', this.CANVAS_SIZE / 2, this.CANVAS_SIZE / 2);
             this.ctx.restore();
@@ -851,7 +880,7 @@ class SoloSnakeGame extends BaseSnakeGame {
         const time = Date.now() / 100;
         const pulseAlpha = 0.3 + Math.sin(time) * 0.15;
         this.ctx.shadowColor = '#00ffff';
-        this.ctx.shadowBlur = 20 + Math.sin(time) * 10;
+        this.ctx.shadowBlur = 10 + Math.sin(time) * 5;
         this.ctx.globalAlpha = pulseAlpha;
         this.ctx.fillStyle = '#00ffff';
 
@@ -877,21 +906,42 @@ class SoloSnakeGame extends BaseSnakeGame {
     }
 
     createBreakEffect(x, y) {
+        // Limiter le nombre total de particules pour éviter lag
+        const maxParticles = 100;
+        const availableSlots = maxParticles - this.particles.length;
+        const count = Math.min(8, availableSlots);
+        if (count <= 0) return;
+
         const centerX = x * this.CELL_SIZE + this.CELL_SIZE / 2;
         const centerY = y * this.CELL_SIZE + this.CELL_SIZE / 2;
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < count; i++) {
             const angle = (Math.PI * 2 * i) / 8;
             const speed = 2 + Math.random() * 2;
-            this.particles.push({
-                x: centerX,
-                y: centerY,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                life: 1,
-                size: 2 + Math.random() * 3,
-                color: this.COLORS.ACCENT_WARM
-            });
+            let particle;
+
+            // Réutiliser une particule du pool si disponible (évite GC)
+            if (this.particlePool && this.particlePool.length > 0) {
+                particle = this.particlePool.pop();
+                particle.x = centerX;
+                particle.y = centerY;
+                particle.vx = Math.cos(angle) * speed;
+                particle.vy = Math.sin(angle) * speed;
+                particle.life = 1;
+                particle.size = 2 + Math.random() * 3;
+                particle.color = this.COLORS.ACCENT_WARM;
+            } else {
+                particle = {
+                    x: centerX,
+                    y: centerY,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    size: 2 + Math.random() * 3,
+                    color: this.COLORS.ACCENT_WARM
+                };
+            }
+            this.particles.push(particle);
         }
     }
 
@@ -900,34 +950,47 @@ class SoloSnakeGame extends BaseSnakeGame {
     // ============================================
 
     updateUI() {
-        const sc = this._domCache.sc || (this._domCache.sc = document.getElementById('solo-sc'));
-        if (sc) {
-            if (this.roguelikeSystem.isActive && window.roguelikeManager?.currentRun) {
-                // Mode Roguelike : formule XP identique à RoguelikeManager.endRun()
-                const run = window.roguelikeManager.currentRun;
-                const xpMultiplier = run.modifiers?.xpMultiplier || 1;
-                // Utiliser run.score (score roguelike) et run.applesEaten, pas this.score
-                const baseXP = run.score + (run.level * 50) + (run.applesEaten * 2);
-                sc.textContent = Math.floor(baseXP * xpMultiplier);
-            } else {
-                // Mode Solo classique : afficher XP gagné (score / 5)
-                sc.textContent = Math.floor(this.score / 5);
-            }
+        // Cache des dernières valeurs pour éviter DOM updates inutiles (perf)
+        if (!this._lastUIValues) {
+            this._lastUIValues = { score: -1, level: -1, segments: -1 };
         }
 
-        const lv = this._domCache.lv || (this._domCache.lv = document.getElementById('solo-lv'));
-        if (lv) {
-            lv.textContent = this.roguelikeSystem.isActive && this.roguelikeSystem.levelData
-                ? this.roguelikeSystem.levelData.level
-                : this.level;
+        // Calculer les nouvelles valeurs
+        let newScore, newLevel, newSegments;
+        
+        if (this.roguelikeSystem.isActive && window.roguelikeManager?.currentRun) {
+            const run = window.roguelikeManager.currentRun;
+            const xpMultiplier = run.modifiers?.xpMultiplier || 1;
+            const baseXP = run.score + (run.level * 50) + (run.applesEaten * 2);
+            newScore = Math.floor(baseXP * xpMultiplier);
+            newLevel = this.roguelikeSystem.levelData?.level || 1;
+            newSegments = this.combo;
+        } else {
+            newScore = Math.floor(this.score / 5);
+            newLevel = this.level;
+            newSegments = Math.max(0, this.snake.length - 3);
         }
 
-        const seg = this._domCache.seg || (this._domCache.seg = document.getElementById('solo-seg'));
-        if (seg) {
-            seg.textContent = this.roguelikeSystem.isActive ? this.combo : Math.max(0, this.snake.length - 3);
+        // Mettre à jour DOM seulement si valeurs changées
+        if (newScore !== this._lastUIValues.score) {
+            const sc = this._domCache.sc || (this._domCache.sc = document.getElementById('solo-sc'));
+            if (sc) sc.textContent = newScore;
+            this._lastUIValues.score = newScore;
         }
 
-        // Update HUD roguelike
+        if (newLevel !== this._lastUIValues.level) {
+            const lv = this._domCache.lv || (this._domCache.lv = document.getElementById('solo-lv'));
+            if (lv) lv.textContent = newLevel;
+            this._lastUIValues.level = newLevel;
+        }
+
+        if (newSegments !== this._lastUIValues.segments) {
+            const seg = this._domCache.seg || (this._domCache.seg = document.getElementById('solo-seg'));
+            if (seg) seg.textContent = newSegments;
+            this._lastUIValues.segments = newSegments;
+        }
+
+        // Update HUD roguelike (a son propre système de cache)
         this.roguelikeSystem.updateObjectiveUI();
         this.roguelikeSystem.updateHUD();
     }
@@ -938,6 +1001,13 @@ class SoloSnakeGame extends BaseSnakeGame {
 
     gameOver() {
         if (this.gameOverTriggered) return;
+        
+        // 🛡️ FIX: Ignorer game over si le boss vient d'être vaincu (victoire en cours)
+        if (this.bossSystem?.bossDefeated) {
+            logger.log('[SoloGame] Game over ignoré - victoire boss en cours');
+            return;
+        }
+        
         this.gameOverTriggered = true;
 
         this.triggerDeathEffects();

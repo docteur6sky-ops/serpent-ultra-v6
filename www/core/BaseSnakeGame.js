@@ -338,24 +338,33 @@ export class BaseSnakeGame {
     }
 
     /**
-     * Met à jour toutes les particules avec recyclage
+     * Met à jour toutes les particules avec recyclage optimisé
+     * Utilise swap-and-pop au lieu de splice() pour O(1) au lieu de O(n)
      */
     updateParticles() {
-        for (let i = this.particles.length - 1; i >= 0; i--) {
+        let writeIndex = 0;
+        const len = this.particles.length;
+        
+        for (let i = 0; i < len; i++) {
             const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
             p.vy += 0.2; // Gravité
             p.life -= 0.02;
 
-            // Si morte, recycler dans le pool (max 50 dans le pool)
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-                if (this.particlePool.length < 50) {
+            if (p.life > 0) {
+                // Particule vivante : la garder
+                this.particles[writeIndex++] = p;
+            } else {
+                // Particule morte : recycler dans le pool (max 100)
+                if (this.particlePool.length < 100) {
                     this.particlePool.push(p);
                 }
             }
         }
+        
+        // Tronquer le tableau aux particules vivantes (O(1))
+        this.particles.length = writeIndex;
     }
 
     /**

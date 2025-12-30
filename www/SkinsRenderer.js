@@ -11,6 +11,14 @@
 
 import { logger } from './services/logger.js';
 import { getItemById } from './data/items.js';
+// ============================================
+// CACHES DE PERFORMANCE
+// ============================================
+const hexToRgbCache = new Map();
+const hslToHexCache = new Map();
+const colorInterpolationCache = new Map();
+const HEX_REGEX = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
+
 
 // État des animations pour effets spéciaux
 const animationState = {
@@ -290,15 +298,8 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            // Glow pour Scanner
-            if (skinEffect === 'scan' && scanIntensity > 0.3) {
-                ctx.shadowColor = skinColors.glow;
-                ctx.shadowBlur = scanIntensity * 15;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, gridSize / 2 * 0.9, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            }
+            // Glow pour Scanner - DISABLED for body (perf optimization)
+            // Scanner glow only on head now
         }
     });
 }
@@ -327,12 +328,19 @@ function interpolateColor(color1, color2, ratio) {
  * @returns {object} {r, g, b}
  */
 function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
+    // Cache lookup
+    if (hexToRgbCache.has(hex)) return hexToRgbCache.get(hex);
+    
+    const result = HEX_REGEX.exec(hex);
+    const rgb = result ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
     } : { r: 0, g: 255, b: 135 }; // Fallback vert
+    
+    // Cache store (limit size)
+    if (hexToRgbCache.size < 100) hexToRgbCache.set(hex, rgb);
+    return rgb;
 }
 
 /**
@@ -477,6 +485,11 @@ function lightenColor(color, factor) {
  * @returns {string} Couleur hex
  */
 function hslToHex(h, s, l) {
+    // Cache lookup
+    const key = (Math.round(h) << 16) | (s << 8) | l;
+    if (hslToHexCache.has(key)) return hslToHexCache.get(key);
+    
+    const origH = h;
     s /= 100;
     l /= 100;
 
@@ -505,7 +518,10 @@ function hslToHex(h, s, l) {
         return hex.length === 1 ? '0' + hex : hex;
     };
 
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    const result = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    // Cache store (limit size)
+    if (hslToHexCache.size < 500) hslToHexCache.set(key, result);
+    return result;
 }
 
 /**

@@ -64,6 +64,7 @@ export class BossFightSystem {
         this.swordDuration = 5;
         this.swordTimer = 0;
         this.swordSpawnInterval = null;
+        this.lastSwordSpawnTime = 0;  // Pour spawn basé sur timestamp
 
         // Période de grâce après vol de segments (évite double collision)
         this.stealGracePeriod = 0;
@@ -97,6 +98,109 @@ export class BossFightSystem {
         // 🧹 CLEANUP: Stockage des timers pour nettoyage
         this.mysteryBoxTimeouts = [];
         this._bossIntroClickHandler = null;
+        
+        // 🚀 PERF: Grille spatiale pour collisions O(1)
+        this._spatialGrid = new Map();
+        
+        // 🚀 PERF: Cache DOM elements
+        this._domCache = {
+            storedItemIcon: null,
+            storedItemSlot: null,
+            boostBtn: null,
+            canvasSolo: null,
+            bossHealthFill: null,
+            bossHealthText: null,
+            bossTimer: null,
+            bossPhase: null
+        };
+    }
+    
+    // ============================================
+    // 🚀 GRILLE SPATIALE - Collisions O(1)
+    // ============================================
+    
+    /**
+     * Initialise/réinitialise la grille spatiale
+     * Appelé à chaque frame avant les vérifications de collision
+     */
+    rebuildSpatialGrid() {
+        this._spatialGrid.clear();
+        
+        // Ajouter le serpent du joueur
+        for (let i = 0; i < this.game.snake.length; i++) {
+            const seg = this.game.snake[i];
+            const key = `${seg.x},${seg.y}`;
+            this._spatialGrid.set(key, { type: i === 0 ? 'playerHead' : 'playerBody', index: i });
+        }
+        
+        // Ajouter le boss
+        if (this.boss?.snake) {
+            for (let i = 0; i < this.boss.snake.length; i++) {
+                const seg = this.boss.snake[i];
+                const key = `${seg.x},${seg.y}`;
+                // Ne pas écraser si déjà occupé (collision détectée ailleurs)
+                if (!this._spatialGrid.has(key)) {
+                    this._spatialGrid.set(key, { type: i === 0 ? 'bossHead' : 'bossBody', index: i });
+                }
+            }
+        }
+        
+        // Ajouter l'épée
+        if (this.sword) {
+            const key = `${this.sword.x},${this.sword.y}`;
+            if (!this._spatialGrid.has(key)) {
+                this._spatialGrid.set(key, { type: 'sword' });
+            }
+        }
+        
+        // Ajouter les mystery boxes
+        for (const box of this.mysteryBoxes) {
+            const key = `${box.x},${box.y}`;
+            if (!this._spatialGrid.has(key)) {
+                this._spatialGrid.set(key, { type: 'mysteryBox', box });
+            }
+        }
+        
+        // Ajouter les crânes du boss
+        if (this.boss?.skulls) {
+            for (const skull of this.boss.skulls) {
+                const key = `${skull.x},${skull.y}`;
+                if (!this._spatialGrid.has(key)) {
+                    this._spatialGrid.set(key, { type: 'skull', skull });
+                }
+            }
+        }
+        
+        // Ajouter les portails
+        if (this.boss?.teleportPortals) {
+            for (const portal of this.boss.teleportPortals) {
+                const key = `${portal.x},${portal.y}`;
+                if (!this._spatialGrid.has(key)) {
+                    this._spatialGrid.set(key, { type: 'portal', portal });
+                }
+            }
+        }
+    }
+    
+    /**
+     * Vérifie ce qui se trouve à une position donnée (O(1))
+     */
+    getEntityAt(x, y) {
+        return this._spatialGrid.get(`${x},${y}`) || null;
+    }
+    
+    /**
+     * 🚀 PERF: Initialise le cache DOM (appelé au début du combat)
+     */
+    initDomCache() {
+        this._domCache.storedItemIcon = document.getElementById('stored-item-icon');
+        this._domCache.storedItemSlot = document.getElementById('stored-item-slot');
+        this._domCache.boostBtn = document.getElementById('boost-btn');
+        this._domCache.canvasSolo = document.getElementById('canvas-solo');
+        this._domCache.bossHealthFill = document.getElementById('boss-health-fill');
+        this._domCache.bossHealthText = document.getElementById('boss-health-text');
+        this._domCache.bossTimer = document.getElementById('boss-timer');
+        this._domCache.bossPhase = document.getElementById('boss-phase');
     }
 
     // ============================================
@@ -128,26 +232,28 @@ export class BossFightSystem {
      * Vérifie si une position est occupée
      */
     isPositionOccupied(x, y) {
-        // Vérifier joueur
-        for (const seg of this.game.snake) {
-            if (seg.x === x && seg.y === y) return true;
-        }
-        // Vérifier boss
-        if (this.boss?.snake) {
-            for (const seg of this.boss.snake) {
+        // 🚀 PERF: Utiliser la grille spatiale si disponible
+        if (this._spatialGrid.size > 0) {
+            if (this._spatialGrid.has(`${x},${y}`)) return true;
+        } else {
+            // Fallback: vérification classique
+            for (const seg of this.game.snake) {
                 if (seg.x === x && seg.y === y) return true;
             }
+            if (this.boss?.snake) {
+                for (const seg of this.boss.snake) {
+                    if (seg.x === x && seg.y === y) return true;
+                }
+            }
+            if (this.sword && this.sword.x === x && this.sword.y === y) return true;
+            for (const box of this.mysteryBoxes) {
+                if (box.x === x && box.y === y) return true;
+            }
         }
-        // Vérifier épée
-        if (this.sword && this.sword.x === x && this.sword.y === y) return true;
-        // Vérifier obstacles
+        // Vérifier obstacles (pas dans la grille car statiques)
         if (this.game.obstacles?.some(o => o.x === x && o.y === y)) return true;
         // Vérifier pomme
         if (this.game.food && this.game.food.x === x && this.game.food.y === y) return true;
-        // Vérifier autres mystery boxes
-        for (const box of this.mysteryBoxes) {
-            if (box.x === x && box.y === y) return true;
-        }
         return false;
     }
 
@@ -188,18 +294,20 @@ export class BossFightSystem {
         this.revealItemAnimation(finalItem);
 
         // Respawn après délai (essayer d'ajouter une nouvelle box)
-        setTimeout(() => {
+        // Tracker le timeout pour cleanup propre
+        const respawnTimeout = setTimeout(() => {
             if (this.isBossFight && !this.bossDefeated) {
                 this.spawnMysteryBox();
             }
         }, this.mysteryBoxRespawnTime);
+        this.mysteryBoxTimeouts.push(respawnTimeout);
     }
 
     /**
      * Animation de roulette dans le slot (style Mario Kart)
      */
     async revealItemAnimation(finalType) {
-        const slot = document.getElementById('stored-item-slot');
+        const slot = this._domCache?.storedItemSlot || document.getElementById('stored-item-slot');
         const icon = document.getElementById('stored-item-icon');
 
         if (!slot || !icon) {
@@ -281,8 +389,8 @@ export class BossFightSystem {
      * Met à jour l'affichage de l'item stocké (utilise le bouton HTML existant)
      */
     updateStoredItemUI() {
-        const iconSpan = document.getElementById('stored-item-icon');
-        const slot = document.getElementById('stored-item-slot');
+        const iconSpan = this._domCache?.storedItemIcon || document.getElementById('stored-item-icon');
+        const slot = this._domCache?.storedItemSlot || document.getElementById('stored-item-slot');
         if (!iconSpan || !slot) return;
 
         if (this.storedItem) {
@@ -369,7 +477,7 @@ export class BossFightSystem {
      * Met à jour l'UI du boost (utilise le bouton HTML existant)
      */
     updateBoostUI() {
-        const btn = document.getElementById('boost-btn');
+        const btn = this._domCache?.boostBtn || document.getElementById('boost-btn');
         if (!btn) return;
 
         const now = Date.now();
@@ -652,6 +760,9 @@ export class BossFightSystem {
         const bossSegments = objective.bossSegments || 15;
 
         logger.log(`[BossFight] Démarrage combat de boss!`);
+        
+        // 🚀 PERF: Initialize DOM cache
+        this.initDomCache();
 
         this.isBossFight = true;
         this.bossDefeated = false;
@@ -789,10 +900,10 @@ export class BossFightSystem {
     }
 
     updateBossUI() {
-        const healthFill = document.getElementById('boss-health-fill');
-        const healthText = document.getElementById('boss-health-text');
-        const timerEl = document.getElementById('boss-timer');
-        const phaseEl = document.getElementById('boss-phase');
+        const healthFill = this._domCache?.bossHealthFill || document.getElementById('boss-health-fill');
+        const healthText = this._domCache?.bossHealthText || document.getElementById('boss-health-text');
+        const timerEl = this._domCache?.bossTimer || document.getElementById('boss-timer');
+        const phaseEl = this._domCache?.bossPhase || document.getElementById('boss-phase');
 
         if (this.boss && healthFill && healthText) {
             const maxSegments = this.game.roguelikeObjective?.bossSegments || 15;
@@ -1542,8 +1653,15 @@ export class BossFightSystem {
     checkCollisions() {
         if (!this.isBossFight || !this.boss || this.boss.snake.length === 0) return;
 
+        // 🚀 PERF: Reconstruire la grille spatiale
+        this.rebuildSpatialGrid();
+
         const playerHead = this.game.snake[0];
         const bossHead = this.boss.snake[0];
+        
+        // 🛡️ FIX: Vérifier invincibilité joueur (ghost/rock)
+        const isPlayerGhost = this.game.powerupEffects?.ghost || false;
+        const isPlayerInvincible = this.game.powerupEffects?.invincible || false;
 
         // Joueur ramasse l'épée
         if (this.sword && playerHead.x === this.sword.x && playerHead.y === this.sword.y) {
@@ -1611,15 +1729,21 @@ export class BossFightSystem {
                 if (this.stealGracePeriod > 0) {
                     return;
                 }
+                // 🛡️ FIX: Épée prioritaire sur ghost/invincible
+                if (this.swordActive) {
+                    this.playerStealsBossSegments();
+                    return;
+                }
+                // Joueur ghost/invincible traverse le boss sans dégâts
+                if (isPlayerGhost || isPlayerInvincible) {
+                    return; // Traverse sans dégâts
+                }
                 if (this.boss.invincible) {
                     this.playerBlockedByBoss();
                     return;
                 }
-                if (this.swordActive) {
-                    this.playerStealsBossSegments();
-                } else {
-                    this.playerBlockedByBoss();
-                }
+                // Sans épée ni protection → bloqué
+                this.playerBlockedByBoss();
                 return;
             }
         }
@@ -1740,7 +1864,7 @@ export class BossFightSystem {
 
         // Invincibilité temporaire (500ms)
         this.headToHeadInvincible = true;
-        this.headToHeadInvincibleUntil = Date.now() + 500;
+        this.headToHeadInvincibleUntil = Date.now() + 1000; // 🛡️ FIX: 1s pour réagir après éjection
 
         // Effets visuels
         this.game.triggerScreenShake(8);
@@ -1913,7 +2037,7 @@ export class BossFightSystem {
 
         // Période de grâce pour éviter une collision immédiate après le vol
         // Le joueur a 2 frames pour s'éloigner du boss
-        this.stealGracePeriod = 2;
+        this.stealGracePeriod = 5; // 🛡️ FIX: 5 frames (~750ms) pour éviter double-hit
 
         if (window.audio) window.audio.eat?.();
         this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#ffd700', 12);

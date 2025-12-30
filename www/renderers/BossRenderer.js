@@ -280,7 +280,7 @@ export class BossRenderer {
 
         // Lueur dorée
         ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 8;
 
         // Dessiner l'épée
         ctx.font = `${size}px Arial`;
@@ -309,7 +309,7 @@ export class BossRenderer {
         ctx.globalAlpha = pulse;
         ctx.fillStyle = '#9932CC';
         ctx.shadowColor = '#9932CC';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 8;
 
         ctx.beginPath();
         ctx.arc(head.x * cellSize + cellSize / 2, head.y * cellSize + cellSize / 2, cellSize * 0.6, 0, Math.PI * 2);
@@ -405,7 +405,7 @@ export class BossRenderer {
 
             // Lueur violette
             ctx.shadowColor = '#9932CC';
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 6;
 
             // Dessiner le crâne
             ctx.font = `${cellSize * 0.8}px Arial`;
@@ -459,7 +459,7 @@ export class BossRenderer {
             ctx.strokeStyle = `rgba(255, 215, 0, ${0.6 * lifeRatio})`;
             ctx.lineWidth = 3;
             ctx.shadowColor = '#FFD700';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 8;
 
             // Rotation basée sur le temps
             const rotation = now / 500;
