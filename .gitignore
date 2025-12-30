@@ -46,3 +46,8 @@ coverage/
 
 # Optional: Uncomment if you don't want to track these
 # package-lock.json
+
+# Android signing (sensitive)
+*.keystore
+*.jks
+android/keystore.properties

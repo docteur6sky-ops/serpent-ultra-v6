@@ -8,13 +8,13 @@
 // ============================================
 export const SERVER_CONFIG = {
     // URL de production - À MODIFIER avant publication sur Play Store
-    PRODUCTION_URL: 'wss://votre-serveur.com',
+    PRODUCTION_URL: 'wss://railway-up-production-b439.up.railway.app',
 
     // URL de développement local
     DEV_URL: 'ws://localhost:3000',
 
     // Activer le mode production (mettre à true avant publication)
-    USE_PRODUCTION: false
+    USE_PRODUCTION: true
 };
 
 export const CONFIG = {
