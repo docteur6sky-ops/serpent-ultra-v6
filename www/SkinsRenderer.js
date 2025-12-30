@@ -19,6 +19,31 @@ const hslToHexCache = new Map();
 const colorInterpolationCache = new Map();
 const HEX_REGEX = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
 
+// PERF: Détection mobile pour mode performance
+const _isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+// PERF: Cache des couleurs interpolées pour le corps
+const _bodyColorCache = new Map();
+const _bodyColorCacheKey = { from: null, to: null, tailColor: null };
+
+function _getBodyColors(fromColor, toColor, tailColor, segmentCount) {
+    if (_bodyColorCacheKey.from !== fromColor ||
+        _bodyColorCacheKey.to !== toColor ||
+        _bodyColorCacheKey.tailColor !== tailColor ||
+        _bodyColorCache.size !== segmentCount) {
+        _bodyColorCache.clear();
+        _bodyColorCacheKey.from = fromColor;
+        _bodyColorCacheKey.to = toColor;
+        _bodyColorCacheKey.tailColor = tailColor;
+        for (let i = 1; i < segmentCount - 1; i++) {
+            const ratio = i / segmentCount;
+            const color1 = interpolateColor(fromColor, toColor, ratio);
+            const color2 = interpolateColor(toColor, tailColor, ratio);
+            _bodyColorCache.set(i, { color1, color2 });
+        }
+    }
+    return _bodyColorCache;
+}
 
 // État des animations pour effets spéciaux
 const animationState = {
@@ -156,16 +181,22 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
             // TÊTE avec yeux animés
             // ==========================================
 
-            // Dégradé radial pour la tête
-            const gradient = ctx.createRadialGradient(
-                centerX, centerY, 0,
-                centerX, centerY, gridSize / 2
-            );
-            gradient.addColorStop(0, skinColors.head.light);  // Centre clair
-            gradient.addColorStop(1, skinColors.head.dark);   // Bord foncé
+            // PERF: Couleur solide sur mobile, gradient sur desktop
+            let headFill;
+            if (_isMobile) {
+                headFill = skinColors.head.light;
+            } else {
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, gridSize / 2
+                );
+                gradient.addColorStop(0, skinColors.head.light);
+                gradient.addColorStop(1, skinColors.head.dark);
+                headFill = gradient;
+            }
 
             // Cercle principal
-            ctx.fillStyle = gradient;
+            ctx.fillStyle = headFill;
             ctx.beginPath();
             ctx.arc(centerX, centerY, gridSize / 2, 0, Math.PI * 2);
             ctx.fill();
@@ -175,14 +206,16 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Glow (effet lumineux) - amplifié par Scanner
-            const glowIntensity = skinEffect === 'scan' ? 10 + scanIntensity * 20 : 10;
-            ctx.shadowColor = skinColors.glow;
-            ctx.shadowBlur = glowIntensity;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, gridSize / 2, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0; // Reset shadow
+            // PERF: Glow désactivé sur mobile
+            if (!_isMobile) {
+                const glowIntensity = skinEffect === 'scan' ? 10 + scanIntensity * 20 : 10;
+                ctx.shadowColor = skinColors.glow;
+                ctx.shadowBlur = glowIntensity;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, gridSize / 2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
 
             // Effet Couronne: dessiner la couronne sur la tête
             if (skinEffect === 'crown') {
@@ -242,64 +275,76 @@ export function drawSnakeEnhanced(ctx, snake, direction, gridSize, skinColors = 
 
         } else if (index === snake.length - 1) {
             // ==========================================
-            // QUEUE effilée et transparente
+            // QUEUE - OPTIMISÉ pour mobile
             // ==========================================
 
-            const gradient = ctx.createRadialGradient(
-                centerX, centerY, 0,
-                centerX, centerY, gridSize / 3
-            );
-
-            // Utiliser la couleur de la queue du skin
+            const tailRadius = gridSize / 3;
             const tailColor = skinColors.tail.color;
-            const rgb = hexToRgb(tailColor);
 
-            gradient.addColorStop(0, tailColor);
-            gradient.addColorStop(0.7, tailColor);
-            gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`); // Transparent au bord
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, gridSize / 3, 0, Math.PI * 2);
-            ctx.fill();
+            if (_isMobile) {
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = tailColor;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, tailRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            } else {
+                const rgb = hexToRgb(tailColor);
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, tailRadius
+                );
+                gradient.addColorStop(0, tailColor);
+                gradient.addColorStop(0.7, tailColor);
+                gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, tailRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
         } else {
             // ==========================================
-            // CORPS avec dégradé progressif
+            // CORPS - OPTIMISÉ pour mobile
             // ==========================================
 
-            // Calculer le ratio de position (0 = près tête, 1 = près queue)
             const ratio = index / snake.length;
+            const bodyRadius = gridSize / 2 * 0.9;
 
-            // Interpoler les couleurs
-            let color1 = interpolateColor(skinColors.body.from, skinColors.body.to, ratio);
-            let color2 = interpolateColor(skinColors.body.to, skinColors.tail.color, ratio);
-
-            // Effet Scanner: éclaircir le segment si la lumière passe dessus
-            if (skinEffect === 'scan' && scanIntensity > 0) {
-                color1 = lightenColor(color1, scanIntensity * 0.5);
-                color2 = lightenColor(color2, scanIntensity * 0.5);
+            if (_isMobile) {
+                // PERF: Couleur solide depuis cache
+                const cachedColors = _getBodyColors(
+                    skinColors.body.from,
+                    skinColors.body.to,
+                    skinColors.tail.color,
+                    snake.length
+                );
+                const colors = cachedColors.get(index) || { color1: skinColors.body.from };
+                ctx.fillStyle = colors.color1;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, bodyRadius, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                let color1 = interpolateColor(skinColors.body.from, skinColors.body.to, ratio);
+                let color2 = interpolateColor(skinColors.body.to, skinColors.tail.color, ratio);
+                if (skinEffect === 'scan' && scanIntensity > 0) {
+                    color1 = lightenColor(color1, scanIntensity * 0.5);
+                    color2 = lightenColor(color2, scanIntensity * 0.5);
+                }
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, bodyRadius
+                );
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, bodyRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = skinColors.outline;
+                ctx.lineWidth = 1;
+                ctx.stroke();
             }
-
-            const gradient = ctx.createRadialGradient(
-                centerX, centerY, 0,
-                centerX, centerY, gridSize / 2 * 0.9
-            );
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, gridSize / 2 * 0.9, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Contour subtil
-            ctx.strokeStyle = skinColors.outline;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // Glow pour Scanner - DISABLED for body (perf optimization)
-            // Scanner glow only on head now
         }
     });
 }

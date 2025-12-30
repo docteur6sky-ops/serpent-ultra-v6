@@ -996,7 +996,7 @@ export class BossFightSystem {
         if (this.boss.isInGrace) return;
 
         this.updateSpecialBehavior();
-        this.cleanupTemporaryWalls();
+        // Note: cleanupTemporaryWalls est appelé dans updateSpecialBehavior
 
         // Vérifier si le boss doit bouger
         const moveDelay = this.boss.moveInterval / this.boss.speed;
@@ -1234,11 +1234,11 @@ export class BossFightSystem {
                 break;
         }
 
-        // Cleanup des éléments temporaires
-        this.cleanupTemporaryWalls();
-        this.cleanupIceZones();
-        this.cleanupSkulls();
-        this.cleanupTeleportPortals();
+        // Cleanup des éléments temporaires - PERF: passer now pour éviter Date.now() répétés
+        this.cleanupTemporaryWalls(now);
+        this.cleanupIceZones(now);
+        this.cleanupSkulls(now);
+        this.cleanupTeleportPortals(now);
     }
 
     // ============================================
@@ -1288,15 +1288,16 @@ export class BossFightSystem {
         logger.log(`[BossFight] TITAN: ${count} mur(s) temporaire(s) créé(s)`);
     }
 
-    cleanupTemporaryWalls() {
-        const now = Date.now();
-        this.game.obstacles = this.game.obstacles.filter(o => {
+    cleanupTemporaryWalls(now) {
+        // PERF: Boucle inverse + splice au lieu de filter (évite allocation)
+        const obstacles = this.game.obstacles;
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const o = obstacles[i];
             if (o.temporary && o.expiresAt && now >= o.expiresAt) {
                 this.game.createParticles(o.x, o.y, '#8B4513', 3);
-                return false;
+                obstacles.splice(i, 1);
             }
-            return true;
-        });
+        }
     }
 
     // ============================================
@@ -1336,17 +1337,18 @@ export class BossFightSystem {
         logger.log(`[BossFight] CRYO: ${count} zone(s) de glace créée(s)`);
     }
 
-    cleanupIceZones() {
+    cleanupIceZones(now) {
         if (!this.boss || !this.boss.iceZones) return;
 
-        const now = Date.now();
-        this.boss.iceZones = this.boss.iceZones.filter(zone => {
+        // PERF: Boucle inverse + splice au lieu de filter
+        const zones = this.boss.iceZones;
+        for (let i = zones.length - 1; i >= 0; i--) {
+            const zone = zones[i];
             if (now - zone.createdAt >= zone.duration) {
                 this.game.createParticles(zone.x, zone.y, '#00BFFF', 3);
-                return false;
+                zones.splice(i, 1);
             }
-            return true;
-        });
+        }
     }
 
     /**
@@ -1415,17 +1417,18 @@ export class BossFightSystem {
         logger.log(`[BossFight] SPECTRE: ${count} crâne(s) invoqué(s)`);
     }
 
-    cleanupSkulls() {
+    cleanupSkulls(now) {
         if (!this.boss || !this.boss.skulls) return;
 
-        const now = Date.now();
-        this.boss.skulls = this.boss.skulls.filter(skull => {
+        // PERF: Boucle inverse + splice au lieu de filter
+        const skulls = this.boss.skulls;
+        for (let i = skulls.length - 1; i >= 0; i--) {
+            const skull = skulls[i];
             if (now - skull.createdAt >= skull.duration) {
                 this.game.createParticles(skull.x, skull.y, '#9932CC', 3);
-                return false;
+                skulls.splice(i, 1);
             }
-            return true;
-        });
+        }
     }
 
     updateInvisibility(special, now) {
@@ -1497,15 +1500,16 @@ export class BossFightSystem {
         return false;
     }
 
-    cleanupTeleportPortals() {
+    cleanupTeleportPortals(now) {
         if (!this.boss || !this.boss.teleportPortals) return;
 
-        const now = Date.now();
-
-        this.boss.teleportPortals = this.boss.teleportPortals.filter(portal => {
-            const age = now - portal.createdAt;
-            return age < portal.duration;
-        });
+        // PERF: Boucle inverse + splice au lieu de filter
+        const portals = this.boss.teleportPortals;
+        for (let i = portals.length - 1; i >= 0; i--) {
+            if (now - portals[i].createdAt >= portals[i].duration) {
+                portals.splice(i, 1);
+            }
+        }
     }
 
     /**
