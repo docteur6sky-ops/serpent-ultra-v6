@@ -13,6 +13,7 @@
 import { logger } from '../services/logger.js';
 import { achievementManager } from '../roguelike/achievements.js';
 import roguelikeManager from '../roguelike/RoguelikeManager.js';
+import { CleanupManager } from '../managers/CleanupManager.js';
 
 export class RoguelikeSystem {
     constructor(game) {
@@ -295,7 +296,7 @@ export class RoguelikeSystem {
 
         logger.log(`[Roguelike] Régénération: +${totalAmount} segment(s) toutes les ${interval / 1000}s`);
 
-        this.regenInterval = setInterval(() => {
+        this.regenInterval = CleanupManager.registerInterval(setInterval(() => {
             if (this.game.paused || !this.game.running) return;
 
             for (let i = 0; i < totalAmount; i++) {
@@ -304,7 +305,7 @@ export class RoguelikeSystem {
 
             this.game.syncCombo();
             this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#00ff00', 3);
-        }, interval);
+        }, interval), 'regen', 'solo-game');
     }
 
     /**
@@ -312,7 +313,7 @@ export class RoguelikeSystem {
      */
     stopRegeneration() {
         if (this.regenInterval) {
-            clearInterval(this.regenInterval);
+            CleanupManager.clearRegisteredInterval(this.regenInterval, 'solo-game');
             this.regenInterval = null;
         }
     }

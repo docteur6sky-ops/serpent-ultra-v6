@@ -7,6 +7,7 @@ import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { SnakeAI } from './ai/snake-ai.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
 import { POWERUP_SKIN_COLORS } from './config/constants.js';
+import { CleanupManager } from './managers/CleanupManager.js';
 
 class AISnakeGame extends BaseSnakeGame {
     constructor() {
@@ -142,6 +143,7 @@ class AISnakeGame extends BaseSnakeGame {
     // ============================================
 
     start(difficulty = 0) {
+        CleanupManager.setContext('ai-game');
         super.start(difficulty);
         this.startTimer();
         // Note: La musique est gérée par ScreenManager.show('game-ai')
@@ -210,7 +212,7 @@ class AISnakeGame extends BaseSnakeGame {
     startTimer() {
         this.stopTimer();
 
-        this.timerInterval = setInterval(() => {
+        this.timerInterval = CleanupManager.registerInterval(setInterval(() => {
             if (!this.running || this.paused) return;
 
             this.timeRemaining -= 100;
@@ -221,7 +223,7 @@ class AISnakeGame extends BaseSnakeGame {
             }
 
             this.updateUI();
-        }, 100);
+        }, 100), 'ai-timer', 'ai-game');
     }
 
     stopTimer() {
@@ -1065,6 +1067,7 @@ class AISnakeGame extends BaseSnakeGame {
     stop() {
         super.stop();
         this.stopTimer();
+        CleanupManager.cleanup('ai-game');
     }
 
     gameOver() {

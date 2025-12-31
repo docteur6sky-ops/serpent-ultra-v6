@@ -13,6 +13,7 @@
 
 import { logger } from '../services/logger.js';
 import { achievementManager } from '../roguelike/achievements.js';
+import { CleanupManager } from '../managers/CleanupManager.js';
 // Imports SkinsRenderer retirés - cinématiques supprimées pour performance
 
 // Couleurs des skins pour chaque boss (basé sur items.js)
@@ -854,7 +855,7 @@ export class BossFightSystem {
             clearInterval(this.bossTimerInterval);
         }
 
-        this.bossTimerInterval = setInterval(() => {
+        this.bossTimerInterval = CleanupManager.registerInterval(setInterval(() => {
             if (this.game.paused || !this.game.running) return;
 
             // Gérer le délai de grâce
@@ -873,7 +874,7 @@ export class BossFightSystem {
             if (this.bossTimer <= 0) {
                 this.bossFightLost();
             }
-        }, 1000);
+        }, 1000), 'boss-timer', 'boss-fight');
     }
 
     showBossUI(levelData) {
@@ -1625,11 +1626,11 @@ export class BossFightSystem {
             }
         }, 3000);
 
-        this.swordSpawnInterval = setInterval(() => {
+        this.swordSpawnInterval = CleanupManager.registerInterval(setInterval(() => {
             if (this.isBossFight && !this.bossDefeated && !this.sword && !this.swordActive) {
                 this.spawnSword();
             }
-        }, 8000);
+        }, 8000), 'sword-spawn', 'boss-fight');
     }
 
     updateSwordTimer() {
@@ -2242,6 +2243,7 @@ export class BossFightSystem {
     cleanup() {
         this.isBossFight = false;
         this.boss = null;
+        CleanupManager.cleanup('boss-fight');
 
         if (this.bossTimerInterval) {
             clearInterval(this.bossTimerInterval);

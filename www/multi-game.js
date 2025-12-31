@@ -7,6 +7,7 @@ import { logger } from './services/logger.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
 import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { multiplayerUIManager } from './ui/MultiplayerUIManager.js';
+import { CleanupManager } from './managers/CleanupManager.js';
 
 // ✅ Fonction placeholder pour le leaderboard (à implémenter plus tard)
 window.showLeaderboard = function() {
@@ -212,6 +213,7 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
     // ============================================
 
     start(playerPseudo = null) {
+        CleanupManager.setContext('multi-game');
         this.isActive = false;
         this.serverState = null;
         this.gameOverShown = false; // ✅ FIX: Réinitialiser à chaque nouvelle partie
@@ -244,6 +246,7 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
 
         // Nettoyer TOUS les overlays créés dynamiquement
         this.cleanupOverlays();
+        CleanupManager.cleanup('multi-game');
     }
 
     cleanupOverlays() {
@@ -837,14 +840,14 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
         // ✅ FIX #3: Nettoyer l'ancien interval AVANT d'en créer un nouveau
         this.stopTimerUpdate();
 
-        this.timerInterval = setInterval(() => {
+        this.timerInterval = CleanupManager.registerInterval(setInterval(() => {
             if (!this.isActive || !this.serverState) {
                 this.stopTimerUpdate();
                 return;
             }
 
             this.updateScoreBoard();
-        }, 100);
+        }, 100), 'multi-timer', 'multi-game');
     }
 
     stopTimerUpdate() {

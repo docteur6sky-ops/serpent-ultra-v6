@@ -11,6 +11,7 @@
 
 import { logger } from '../services/logger.js';
 import { achievementManager } from '../roguelike/achievements.js';
+import { CleanupManager } from '../managers/CleanupManager.js';
 
 export class PowerUpSystem {
     constructor(game) {
@@ -331,12 +332,13 @@ export class PowerUpSystem {
 
                 // Décrémenter le cooldown chaque seconde
                 if (this.sprintCooldownInterval) clearInterval(this.sprintCooldownInterval);
-                this.sprintCooldownInterval = setInterval(() => {
+                this.sprintCooldownInterval = CleanupManager.registerInterval(setInterval(() => {
                     this.sprintCooldown--;
                     if (this.sprintCooldown <= 0) {
-                        clearInterval(this.sprintCooldownInterval); this.sprintCooldownInterval = null;
+                        CleanupManager.clearRegisteredInterval(this.sprintCooldownInterval, 'solo-game');
+                        this.sprintCooldownInterval = null;
                     }
-                }, 1000);
+                }, 1000), 'sprint-cooldown', 'solo-game');
             }
         }, ability.duration * 1000);
     }
