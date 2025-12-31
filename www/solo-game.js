@@ -978,10 +978,27 @@ class SoloSnakeGame extends BaseSnakeGame {
             this._lastUIValues.score = newScore;
         }
 
+        // Stage number only
         if (newLevel !== this._lastUIValues.level) {
             const lv = this._domCache.lv || (this._domCache.lv = document.getElementById('solo-lv'));
             if (lv) lv.textContent = newLevel;
             this._lastUIValues.level = newLevel;
+        }
+
+        // Roguelike progress bar
+        if (this.roguelikeSystem?.isActive) {
+            const progressBar = this._domCache.stageProgressBar ||
+                (this._domCache.stageProgressBar = document.getElementById('stage-progress-bar'));
+            const progressFill = this._domCache.stageProgressFill ||
+                (this._domCache.stageProgressFill = document.getElementById('stage-progress-fill'));
+
+            if (progressBar && progressFill) {
+                progressBar.classList.add('active');
+                const progress = this.roguelikeSystem.progress || 0;
+                const target = this.roguelikeSystem.objective?.count || 1;
+                const percent = Math.min((progress / target) * 100, 100);
+                progressFill.style.width = percent + '%';
+            }
         }
 
         if (newSegments !== this._lastUIValues.segments) {

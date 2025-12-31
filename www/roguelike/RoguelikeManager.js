@@ -503,7 +503,7 @@ class RoguelikeManager {
 
         // Sélectionner les upgrades
         const rarityBoost = this.getMetaBonus('rarity_boost');
-        this.pendingUpgradeChoices = selectRandomUpgrades(choiceCount, maxedUpgrades, rarityBoost);
+        this.pendingUpgradeChoices = selectRandomUpgrades(choiceCount, maxedUpgrades, rarityBoost, this.currentRun.upgrades);
 
         logger.log('[RoguelikeManager] Choix d\'upgrades:', this.pendingUpgradeChoices.map(u => u.name));
 

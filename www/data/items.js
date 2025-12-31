@@ -200,7 +200,7 @@ export const ITEMS = {
             description: 'Toutes les couleurs de l\'arc-en-ciel',
             roguelikeBonus: {
                 type: 'starting_upgrades',
-                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended'],
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'lightning_duration'],
                 bonusName: 'Maître Élémentaire',
                 bonusDesc: 'Tous les power-ups élémentaires durent 2x plus longtemps'
             }
@@ -345,7 +345,7 @@ export const ITEMS = {
             description: 'Le roi des serpents, pourpre royal',
             roguelikeBonus: {
                 type: 'starting_upgrades',
-                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'lightning_duration', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
                 bonusName: 'Royauté',
                 bonusDesc: 'Rainbow + Neon : Élémentaires x2 + Sagesse x4'
             }
@@ -406,7 +406,7 @@ export const ITEMS = {
             description: 'Voyageur des galaxies infinies',
             roguelikeBonus: {
                 type: 'combo',
-                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended'],
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'lightning_duration'],
                 shield: 3,
                 bonusName: 'Maître de l Univers',
                 bonusDesc: 'Rainbow + Diamond : Élémentaires x2 + 3 boucliers'
@@ -556,7 +556,7 @@ export const ITEMS = {
                 selfCollisionImmune: true,
                 extraLives: 3,
                 shield: 3,
-                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
+                upgradeIds: ['ice_duration', 'fire_duration', 'rock_duration', 'ghost_extended', 'lightning_duration', 'xp_boost', 'xp_boost', 'xp_boost', 'xp_boost'],
                 bonusName: 'Transcendance',
                 bonusDesc: 'ULTIME : Neon + Phoenix + Diamond + Rainbow + Immunité'
             }

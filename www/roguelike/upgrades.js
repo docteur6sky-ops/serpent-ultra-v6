@@ -36,23 +36,6 @@ export const RUN_UPGRADES = {
         stackable: true,
         maxStacks: 2
     },
-    regeneration: {
-        id: "regeneration",
-        name: "Régénération",
-        description: "+1 segment toutes les 15 secondes",
-        icon: "💚",
-        category: "survival",
-        rarity: "rare",
-        weight: 5,
-        effect: {
-            type: "regen",
-            interval: 15,
-            amount: 1
-        },
-        stackable: true,
-        maxStacks: 2
-    },
-
     // ===== CATÉGORIE : POWER-UPS =====
     ice_duration: {
         id: "ice_duration",
@@ -200,6 +183,7 @@ export const RUN_UPGRADES = {
         category: "segments",
         rarity: "legendary",
         weight: 1,
+        requires: "ghost_extended",
         effect: {
             type: "steal_on_ghost",
             amount: 1
@@ -216,6 +200,7 @@ export const RUN_UPGRADES = {
         category: "powerup",
         rarity: "legendary",
         weight: 1,
+        requires: "rock_duration",
         effect: {
             type: "devour_on_rock",
             amount: 1
@@ -230,6 +215,7 @@ export const RUN_UPGRADES = {
         category: "powerup",
         rarity: "legendary",
         weight: 1,
+        requires: "fire_duration",
         effect: {
             type: "fire_wall_immunity",
             enabled: true
@@ -244,6 +230,7 @@ export const RUN_UPGRADES = {
         category: "powerup",
         rarity: "legendary",
         weight: 1,
+        requires: "lightning_duration",
         effect: {
             type: "lightning_no_invert",
             enabled: true
@@ -258,6 +245,7 @@ export const RUN_UPGRADES = {
         category: "powerup",
         rarity: "legendary",
         weight: 1,
+        requires: "ice_duration",
         effect: {
             type: "ice_ultra_slow",
             multiplier: 0.5
@@ -403,8 +391,13 @@ export const RARITIES = {
 /**
  * Sélectionne N upgrades aléatoires selon leur poids et rareté
  */
-export function selectRandomUpgrades(count = 3, excludeIds = [], rarityBoost = 0) {
-    const available = Object.values(RUN_UPGRADES).filter(u => !excludeIds.includes(u.id));
+export function selectRandomUpgrades(count = 3, excludeIds = [], rarityBoost = 0, currentUpgrades = []) {
+    const available = Object.values(RUN_UPGRADES).filter(u => {
+        if (excludeIds.includes(u.id)) return false;
+        // Verifier prerequis (legendaires necessitent leur bonus simple)
+        if (u.requires && !currentUpgrades.includes(u.requires)) return false;
+        return true;
+    });
 
     // Calculer les poids totaux
     let totalWeight = 0;

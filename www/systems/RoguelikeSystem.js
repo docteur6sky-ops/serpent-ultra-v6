@@ -544,23 +544,58 @@ export class RoguelikeSystem {
         const { passivesContainer } = this._domCache;
         if (!passivesContainer) return;
 
-        const upgradeCounts = {};
-        run.upgrades.forEach(upgradeId => {
-            if (['extra_life', 'shield', 'scissors', 'combo_master'].includes(upgradeId)) return;
-            upgradeCounts[upgradeId] = (upgradeCounts[upgradeId] || 0) + 1;
-        });
-
         const { RUN_UPGRADES } = window.roguelikeUpgrades || {};
         if (!RUN_UPGRADES) {
             passivesContainer.innerHTML = '';
             return;
         }
 
+        // Map des legendaires vers leurs prerequis (pour remplacement visuel)
+        const legendaryReplacements = {
+            'rock_devour': 'rock_duration',
+            'fire_phoenix': 'fire_duration',
+            'lightning_master': 'lightning_duration',
+            'ice_absolute': 'ice_duration',
+            'segment_steal': 'ghost_extended'
+        };
+
+        // Trouver les bonus simples remplaces par un legendaire obtenu
+        const ownedUpgrades = new Set(run.upgrades);
+        const replacedSimples = new Set();
+
+        for (const [legendary, simple] of Object.entries(legendaryReplacements)) {
+            if (ownedUpgrades.has(legendary)) {
+                replacedSimples.add(simple);
+            }
+        }
+
+        // Compter les upgrades a afficher
+        const upgradeCounts = {};
+        run.upgrades.forEach(upgradeId => {
+            // Ignorer vies/boucliers/consommables (affiches separement)
+            if (['extra_life', 'shield', 'scissors', 'combo_master'].includes(upgradeId)) return;
+
+            // Ignorer teleport (passe muraille) - pas besoin de l'afficher
+            if (upgradeId === 'teleport') return;
+
+            // Ignorer les bonus simples remplaces par leur legendaire
+            if (replacedSimples.has(upgradeId)) return;
+
+            const upgrade = RUN_UPGRADES[upgradeId];
+            if (!upgrade) return;
+
+            upgradeCounts[upgradeId] = (upgradeCounts[upgradeId] || 0) + 1;
+        });
+
         let html = '';
         for (const [upgradeId, count] of Object.entries(upgradeCounts)) {
             const upgrade = RUN_UPGRADES[upgradeId];
             if (!upgrade) continue;
-            html += `<div class="rl-hud-passive" title="${upgrade.name}">
+
+            const isLegendary = upgrade.rarity === 'legendary';
+            const cssClass = isLegendary ? 'rl-hud-passive rl-legendary' : 'rl-hud-passive';
+
+            html += `<div class="${cssClass}" title="${upgrade.name}">
                 <span class="rl-passive-icon">${upgrade.icon}</span>
                 ${count > 1 ? `<span class="rl-passive-count">×${count}</span>` : ''}
             </div>`;
