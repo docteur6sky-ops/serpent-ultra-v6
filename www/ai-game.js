@@ -88,6 +88,16 @@ class AISnakeGame extends BaseSnakeGame {
         this.aiFlash = null;
 
         logger.log('[AIGame] Initialized');
+
+        // 🧹 Cache DOM refs pour performance
+        this._isDarkMode = false;
+        this._darkModeCheckCounter = 0;
+        this._domCache = {
+            timer: null,
+            player1Score: null,
+            player2Score: null
+        };
+        this._lastUIValues = { timeText: '', playerScore: -1, aiScore: -1 };
     }
 
     /**
@@ -861,9 +871,12 @@ class AISnakeGame extends BaseSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
-        // ✅ Couleur bordure adaptée au mode dark/light (comme solo)
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        let borderColor = isDarkMode ? '#00A5A5' : '#d8d800ff';
+        // ✅ Couleur bordure adaptée au mode dark/light (check toutes les 60 frames)
+        if (++this._darkModeCheckCounter >= 60) {
+            this._isDarkMode = document.body.classList.contains('dark-mode');
+            this._darkModeCheckCounter = 0;
+        }
+        const borderColor = this._isDarkMode ? '#00A5A5' : '#d8d800ff';
 
         // Grille avec bordure (utilise RenderUtils)
         if (window.RenderUtils) {
@@ -1027,22 +1040,40 @@ class AISnakeGame extends BaseSnakeGame {
     // ============================================
 
     updateUI() {
-        // Timer
+        // Timer - cache DOM element
         const minutes = Math.floor(this.timeRemaining / 60000);
         const seconds = Math.floor((this.timeRemaining % 60000) / 1000);
-        const timerElem = document.getElementById('ai-timer');
-        if (timerElem) {
-            timerElem.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            if (this.timeRemaining < 60000) {
-                timerElem.style.color = '#FF4444';
+        const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeText !== this._lastUIValues.timeText) {
+            const timerElem = this._domCache.timer ||
+                (this._domCache.timer = document.getElementById('ai-timer'));
+            if (timerElem) {
+                timerElem.textContent = timeText;
+                if (this.timeRemaining < 60000) {
+                    timerElem.style.color = '#FF4444';
+                }
             }
+            this._lastUIValues.timeText = timeText;
         }
 
-        // Scores (nombre de segments)
-        const player1Score = document.getElementById('ai-player1-segments');
-        const player2Score = document.getElementById('ai-player2-segments');
-        if (player1Score) player1Score.textContent = this.playerSnake.length;
-        if (player2Score) player2Score.textContent = this.aiSnake.length;
+        // Scores - only update when changed
+        const playerLen = this.playerSnake.length;
+        const aiLen = this.aiSnake.length;
+
+        if (playerLen !== this._lastUIValues.playerScore) {
+            const player1Score = this._domCache.player1Score ||
+                (this._domCache.player1Score = document.getElementById('ai-player1-segments'));
+            if (player1Score) player1Score.textContent = playerLen;
+            this._lastUIValues.playerScore = playerLen;
+        }
+
+        if (aiLen !== this._lastUIValues.aiScore) {
+            const player2Score = this._domCache.player2Score ||
+                (this._domCache.player2Score = document.getElementById('ai-player2-segments'));
+            if (player2Score) player2Score.textContent = aiLen;
+            this._lastUIValues.aiScore = aiLen;
+        }
     }
 
     // ============================================

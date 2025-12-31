@@ -308,9 +308,12 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
-        // ✅ Couleur bordure adaptée au mode dark/light (comme solo)
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        const borderColor = isDarkMode ? '#008B8B' : '#d8d800ff';  // Cyan en dark, Gold en light
+        // ✅ Couleur bordure adaptée au mode dark/light (check toutes les 60 frames)
+        if (++this._darkModeCheckCounter >= 60) {
+            this._isDarkMode = document.body.classList.contains('dark-mode');
+            this._darkModeCheckCounter = 0;
+        }
+        const borderColor = this._isDarkMode ? '#008B8B' : '#d8d800ff';  // Cyan en dark, Gold en light
 
         // Dessiner la grille (même style que le solo)
         RenderUtils.drawGrid(
@@ -711,9 +714,8 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
         this.ctx.fillStyle = this.COLORS.BG_DARK;
         this.ctx.fillRect(0, 0, this.CANVAS_SIZE, this.CANVAS_SIZE);
 
-        // Couleur bordure
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        const borderColor = isDarkMode ? '#008B8B' : '#d8d800ff';
+        // Couleur bordure (utilise cache)
+        const borderColor = this._isDarkMode ? '#008B8B' : '#d8d800ff';
 
         // Dessiner la grille
         RenderUtils.drawGrid(
