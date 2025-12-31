@@ -9,23 +9,13 @@
 // 1. Services de base (pas de dépendances)
 import { logger } from './services/logger.js';
 import { state } from './services/StateManager.js';
+import { ErrorBoundary } from './services/ErrorBoundary.js';
 
 // ============================================
 // GESTION D'ERREUR GLOBALE
-// Capture les erreurs non-gérées pour éviter crash silencieux
+// ErrorBoundary avec déduplication et notifications user-friendly
 // ============================================
-window.addEventListener('error', (event) => {
-    logger.error('[GLOBAL ERROR]', event.message, {
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno
-    });
-    // Ne pas bloquer l'exécution du reste
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    logger.error('[UNHANDLED PROMISE]', event.reason?.message || event.reason);
-});
+ErrorBoundary.init();
 
 // ============================================
 // ACCESSIBILITÉ CLAVIER
