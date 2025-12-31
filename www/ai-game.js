@@ -8,6 +8,7 @@ import { SnakeAI } from './ai/snake-ai.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
 import { POWERUP_SKIN_COLORS } from './config/constants.js';
 import { CleanupManager } from './managers/CleanupManager.js';
+import { PowerUpState } from './core/PowerUpState.js';
 
 class AISnakeGame extends BaseSnakeGame {
     constructor() {
@@ -45,28 +46,32 @@ class AISnakeGame extends BaseSnakeGame {
             ghost: 6000       // 6 secondes
         };
 
-        // Effets power-ups JOUEUR
-        this.playerPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-        this.playerActivePowerup = null;
-        this.playerPowerupTime = 0;
-        this.playerGhostUsed = false; // Flag pour usage unique de GHOST
+        // Effets power-ups (utilise PowerUpState centralisé)
+        this.playerPowerup = new PowerUpState('player');
+        this.aiPowerup = new PowerUpState('ai');
 
-        // Effets power-ups IA
-        this.aiPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-        this.aiActivePowerup = null;
-        this.aiPowerupTime = 0;
-        this.aiGhostUsed = false; // Flag pour usage unique de GHOST
+        // Aliases pour compatibilité (getter dynamique)
+        Object.defineProperty(this, 'playerPowerupEffects', { get: () => this.playerPowerup.effects });
+        Object.defineProperty(this, 'playerActivePowerup', { get: () => this.playerPowerup.activePowerup });
+        Object.defineProperty(this, 'playerGhostUsed', {
+            get: () => this.playerPowerup.ghostUsed,
+            set: (v) => this.playerPowerup.ghostUsed = v
+        });
+        Object.defineProperty(this, 'playerSlowed', { get: () => this.playerPowerup.slowed });
+        Object.defineProperty(this, 'aiPowerupEffects', { get: () => this.aiPowerup.effects });
+        Object.defineProperty(this, 'aiActivePowerup', { get: () => this.aiPowerup.activePowerup });
+        Object.defineProperty(this, 'aiGhostUsed', {
+            get: () => this.aiPowerup.ghostUsed,
+            set: (v) => this.aiPowerup.ghostUsed = v
+        });
+        Object.defineProperty(this, 'aiSlowed', { get: () => this.aiPowerup.slowed });
 
         // 🏆 Tracking segments volés par le joueur (pour trophée Voleur)
         this.playerSegmentsStolenThisGame = 0;
         // 💎 Tracking power-ups collectés par le joueur (pour trophée Collectionneur)
         this.playerPowerupsCollectedThisGame = 0;
 
-        // États de ralentissement (ICE) - 500ms au lieu de freeze total
-        this.playerSlowed = false;
-        this.playerSlowedUntil = 0;
-        this.aiSlowed = false;
-        this.aiSlowedUntil = 0;
+        // États de ralentissement (ICE) - géré par PowerUpState
 
         // Vitesses indépendantes (comme multi)
         this.playerLastMove = 0;
@@ -106,17 +111,7 @@ class AISnakeGame extends BaseSnakeGame {
      * Si ralenti par ICE ennemi: 500ms
      */
     getPlayerSpeed() {
-        const BASE_SPEED = 250;
-
-        // Si ralenti par ICE ennemi, vitesse réduite à 500ms
-        if (this.playerSlowed) return 500;
-
-        // ✅ LIGHTNING augmente la vitesse
-        if (this.playerActivePowerup === 'lightning') {
-            return BASE_SPEED / 2; // 125ms - x2 vitesse
-        }
-
-        return BASE_SPEED; // 250ms - normal (ICE, ROCK, GHOST, aucun)
+        return this.playerPowerup.getSpeed(250, 500);
     }
 
     /**
@@ -124,17 +119,7 @@ class AISnakeGame extends BaseSnakeGame {
      * Si ralenti par ICE ennemi: 500ms
      */
     getAISpeed() {
-        const BASE_SPEED = 250;
-
-        // Si ralenti par ICE ennemi, vitesse réduite à 500ms
-        if (this.aiSlowed) return 500;
-
-        // ✅ LIGHTNING augmente la vitesse
-        if (this.aiActivePowerup === 'lightning') {
-            return BASE_SPEED / 2; // 125ms - x2 vitesse
-        }
-
-        return BASE_SPEED; // 250ms - normal
+        return this.aiPowerup.getSpeed(250, 500);
     }
 
     /**
@@ -193,16 +178,10 @@ class AISnakeGame extends BaseSnakeGame {
 
         // Réinitialiser power-ups
         this.powerups = [];
-        this.playerPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-        this.playerActivePowerup = null;
-        this.playerPowerupTime = 0;
-        this.playerGhostUsed = false;
-        this.playerSegmentsStolenThisGame = 0; // Reset compteur segments volés
-        this.playerPowerupsCollectedThisGame = 0; // Reset compteur power-ups
-        this.aiPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-        this.aiActivePowerup = null;
-        this.aiPowerupTime = 0;
-        this.aiGhostUsed = false;
+        this.playerPowerup.reset();
+        this.aiPowerup.reset();
+        this.playerSegmentsStolenThisGame = 0;
+        this.playerPowerupsCollectedThisGame = 0;
 
         // Timer
         this.timeRemaining = this.matchDuration;
@@ -285,31 +264,9 @@ class AISnakeGame extends BaseSnakeGame {
         // 4️⃣ Gérer power-ups (spawn + expiration)
         this.managePowerups();
 
-        // 5️⃣ Vérifier expiration des power-ups
-        if (this.playerActivePowerup) {
-            const elapsed = performance.now() - this.playerPowerupTime;
-            const duration = this.POWERUP_DURATIONS[this.playerActivePowerup] || 8000;
-            if (elapsed > duration) {
-                this.disablePowerup('player');
-            }
-        }
-        if (this.aiActivePowerup) {
-            const elapsed = performance.now() - this.aiPowerupTime;
-            const duration = this.POWERUP_DURATIONS[this.aiActivePowerup] || 8000;
-            if (elapsed > duration) {
-                this.disablePowerup('ai');
-            }
-        }
-
-        // 6️⃣ Vérifier fin du ralentissement (ICE)
-        if (this.playerSlowed && timestamp > this.playerSlowedUntil) {
-            this.playerSlowed = false;
-            logger.log('[AIGame] Joueur n\'est plus ralenti');
-        }
-        if (this.aiSlowed && timestamp > this.aiSlowedUntil) {
-            this.aiSlowed = false;
-            logger.log('[AIGame] IA n\'est plus ralentie');
-        }
+        // 5️⃣ + 6️⃣ Vérifier expiration des power-ups et ralentissement via PowerUpState
+        this.playerPowerup.update(timestamp, this.POWERUP_DURATIONS);
+        this.aiPowerup.update(timestamp, this.POWERUP_DURATIONS);
 
         // 7️⃣ Mettre à jour particules
         this.updateParticles();
@@ -506,13 +463,9 @@ class AISnakeGame extends BaseSnakeGame {
         const SLOW_DURATION = 6000; // 6 secondes
 
         if (defender === 'player') {
-            this.playerSlowed = true;
-            this.playerSlowedUntil = now + SLOW_DURATION;
-            logger.log('[AIGame] ❄️ ICE: Joueur ralenti à 500ms pendant 6s');
+            this.playerPowerup.applySlowed(SLOW_DURATION);
         } else {
-            this.aiSlowed = true;
-            this.aiSlowedUntil = now + SLOW_DURATION;
-            logger.log('[AIGame] ❄️ ICE: IA ralentie à 500ms pendant 6s');
+            this.aiPowerup.applySlowed(SLOW_DURATION);
         }
     }
 
@@ -792,53 +745,13 @@ class AISnakeGame extends BaseSnakeGame {
             // 💎 Tracking pour trophée Collectionneur
             this.playerPowerupsCollectedThisGame++;
 
-            // ✅ Annuler ancien power-up avant activer nouveau
-            if (this.playerActivePowerup) {
-                this.disablePowerup('player');
-            }
-
-            // Activer l'effet
-            if (type === 'ice') {
-                this.playerPowerupEffects.slow = true;
-                this.playerActivePowerup = 'ice';
-            } else if (type === 'lightning') {
-                this.playerPowerupEffects.double = true;
-                this.playerActivePowerup = 'lightning';
-            } else if (type === 'rock') {
-                this.playerPowerupEffects.invincible = true;
-                this.playerActivePowerup = 'rock';
-            } else if (type === 'ghost') {
-                this.playerPowerupEffects.ghost = true;
-                this.playerActivePowerup = 'ghost';
-                this.playerGhostUsed = false; // Reset flag pour nouveau GHOST
-            }
-
-            this.playerPowerupTime = performance.now();
+            // Activer via PowerUpState (gère reset automatique)
+            this.playerPowerup.activate(type);
         } else {
             this.aiSnake.unshift(head);
 
-            // ✅ Annuler ancien power-up avant activer nouveau
-            if (this.aiActivePowerup) {
-                this.disablePowerup('ai');
-            }
-
-            // Activer l'effet
-            if (type === 'ice') {
-                this.aiPowerupEffects.slow = true;
-                this.aiActivePowerup = 'ice';
-            } else if (type === 'lightning') {
-                this.aiPowerupEffects.double = true;
-                this.aiActivePowerup = 'lightning';
-            } else if (type === 'rock') {
-                this.aiPowerupEffects.invincible = true;
-                this.aiActivePowerup = 'rock';
-            } else if (type === 'ghost') {
-                this.aiPowerupEffects.ghost = true;
-                this.aiActivePowerup = 'ghost';
-                this.aiGhostUsed = false; // Reset flag pour nouveau GHOST
-            }
-
-            this.aiPowerupTime = performance.now();
+            // Activer via PowerUpState (gère reset automatique)
+            this.aiPowerup.activate(type);
         }
 
         // Supprimer le power-up mangé (un nouveau respawnera via managePowerups)
@@ -850,13 +763,9 @@ class AISnakeGame extends BaseSnakeGame {
 
     disablePowerup(who) {
         if (who === 'player') {
-            this.playerPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-            this.playerActivePowerup = null;
-            logger.log('[AIGame] Power-up joueur expiré');
+            this.playerPowerup.disable();
         } else {
-            this.aiPowerupEffects = { slow: false, double: false, invincible: false, ghost: false };
-            this.aiActivePowerup = null;
-            logger.log('[AIGame] Power-up IA expiré');
+            this.aiPowerup.disable();
         }
     }
 
