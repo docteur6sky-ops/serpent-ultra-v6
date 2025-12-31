@@ -122,7 +122,7 @@
 /* ============================================
    ROGUELIKE - Cacher ligne objective (info dans STAGE)
    ============================================ */
-.roguelike-objective {
+.roguelike-objective:not(:has(.boss-hud-aaa)) {
     display: none !important;
 }
 
