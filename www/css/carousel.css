@@ -1,0 +1,398 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   CARROUSEL DES MODES DE JEU
+   Composant swipeable avec navigation flèches et dots
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.hub-carousel-container {
+    position: relative;
+    width: 100%;
+    padding: 0 10px;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Zone principale du carrousel */
+.hub-carousel {
+    width: 85%;
+    max-width: 320px;
+    overflow: hidden;
+    border-radius: 16px;
+    position: relative;
+}
+
+/* Track contenant tous les slides */
+.carousel-track {
+    display: flex;
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+}
+
+/* Chaque slide */
+.carousel-slide {
+    min-width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    box-sizing: border-box;
+    opacity: 0.5;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ═══ BOUTON MODE (style unifié) ═══ */
+.carousel-mode-btn {
+    width: 100%;
+    min-height: 100px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px 25px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+.carousel-mode-btn:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.carousel-mode-btn:active {
+    transform: scale(0.98);
+}
+
+/* Icône du mode */
+.carousel-mode-icon {
+    font-size: 2.8rem;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.carousel-icon-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+/* Texte du mode */
+.carousel-mode-text {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    position: relative;
+    z-index: 1;
+}
+
+/* Badge (HOT, NEW, etc.) */
+.carousel-mode-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(244, 67, 54, 0.5);
+    animation: pulse-badge 2s ease-in-out infinite;
+    z-index: 10;
+}
+
+/* ═══ STYLES PAR MODE ═══ */
+
+/* ROGUELIKE - Violet/Magenta */
+.carousel-mode-roguelike {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #4a2c7a 100%);
+    border-color: #9c27b0;
+    box-shadow: 0 8px 30px rgba(156, 39, 176, 0.4);
+}
+
+.carousel-mode-roguelike::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(156, 39, 176, 0.3) 60deg,
+        transparent 120deg
+    );
+    animation: carouselShine 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes carouselShine {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.carousel-mode-roguelike:hover {
+    background: linear-gradient(135deg, #2d1b4e 0%, #4a2c7a 50%, #6a3c9a 100%);
+    box-shadow: 0 12px 40px rgba(156, 39, 176, 0.6);
+    border-color: #ba68c8;
+}
+
+.carousel-mode-roguelike .carousel-mode-icon {
+    filter: drop-shadow(0 0 10px rgba(186, 104, 200, 0.5));
+}
+
+.carousel-mode-roguelike .carousel-mode-text {
+    text-shadow: 0 2px 8px rgba(156, 39, 176, 0.8);
+}
+
+/* SOLO - Vert/Cyan */
+.carousel-mode-solo {
+    background: linear-gradient(135deg, #0a2e1a 0%, #1b4e2d 50%, #2c7a4a 100%);
+    border-color: #4CAF50;
+    box-shadow: 0 8px 30px rgba(76, 175, 80, 0.4);
+}
+
+.carousel-mode-solo::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(76, 175, 80, 0.3) 60deg,
+        transparent 120deg
+    );
+    animation: carouselShine 3s linear infinite;
+    pointer-events: none;
+}
+
+.carousel-mode-solo:hover {
+    background: linear-gradient(135deg, #1b4e2d 0%, #2c7a4a 50%, #3c9a6a 100%);
+    box-shadow: 0 12px 40px rgba(76, 175, 80, 0.6);
+    border-color: #81C784;
+}
+
+.carousel-mode-solo .carousel-mode-icon {
+    filter: drop-shadow(0 0 10px rgba(129, 199, 132, 0.5));
+}
+
+.carousel-mode-solo .carousel-mode-text {
+    text-shadow: 0 2px 8px rgba(76, 175, 80, 0.8);
+}
+
+/* ONLINE - Bleu/Cyan */
+.carousel-mode-online {
+    background: linear-gradient(135deg, #0a1a2e 0%, #1b3d4e 50%, #2c5a7a 100%);
+    border-color: #2196F3;
+    box-shadow: 0 8px 30px rgba(33, 150, 243, 0.4);
+}
+
+.carousel-mode-online::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(33, 150, 243, 0.3) 60deg,
+        transparent 120deg
+    );
+    animation: carouselShine 3s linear infinite;
+    pointer-events: none;
+}
+
+.carousel-mode-online:hover {
+    background: linear-gradient(135deg, #1b3d4e 0%, #2c5a7a 50%, #3c7a9a 100%);
+    box-shadow: 0 12px 40px rgba(33, 150, 243, 0.6);
+    border-color: #64B5F6;
+}
+
+.carousel-mode-online .carousel-mode-icon {
+    filter: drop-shadow(0 0 10px rgba(100, 181, 246, 0.5));
+}
+
+.carousel-mode-online .carousel-mode-text {
+    text-shadow: 0 2px 8px rgba(33, 150, 243, 0.8);
+}
+
+/* BOSS RUSH - Rouge/Orange */
+.carousel-mode-boss {
+    background: linear-gradient(135deg, #2e0a0a 0%, #4e1b1b 50%, #7a2c2c 100%);
+    border-color: #f44336;
+    box-shadow: 0 8px 30px rgba(244, 67, 54, 0.4);
+}
+
+.carousel-mode-boss::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(244, 67, 54, 0.3) 60deg,
+        transparent 120deg
+    );
+    animation: carouselShine 3s linear infinite;
+    pointer-events: none;
+}
+
+.carousel-mode-boss:hover {
+    background: linear-gradient(135deg, #4e1b1b 0%, #7a2c2c 50%, #9a3c3c 100%);
+    box-shadow: 0 12px 40px rgba(244, 67, 54, 0.6);
+    border-color: #EF5350;
+}
+
+.carousel-mode-boss .carousel-mode-icon {
+    filter: drop-shadow(0 0 10px rgba(239, 83, 80, 0.5));
+}
+
+.carousel-mode-boss .carousel-mode-text {
+    text-shadow: 0 2px 8px rgba(244, 67, 54, 0.8);
+}
+
+.carousel-badge-boss {
+    background: linear-gradient(135deg, #FF5722, #E64A19) !important;
+    box-shadow: 0 3px 10px rgba(255, 87, 34, 0.5) !important;
+}
+
+/* ═══ FLÈCHES DE NAVIGATION ═══ */
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-arrow:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-prev {
+    left: 0;
+}
+
+.carousel-next {
+    right: 0;
+}
+
+/* ═══ INDICATEURS DOTS ═══ */
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1.2);
+}
+
+.carousel-dot.active {
+    background: #fff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transform: scale(1.2);
+}
+
+/* ═══ BOUTON NOUVELLE RUN (dans slide Roguelike) ═══ */
+.hub-carousel-container .hub-new-run-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
+    color: #81C784;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hub-carousel-container .hub-new-run-btn:hover {
+    background: rgba(76, 175, 80, 0.3);
+}
+
+.hub-carousel-container .hub-new-run-btn.hidden {
+    display: none;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 360px) {
+    .hub-carousel {
+        width: 90%;
+    }
+
+    .carousel-mode-btn {
+        min-height: 85px;
+        padding: 15px 20px;
+    }
+
+    .carousel-mode-text {
+        font-size: 1.3rem;
+    }
+
+    .carousel-icon-img {
+        width: 50px;
+        height: 50px;
+    }
+
+    .carousel-arrow {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+}

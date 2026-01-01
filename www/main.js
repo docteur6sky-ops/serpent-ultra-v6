@@ -75,6 +75,7 @@ await import('./managers/LeaderboardManager.js');  // ✅ Scores et classement
 await import('./managers/GradeManager.js');  // ✅ Grades Solo/Multi
 await import('./managers/BoosterManager.js');  // ✅ Boosters XP
 await import('./managers/ChestManager.js');  // ✅ Coffre quotidien
+await import('./managers/BoostersTabManager.js');  // ✅ Onglet Boosters dans Box
 await import('./managers/ModalManager.js');  // ✅ Modales pour remplacer alert()
 await import('./managers/CleanupManager.js');  // ✅ Gestion mémoire centralisée
 
@@ -86,6 +87,7 @@ await import('./BackgroundManager.js');
 await import('./AudioManager.js');
 await import('./NotificationManager.js');
 await import('./hub-manager.js');
+await import('./managers/CarouselManager.js');  // ✅ Carrousel modes de jeu
 await import('./BoxSystem.js');  // ✅ Système Box unifié (manager + UI)
 await import('./chest-opening.js');  // ✅ Expérience AAA ouverture coffre
 await import('./stats-manager.js');  // ✅ Gestionnaire écran Stats/Carrière

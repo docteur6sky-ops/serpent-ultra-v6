@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="/css/firebase.css"> <!-- Mode Roguelike -->
     <link rel="stylesheet" href="/roguelike/tutorial.css"> <!-- Tutoriel Serpent Academy -->
     <link rel="stylesheet" href="/rules.css">
+    <link rel="stylesheet" href="/css/carousel.css">
+    <link rel="stylesheet" href="/css/box-boosters.css">
 
     <!-- Point d'entrée Vite - Bundle optimisé -->
     <script type="module" src="/main.js"></script>
@@ -259,7 +261,7 @@
             </div>
 
             <!-- Boosters XP disponibles -->
-            <div class="hub-boosters-row" id="hub-boosters">
+            <div class="hub-boosters-row" style="display:none" id="hub-boosters">
                 <div class="hub-booster-item" id="hub-booster-25" role="button" tabindex="0" aria-label="Activer boost 25 pourcent XP" onclick="window.activateBooster(25)" title="Activer Boost +25% XP">
                     <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25%" class="hub-booster-icon">
                     <span class="hub-booster-count" id="hub-booster-25-count">0</span>
@@ -273,38 +275,53 @@
             <!-- SPACER - Pousse les boutons vers le bas -->
             <div style="flex: 1;"></div>
 
-            <!-- Hero CTA (Bouton Principal - ROGUELIKE) -->
-            <div class="hub-hero-container">
-                <button class="hub-hero-btn hub-hero-btn-compact hub-hero-roguelike" id="hub-hero-btn">
-                    <div class="hub-hero-icon">🎲</div>
-                    <div class="hub-hero-text">Roguelike</div>
-                    <div class="hub-hero-badge">HOT</div>
-                </button>
-                <!-- Bouton secondaire pour nouvelle run (visible si sauvegarde existe) -->
-                <button class="hub-new-run-btn hidden" id="hub-new-run-btn" onclick="window.audio.buttonClick();if(confirm('Abandonner la run sauvegardee et en commencer une nouvelle?')){window.deleteRoguelikeSavedRun();window.startRoguelikeRun();}">
-                    🔄 Nouvelle Run
-                </button>
+            <!-- CARROUSEL DES MODES DE JEU -->
+            <div class="hub-carousel-container">
+                <button class="carousel-arrow carousel-prev" aria-label="Mode precedent">◀</button>
+                <div class="hub-carousel">
+                    <div class="carousel-track">
+                        <!-- Slide 1: ROGUELIKE -->
+                        <div class="carousel-slide active" data-mode="roguelike">
+                            <button class="carousel-mode-btn carousel-mode-roguelike" id="hub-hero-btn" role="button" tabindex="0" aria-label="Mode Roguelike">
+                                <div class="carousel-mode-icon hub-hero-icon">🎲</div>
+                                <div class="carousel-mode-text hub-hero-text">Roguelike</div>
+                                <div class="carousel-mode-badge hub-hero-badge">HOT</div>
+                            </button>
+                            <button class="hub-new-run-btn hidden" id="hub-new-run-btn" onclick="window.audio.buttonClick();if(confirm('Abandonner la run sauvegardee et en commencer une nouvelle?')){window.deleteRoguelikeSavedRun();window.startRoguelikeRun();}">🔄 Nouvelle Run</button>
+                        </div>
+                        <!-- Slide 2: SOLO -->
+                        <div class="carousel-slide" data-mode="solo">
+                            <button class="carousel-mode-btn carousel-mode-solo" role="button" tabindex="0" aria-label="Mode Solo" onclick="window.audio.buttonClick();showDifficultySelection()">
+                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="carousel-icon-img"></div>
+                                <div class="carousel-mode-text">Solo</div>
+                            </button>
+                        </div>
+                        <!-- Slide 3: ONLINE -->
+                        <div class="carousel-slide" data-mode="online">
+                            <button class="carousel-mode-btn carousel-mode-online" role="button" tabindex="0" aria-label="Mode Online" onclick="window.audio.buttonClick();window.showMultiplayer()">
+                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Online" class="carousel-icon-img"></div>
+                                <div class="carousel-mode-text">Online</div>
+                                <div class="carousel-mode-badge">NEW</div>
+                            </button>
+                        </div>
+                        <!-- Slide 4: BOSS RUSH -->
+                        <div class="carousel-slide" data-mode="boss">
+                            <button class="carousel-mode-btn carousel-mode-boss" role="button" tabindex="0" aria-label="Mode Boss Rush" onclick="window.audio.buttonClick();startBossRush()">
+                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="Boss Rush" class="carousel-icon-img"></div>
+                                <div class="carousel-mode-text">Boss Rush</div>
+                                <div class="carousel-mode-badge carousel-badge-boss">4 BOSS</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-arrow carousel-next" aria-label="Mode suivant">▶</button>
+                <div class="carousel-dots">
+                    <button class="carousel-dot active" data-index="0" aria-label="Roguelike"></button>
+                    <button class="carousel-dot" data-index="1" aria-label="Solo"></button>
+                    <button class="carousel-dot" data-index="2" aria-label="Online"></button>
+                    <button class="carousel-dot" data-index="3" aria-label="Boss Rush"></button>
+                </div>
             </div>
-
-            <!-- Modes Secondaires (3 cartes) -->
-            <div class="hub-modes hub-modes-three">
-                <!-- Mode Solo (descendu) -->
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode solo roguelike" onclick="window.audio.buttonClick();showDifficultySelection()">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="mode-icon-img"></div>
-                    <div class="hub-mode-text">Solo</div>
-                </div>
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode multijoueur en ligne" onclick="window.audio.buttonClick();window.showMultiplayer()">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Multi" class="mode-icon-img"></div>
-                    <div class="hub-mode-text">Online</div>
-                    <div class="hub-mode-badge">NEW</div>
-                </div>
-                <div class="hub-mode-card hub-mode-card-large hub-mode-horizontal" role="button" tabindex="0" aria-label="Mode Boss Rush" onclick="window.audio.buttonClick();startBossRush()">
-                    <div class="hub-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="Boss Rush" class="mode-icon-img"></div>
-                    <div class="hub-mode-text">Boss Rush</div>
-                    <div class="hub-mode-badge boss-rush">4 BOSS</div>
-                </div>
-            </div>
-
             <!-- Navigation Fixe (Bottom Nav) -->
             <div class="hub-bottom-nav">
                 <button class="hub-nav-btn" onclick="window.audio.buttonClick();if(window.ModalManager)window.ModalManager.info('Boutique - À venir !',{title:'Boutique'})">
@@ -891,21 +908,76 @@
             <div class="box-tabs">
                 <button class="box-tab active" data-category="skins" onclick="filterBoxItems('skins')">
                     <span class="tab-icon">🐍</span>
-                    <span class="tab-label">Skins</span>
+                    <span class="tab-label">Powers</span>
                     <span class="tab-count" id="tab-count-skins">(0)</span>
                 </button>
-                <button class="box-tab" data-category="banners" onclick="filterBoxItems('banners')">
-                    <span class="tab-icon">🖼️</span>
-                    <span class="tab-label">Bannières</span>
-                    <span class="tab-count" id="tab-count-banners">(0)</span>
+                <button class="box-tab" data-category="boosters" onclick="filterBoxItems('boosters')">
+                    <span class="tab-icon">⚗️</span>
+                    <span class="tab-label">Boosters</span>
                 </button>
                 <button class="box-tab" data-category="backgrounds" onclick="filterBoxItems('backgrounds')">
                     <span class="tab-icon">🎨</span>
                     <span class="tab-label">Fonds</span>
                     <span class="tab-count" id="tab-count-backgrounds">(0)</span>
                 </button>
+                <button class="box-tab" data-category="banners" onclick="filterBoxItems('banners')">
+                    <span class="tab-icon">🖼️</span>
+                    <span class="tab-label">Bannières</span>
+                    <span class="tab-count" id="tab-count-banners">(0)</span>
+                </button>
             </div>
 
+
+            <!-- Contenu Boosters -->
+            <div class="box-boosters-content hidden" id="boxBoostersContent">
+                <div class="boosters-grid">
+                    <!-- Booster +25% XP -->
+                    <div class="box-item booster-item rarity-rare" id="booster-card-25">
+                        <div class="box-item-preview">
+                            <img src="assets/items_chess_pictures/xp_boost2.webp" alt="+25% XP" class="booster-preview-img">
+                        </div>
+                        <div class="box-item-info">
+                            <h4 class="box-item-name">Boost +25% XP</h4>
+                            <p class="box-item-type">1 partie</p>
+                        </div>
+                        <div class="box-item-footer">
+                            <span class="booster-count-badge" id="booster-count-25">x0</span>
+                            <button class="btn-booster-activate" onclick="window.activateBooster(25)">Activer</button>
+                        </div>
+                    </div>
+                    <!-- Booster +50% XP -->
+                    <div class="box-item booster-item rarity-epic" id="booster-card-50">
+                        <div class="box-item-preview">
+                            <img src="assets/items_chess_pictures/xp_boost_epic2.webp" alt="+50% XP" class="booster-preview-img">
+                        </div>
+                        <div class="box-item-info">
+                            <h4 class="box-item-name">Boost +50% XP</h4>
+                            <p class="box-item-type">1 partie</p>
+                        </div>
+                        <div class="box-item-footer">
+                            <span class="booster-count-badge epic" id="booster-count-50">x0</span>
+                            <button class="btn-booster-activate epic" onclick="window.activateBooster(50)">Activer</button>
+                        </div>
+                    </div>
+                    <!-- Coffre Premium -->
+                    <div class="box-item booster-item rarity-legendary" id="premium-chest-card">
+                        <div class="box-item-preview">
+                            <img src="assets/trophies/locked-treasure-chest.png" alt="Coffre" class="booster-preview-img chest-img-animated">
+                        </div>
+                        <div class="box-item-info">
+                            <h4 class="box-item-name">Coffre Mystere</h4>
+                            <p class="box-item-type">Skins, fonds, boosters...</p>
+                        </div>
+                        <div class="box-item-footer">
+                            <button class="btn-chest-buy" onclick="window.buyPremiumChest()">
+                                <span class="chest-price-icon">💰</span>
+                                <span class="chest-price-value">500</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="chest-note">※ Le coffre premium n'affecte pas le timer quotidien</p>
+            </div>
             <!-- Grid Items -->
             <div class="box-grid" id="boxGrid">
                 <!-- Items générés dynamiquement via JS -->

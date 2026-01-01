@@ -227,6 +227,58 @@ class ChestManager {
         logger.log('[ChestManager] Coffre ouvert avec succès ✅');
     }
 
+
+    /**
+     * Ouvre un coffre premium (achete avec gold)
+     * NE modifie PAS le timer du coffre quotidien
+     */
+    async openPremiumChest() {
+        logger.log('[ChestManager] Ouverture coffre PREMIUM...');
+
+        // 1. DONNER DE VRAIS XP (bonus: 300-600 aleatoire)
+        const xpAmount = 300 + Math.floor(Math.random() * 300);
+        if (window.awardXP) {
+            const result = window.awardXP(xpAmount);
+            logger.log('[ChestManager] +' + xpAmount + ' XP donnes');
+        }
+
+        // 2. Tirer recompense via BoxManager
+        const rewardData = { xp: xpAmount, isPremium: true };
+
+        if (window.boxManager) {
+            const reward = window.boxManager.openChest();
+
+            if (reward.type === 'coins') {
+                rewardData.coins = reward.value;
+            } else if (reward.type === 'item') {
+                rewardData.item = reward.item;
+            } else if (reward.type === 'booster') {
+                rewardData.booster = reward.boostPercent;
+            }
+        }
+
+        // 3. AFFICHER EXPERIENCE AAA
+        if (window.chestOpening) {
+            await window.chestOpening.open(rewardData);
+        } else {
+            if (window.ModalManager) {
+                let msg = '+' + rewardData.xp + ' XP';
+                if (rewardData.coins) msg += '\n+' + rewardData.coins + ' coins';
+                if (rewardData.item) msg += '\n' + rewardData.item.emoji + ' ' + rewardData.item.name;
+                window.ModalManager.success(msg, { title: 'Coffre Premium !' });
+            }
+        }
+
+        // PAS DE RESET DU TIMER (coffre premium payant)
+
+        // 4. METTRE A JOUR L AFFICHAGE
+        this.updateBoxCount();
+        if (window.updatePlayerInfo) window.updatePlayerInfo();
+        if (window.updateBoostersDisplay) window.updateBoostersDisplay();
+        if (window.updateBoostersTabUI) window.updateBoostersTabUI();
+
+        logger.log('[ChestManager] Coffre PREMIUM ouvert avec succes');
+    }
     // ============================================
     // REWARDS
     // ============================================

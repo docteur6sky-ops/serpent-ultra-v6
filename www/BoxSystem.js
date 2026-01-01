@@ -681,6 +681,10 @@ function filterBoxItems(category) {
     const activeTab = document.querySelector(`[data-category="${category}"]`);
     if (activeTab) activeTab.classList.add('active');
 
+    // Gérer onglet boosters spécialement
+    if (window.handleBoostersTab && window.handleBoostersTab(category)) {
+        return; // Boosters tab géré
+    }
     renderItems(category);
 
     logger.log(`[BoxUI] Filtre changé: ${category}`);
