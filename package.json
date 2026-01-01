@@ -38,10 +38,12 @@
   "author": "Snake Ultra Dev Team",
   "license": "MIT",
   "dependencies": {
+    "@awesome-cordova-plugins/in-app-purchase-2": "^8.1.0",
     "@capacitor-community/admob": "^8.0.0",
     "@capacitor-firebase/authentication": "^6.3.1",
     "@capacitor/android": "^6.2.0",
     "@capacitor/core": "^6.2.0",
+    "cordova-plugin-purchase": "^13.12.1",
     "express": "^4.21.2",
     "firebase": "^12.7.0",
     "serve": "^14.2.5",

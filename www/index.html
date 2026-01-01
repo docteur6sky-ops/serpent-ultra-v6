@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/css/box-boosters.css">
     <link rel="stylesheet" href="/css/gdpr-consent.css">
     <link rel="stylesheet" href="/css/boss-prebattle.css">
+    <link rel="stylesheet" href="/css/shop.css">
 
     <!-- Point d'entrée Vite - Bundle optimisé -->
     <script type="module" src="/main.js"></script>
@@ -255,9 +256,9 @@
                 </div>
             </div>
 
-            <!-- Bouton Daily Challenge (réduit) -->
-            <div style="display: flex; justify-content: center; margin: 8px 0; padding: 0 16px;">
-                <button class="btn btn-primary" id="hub-daily-btn" onclick="window.audio?.buttonClick();window.showDailyChallenge()" style="width: 100%; max-width: 400px; background: linear-gradient(135deg, #e94560, #0f3460); border: 2px solid #e94560; font-size: 0.95rem; padding: 10px 16px;">
+            <!-- Bouton Daily Challenge -->
+            <div style="display: flex; justify-content: center; gap: 10px; margin: 8px 0; padding: 0 16px;">
+                <button class="btn btn-primary" id="hub-daily-btn" onclick="window.audio?.buttonClick();window.showDailyChallenge()" style="flex: 1; max-width: 200px; background: linear-gradient(135deg, #e94560, #0f3460); border: 2px solid #e94560; font-size: 0.9rem; padding: 10px 12px;">
                     🎯 Défi du Jour
                 </button>
             </div>
@@ -326,7 +327,7 @@
             </div>
             <!-- Navigation Fixe (Bottom Nav) -->
             <div class="hub-bottom-nav">
-                <button class="hub-nav-btn" onclick="window.audio.buttonClick();if(window.ModalManager)window.ModalManager.info('Boutique - À venir !',{title:'Boutique'})">
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();window.openShop()">
                     <div class="hub-nav-icon">🛒</div>
                     <div class="hub-nav-label">Boutique</div>
                 </button>
@@ -1489,6 +1490,71 @@
                         🏠 Menu
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN BOUTIQUE IAP -->
+        <div class="screen hidden" id="shop-screen">
+            <!-- Header -->
+            <div class="shop-header">
+                <div class="shop-title">
+                    <span class="shop-title-icon">🛒</span>
+                    <span>Boutique</span>
+                </div>
+                <div class="shop-balance">
+                    <span class="shop-balance-icon">💰</span>
+                    <span class="shop-balance-value" id="shop-gold-display">0</span>
+                </div>
+                <button class="shop-close-btn" onclick="window.closeShop()">✕</button>
+            </div>
+
+            <!-- Contenu -->
+            <div class="shop-content">
+                <!-- Section Gold -->
+                <div class="shop-section">
+                    <div class="shop-section-title">
+                        <span class="shop-section-title-icon">💰</span>
+                        <span>Packs de Gold</span>
+                    </div>
+                    <div class="shop-grid" id="shop-gold-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Section Coffres -->
+                <div class="shop-section">
+                    <div class="shop-section-title">
+                        <span class="shop-section-title-icon">📦</span>
+                        <span>Coffres</span>
+                    </div>
+                    <div class="shop-grid" id="shop-chest-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Section Premium -->
+                <div class="shop-section">
+                    <div class="shop-section-title">
+                        <span class="shop-section-title-icon">⭐</span>
+                        <span>Offres Premium</span>
+                    </div>
+                    <div class="shop-grid" id="shop-premium-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Bouton Restaurer -->
+                <button class="shop-restore-btn" onclick="window.restorePurchases()">
+                    🔄 Restaurer mes achats
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="shop-footer">
+                <p class="shop-footer-text">
+                    Les achats sont définitifs et non remboursables.<br>
+                    Les achats consommables peuvent être effectués plusieurs fois.
+                </p>
             </div>
         </div>
 

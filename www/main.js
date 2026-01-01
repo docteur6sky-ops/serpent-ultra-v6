@@ -80,6 +80,10 @@ await import('./managers/GDPRConsentManager.js');  // ✅ Consentement RGPD
 await import('./managers/ModalManager.js');  // ✅ Modales pour remplacer alert()
 await import('./managers/CleanupManager.js');  // ✅ Gestion mémoire centralisée
 
+// Boutique IAP
+await safeImport('./services/ShopManager.js', 'ShopManager');
+await safeImport('./managers/ShopUIManager.js', 'ShopUIManager');
+
 // ============================================
 // PHASE 3: Managers UI (peuvent être statiques)
 // ============================================

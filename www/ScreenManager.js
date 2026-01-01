@@ -25,6 +25,7 @@ class ScreenManager {
             'menu',
             'hub',  // ✅ NOUVEAU HUB AAA
             'box-screen',  // ✅ MA BOX (collection d'items)
+            'shop-screen',  // ✅ BOUTIQUE IAP
             'stats-screen',  // ✅ STATS/CARRIÈRE AAA
             'multiplayer-menu',
             'main-lobby-screen',  // ✅ LOBBY PRINCIPAL
