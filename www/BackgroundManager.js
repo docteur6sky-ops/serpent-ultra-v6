@@ -26,6 +26,8 @@ class BackgroundManager {
             'stats-screen': 'assets/backgrounds/backgrounds_generique.webp',
             over: 'assets/backgrounds/backgrounds_generique.webp',
             gameover: 'assets/backgrounds/backgrounds_generique.webp',
+            // Box (utilise son propre style CSS)
+            'box-screen': null,
             // Boss Rush (utilise gradient inline, pas besoin d'image)
             'menu-boss-rush': null,
             'over-boss-rush': null,
