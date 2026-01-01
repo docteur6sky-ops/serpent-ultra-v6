@@ -635,6 +635,13 @@ export class BossFightSystem {
         if (!objective || objective.type !== 'boss') return;
 
         this.game.paused = true;
+
+        // En mode Boss Rush, on skip l'intro (déjà affiché via le nouvel écran pré-boss)
+        if (this.game.isBossRushMode) {
+            this.startBossFightAfterIntro(objective, levelData);
+            return;
+        }
+
         this.showBossIntro(levelData, objective);
     }
 

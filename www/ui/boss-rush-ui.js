@@ -14,10 +14,239 @@ import { BOSS_RUSH_STAGES } from '../modes/BossRushManager.js';
 // CLASSE BOSS RUSH UI
 // ============================================
 
+// Données des boss pour l'écran pré-boss
+const BOSS_DATA = {
+    titan: {
+        id: 'titan',
+        name: 'TITAN',
+        subtitle: 'Cœur de Pierre',
+        element: 'rock',
+        icon: '🪨',
+        image: 'assets/backgrounds/backgrounds_roche_hub.webp',
+        color: '#FF8C00',
+        gradient: 'linear-gradient(135deg, #8B4513, #FF8C00)',
+        segments: 15,
+        timer: '2:00',
+        tips: [
+            'Évite les murs qui apparaissent',
+            'Attaque quand le boss est vulnérable',
+            'Garde ton calme, le temps est suffisant'
+        ]
+    },
+    cryo: {
+        id: 'cryo',
+        name: 'CRYO',
+        subtitle: 'Gardien du Givre',
+        element: 'ice',
+        icon: '❄️',
+        image: 'assets/backgrounds/backgrounds_glace_hub.webp',
+        color: '#00FFFF',
+        gradient: 'linear-gradient(135deg, #0066CC, #00FFFF)',
+        segments: 15,
+        timer: '2:00',
+        tips: [
+            'Attention aux zones de glace',
+            'Le boss ralentit tes mouvements',
+            'Reste mobile pour ne pas geler'
+        ]
+    },
+    spectre: {
+        id: 'spectre',
+        name: 'SPECTRE',
+        subtitle: "L'Âme Errante",
+        element: 'ghost',
+        icon: '👻',
+        image: 'assets/backgrounds/backgrounds_ghost_hub.webp',
+        color: '#9370DB',
+        gradient: 'linear-gradient(135deg, #4B0082, #9370DB)',
+        segments: 15,
+        timer: '2:00',
+        tips: [
+            'Le boss devient invisible parfois',
+            'Évite les crânes fantômes',
+            'Anticipe ses mouvements'
+        ]
+    },
+    foudre: {
+        id: 'foudre',
+        name: 'FOUDRE',
+        subtitle: 'Fureur du Ciel',
+        element: 'lightning',
+        icon: '⚡',
+        image: 'assets/backgrounds/backgrounds_foudre_hub.webp',
+        color: '#FFD700',
+        gradient: 'linear-gradient(135deg, #FF8C00, #FFD700)',
+        segments: 15,
+        timer: '2:00',
+        tips: [
+            'Évite les lignes d\'éclairs',
+            'Le boss est très agressif',
+            'C\'est le combat final, donne tout!'
+        ]
+    }
+};
+
 class BossRushUI {
     constructor() {
         this.transitionCallback = null;
+        this.preBossFightCallback = null;
+        this.currentBossId = null;
         logger.log('[BossRushUI] Initialisé');
+    }
+
+    // ============================================
+    // ÉCRAN PRÉ-BOSS
+    // ============================================
+
+    /**
+     * Affiche l'écran pré-boss avant le combat
+     * @param {string} bossId - ID du boss (titan, cryo, spectre, foudre)
+     * @param {object} stageConfig - Config du stage (segments, timer, etc.)
+     * @param {Function} onFight - Callback quand le joueur clique "COMBATTRE"
+     */
+    showPreBossScreen(bossId, stageConfig, onFight) {
+        const bossData = BOSS_DATA[bossId.toLowerCase()] || BOSS_DATA.titan;
+        this.currentBossId = bossId;
+        this.preBossFightCallback = onFight;
+
+        // Récupérer les éléments
+        const screen = document.getElementById('pre-boss-screen');
+        const bgImg = document.getElementById('preboss-bg-img');
+        const portraitImg = document.getElementById('preboss-portrait-img');
+        const card = document.getElementById('preboss-card');
+        const element = document.getElementById('preboss-element');
+        const name = document.getElementById('preboss-name');
+        const subtitle = document.getElementById('preboss-subtitle');
+        const segments = document.getElementById('preboss-segments');
+        const timer = document.getElementById('preboss-timer');
+        const tipsList = document.getElementById('preboss-tips-list');
+        const fightBtn = document.getElementById('preboss-fight-btn');
+
+        if (!screen) {
+            logger.error('[BossRushUI] Écran pré-boss introuvable');
+            if (onFight) onFight();
+            return;
+        }
+
+        // Appliquer le thème du boss
+        screen.className = `screen boss-${bossId.toLowerCase()}`;
+        card.className = `preboss-card boss-${bossId.toLowerCase()}`;
+
+        // Images
+        bgImg.src = bossData.image;
+        portraitImg.src = bossData.image;
+
+        // Infos
+        element.textContent = bossData.icon;
+        name.textContent = bossData.name;
+        name.style.color = bossData.color;
+        subtitle.textContent = `"${bossData.subtitle}"`;
+
+        // Stats (utiliser stageConfig si disponible)
+        segments.textContent = stageConfig?.bossSegments || bossData.segments;
+        const timeLimit = stageConfig?.timeLimit || 120;
+        const mins = Math.floor(timeLimit / 60);
+        const secs = timeLimit % 60;
+        timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        // Tips
+        tipsList.innerHTML = bossData.tips.map(tip => `<li>${tip}</li>`).join('');
+
+        // Réinitialiser les tips (fermés)
+        const tipsContent = document.getElementById('preboss-tips-content');
+        const tipsArrow = document.getElementById('preboss-tips-arrow');
+        if (tipsContent) tipsContent.classList.add('hidden');
+        if (tipsArrow) tipsArrow.classList.remove('expanded');
+
+        // Style du bouton selon le boss
+        fightBtn.style.background = bossData.gradient;
+        fightBtn.style.setProperty('--boss-glow', bossData.color + '66');
+
+        // Afficher l'écran
+        if (window.screenManager) {
+            window.screenManager.show('pre-boss-screen');
+        } else {
+            screen.classList.remove('hidden');
+        }
+
+        // Son d'ambiance
+        if (window.audio?.bossIntro) {
+            window.audio.bossIntro();
+        }
+
+        logger.log(`[BossRushUI] Écran pré-boss affiché: ${bossData.name}`);
+    }
+
+    /**
+     * Lance le combat depuis l'écran pré-boss
+     */
+    startFightFromPreBoss() {
+        // Flash blanc
+        this.flashWhite();
+
+        // Son
+        if (window.audio?.buttonClick) {
+            window.audio.buttonClick();
+        }
+
+        // Cacher immédiatement l'écran pré-boss
+        this.hidePreBossScreen();
+
+        // Attendre le flash puis lancer le combat
+        setTimeout(() => {
+            if (this.preBossFightCallback) {
+                this.preBossFightCallback();
+                this.preBossFightCallback = null;
+            }
+        }, 150);
+    }
+
+    /**
+     * Cache l'écran pré-boss
+     */
+    hidePreBossScreen() {
+        const screen = document.getElementById('pre-boss-screen');
+        if (screen) {
+            screen.classList.add('hidden');
+            screen.style.display = 'none';
+        }
+        this.currentBossId = null;
+    }
+
+    /**
+     * Flash blanc rapide pour la transition
+     */
+    flashWhite() {
+        const flash = document.createElement('div');
+        flash.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            z-index: 99999;
+            opacity: 0;
+            pointer-events: none;
+            animation: prebossFlash 0.15s ease-out forwards;
+        `;
+
+        // Ajouter l'animation CSS temporairement
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes prebossFlash {
+                0% { opacity: 0; }
+                50% { opacity: 0.8; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        document.body.appendChild(flash);
+
+        setTimeout(() => {
+            flash.remove();
+            style.remove();
+        }, 200);
     }
 
     // ============================================
@@ -223,11 +452,14 @@ class BossRushUI {
      * Nettoie tous les overlays Boss Rush
      */
     cleanup() {
-        const overlays = ['boss-rush-start', 'boss-rush-transition'];
+        const overlays = ['boss-rush-start', 'boss-rush-transition', 'boss-intro-screen'];
         overlays.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
+
+        // Cacher l'écran pré-boss
+        this.hidePreBossScreen();
     }
 
     // ============================================
@@ -356,5 +588,26 @@ const bossRushUI = new BossRushUI();
 // Exposer globalement
 window.bossRushUI = bossRushUI;
 
-export { bossRushUI, BossRushUI };
+// Fonctions globales pour l'écran pré-boss (appelées depuis HTML onclick)
+window.togglePreBossTips = function() {
+    const content = document.getElementById('preboss-tips-content');
+    const arrow = document.getElementById('preboss-tips-arrow');
+
+    if (content && arrow) {
+        content.classList.toggle('hidden');
+        arrow.classList.toggle('expanded');
+
+        if (window.audio?.buttonClick) {
+            window.audio.buttonClick();
+        }
+    }
+};
+
+window.startPreBossFight = function() {
+    if (window.bossRushUI) {
+        window.bossRushUI.startFightFromPreBoss();
+    }
+};
+
+export { bossRushUI, BossRushUI, BOSS_DATA };
 export default bossRushUI;

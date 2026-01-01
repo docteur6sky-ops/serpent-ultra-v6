@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Firebase Auth - Ignorer les classes Facebook (non utilisées)
+-dontwarn com.facebook.**
+
+# Google Play Services Auth
+-keep class com.google.android.gms.auth.** { *; }
+-keep class com.google.android.gms.auth.api.signin.** { *; }

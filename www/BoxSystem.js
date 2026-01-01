@@ -27,9 +27,14 @@ class BoxManager {
         this.equippedBackground = 'default';
         this.equippedBanner = 'banner_default';
 
-        // ⚗️ Système de boosters XP
+        // ⚗️ Système de boosters XP (max 5 de chaque)
         this.boosters = { boost25: 0, boost50: 0 };
         this.activeBooster = null; // { percent: 25|50, expiresAt: timestamp }
+        this.MAX_BOOSTERS = 5;
+
+        // 📦 Système de coffres stackables (max 5)
+        this.chests = 0;
+        this.MAX_CHESTS = 5;
 
         this.load();
 
@@ -74,14 +79,30 @@ class BoxManager {
 
     addBooster(percent) {
         const key = percent === 50 ? 'boost50' : 'boost25';
+
+        // Vérifier le max
+        if (this.boosters[key] >= this.MAX_BOOSTERS) {
+            logger.warn(`⚗️ [BoxManager] Max boosters ${percent}% atteint (${this.MAX_BOOSTERS})`);
+            if (window.NotificationManager && window.NotificationManager.show) {
+                window.NotificationManager.show(`Max boosters +${percent}% atteint !`, 'warning', 3000);
+            }
+            return false;
+        }
+
         this.boosters[key]++;
         this.save();
 
-        logger.log(`⚗️ [BoxManager] +1 Booster ${percent}% → Total: ${this.boosters[key]}`);
+        logger.log(`⚗️ [BoxManager] +1 Booster ${percent}% → Total: ${this.boosters[key]}/${this.MAX_BOOSTERS}`);
 
         if (window.NotificationManager && window.NotificationManager.show) {
             window.NotificationManager.show(`⚗️ Booster +${percent}% XP obtenu !`, 'success', 3000);
         }
+        return true;
+    }
+
+    canAddBooster(percent) {
+        const key = percent === 50 ? 'boost50' : 'boost25';
+        return this.boosters[key] < this.MAX_BOOSTERS;
     }
 
     getBoosters() {
@@ -149,6 +170,112 @@ class BoxManager {
     getXpMultiplier() {
         if (!this.isBoosterActive()) return 1.0;
         return 1 + (this.activeBooster.percent / 100);
+    }
+
+    // ============================================
+    // 📦 SYSTÈME DE COFFRES STACKABLES
+    // ============================================
+
+    /**
+     * Ajoute un coffre au stack
+     * @returns {boolean} true si ajouté, false si max atteint
+     */
+    addChest() {
+        if (this.chests >= this.MAX_CHESTS) {
+            logger.warn(`📦 [BoxManager] Max coffres atteint (${this.MAX_CHESTS})`);
+            if (window.NotificationManager && window.NotificationManager.show) {
+                window.NotificationManager.show(`Max coffres atteint (${this.MAX_CHESTS}) !`, 'warning', 3000);
+            }
+            return false;
+        }
+
+        this.chests++;
+        this.save();
+
+        logger.log(`📦 [BoxManager] +1 Coffre → Total: ${this.chests}/${this.MAX_CHESTS}`);
+
+        if (window.NotificationManager && window.NotificationManager.show) {
+            window.NotificationManager.show(`📦 Coffre obtenu ! (${this.chests}/${this.MAX_CHESTS})`, 'success', 3000);
+        }
+
+        // Mettre à jour l'UI si nécessaire
+        if (window.updateChestsDisplay) {
+            window.updateChestsDisplay();
+        }
+
+        return true;
+    }
+
+    /**
+     * Ajoute plusieurs coffres (pour la boutique)
+     * @param {number} count - Nombre de coffres à ajouter
+     * @returns {number} Nombre de coffres effectivement ajoutés
+     */
+    addChests(count) {
+        let added = 0;
+        for (let i = 0; i < count; i++) {
+            if (this.chests >= this.MAX_CHESTS) break;
+            this.chests++;
+            added++;
+        }
+
+        if (added > 0) {
+            this.save();
+            logger.log(`📦 [BoxManager] +${added} Coffres → Total: ${this.chests}/${this.MAX_CHESTS}`);
+
+            if (window.NotificationManager && window.NotificationManager.show) {
+                window.NotificationManager.show(`📦 ${added} coffre(s) obtenu(s) !`, 'success', 3000);
+            }
+
+            if (window.updateChestsDisplay) {
+                window.updateChestsDisplay();
+            }
+        }
+
+        return added;
+    }
+
+    /**
+     * Utilise un coffre du stack pour l'ouvrir
+     * @returns {boolean} true si coffre disponible et utilisé
+     */
+    useChest() {
+        if (this.chests <= 0) {
+            logger.warn('📦 [BoxManager] Pas de coffre disponible');
+            return false;
+        }
+
+        this.chests--;
+        this.save();
+
+        logger.log(`📦 [BoxManager] Coffre utilisé → Restant: ${this.chests}/${this.MAX_CHESTS}`);
+
+        if (window.updateChestsDisplay) {
+            window.updateChestsDisplay();
+        }
+
+        return true;
+    }
+
+    /**
+     * Récupère le nombre de coffres
+     */
+    getChests() {
+        return this.chests;
+    }
+
+    /**
+     * Vérifie si on peut ajouter un coffre
+     */
+    canAddChest() {
+        return this.chests < this.MAX_CHESTS;
+    }
+
+    /**
+     * Vérifie si on a des coffres à ouvrir
+     */
+    hasChests() {
+        return this.chests > 0;
     }
 
     // ============================================
@@ -492,7 +619,8 @@ class BoxManager {
             equippedBackground: this.equippedBackground,
             equippedBanner: this.equippedBanner,
             boosters: this.boosters,
-            activeBooster: this.activeBooster
+            activeBooster: this.activeBooster,
+            chests: this.chests
         };
 
         // Utiliser storage.js pour bénéficier de la protection SecurityManager
@@ -511,8 +639,14 @@ class BoxManager {
             this.equippedBanner = data.equippedBanner || 'banner_default';
             this.boosters = data.boosters || { boost25: 0, boost50: 0 };
             this.activeBooster = data.activeBooster || null;
+            this.chests = data.chests || 0;
 
-            logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items`);
+            // Respecter les limites max au chargement
+            this.boosters.boost25 = Math.min(this.boosters.boost25, this.MAX_BOOSTERS);
+            this.boosters.boost50 = Math.min(this.boosters.boost50, this.MAX_BOOSTERS);
+            this.chests = Math.min(this.chests, this.MAX_CHESTS);
+
+            logger.log(`📦 [BoxManager] Chargé: ${this.coins} coins, ${this.unlockedItems.length} items, ${this.chests} coffres`);
         } else {
             logger.log('📦 [BoxManager] Première initialisation');
         }
@@ -526,6 +660,7 @@ class BoxManager {
         this.equippedBanner = 'banner_default';
         this.boosters = { boost25: 0, boost50: 0 };
         this.activeBooster = null;
+        this.chests = 0;
         this.save();
 
         logger.log('🔄 [BoxManager] Reset complet');

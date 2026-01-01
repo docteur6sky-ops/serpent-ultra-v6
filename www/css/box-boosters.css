@@ -166,6 +166,80 @@
     font-style: italic;
 }
 
+/* ═══ BADGE LEGENDARY (coffres) ═══ */
+.booster-count-badge.legendary {
+    background: linear-gradient(135deg, #FFD700, #FF8C00);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    color: #333;
+}
+
+/* ═══ BOUTON LEGENDARY (ouvrir coffre) ═══ */
+.btn-booster-activate.legendary {
+    background: linear-gradient(135deg, #FFD700, #FF8C00);
+    box-shadow: 0 3px 10px rgba(255, 215, 0, 0.4);
+    color: #333;
+}
+
+.btn-booster-activate.legendary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #FFEB3B, #FFD700);
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.6);
+}
+
+/* ═══ CARTE PUB COFFRE GRATUIT ═══ */
+.ad-chest-card .box-item-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(0, 217, 255, 0.05));
+}
+
+.ad-chest-icon {
+    font-size: 3rem;
+    animation: adPulse 2s ease-in-out infinite;
+}
+
+@keyframes adPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* ═══ BOUTON REGARDER PUB ═══ */
+.btn-ad-chest {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #00D9FF, #0099CC);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 15px rgba(0, 217, 255, 0.4);
+}
+
+.btn-ad-chest:hover:not(:disabled) {
+    background: linear-gradient(135deg, #33E0FF, #00D9FF);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 217, 255, 0.6);
+}
+
+.btn-ad-chest:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-ad-chest:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 360px) {
     .boosters-grid {
@@ -173,7 +247,8 @@
     }
 
     .btn-booster-activate,
-    .btn-chest-buy {
+    .btn-chest-buy,
+    .btn-ad-chest {
         padding: 8px 12px;
         font-size: 0.85rem;
     }

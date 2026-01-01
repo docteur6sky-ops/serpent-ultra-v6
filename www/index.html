@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="/css/carousel.css">
     <link rel="stylesheet" href="/css/box-boosters.css">
     <link rel="stylesheet" href="/css/gdpr-consent.css">
+    <link rel="stylesheet" href="/css/boss-prebattle.css">
 
     <!-- Point d'entrée Vite - Bundle optimisé -->
     <script type="module" src="/main.js"></script>
@@ -960,13 +961,42 @@
                             <button class="btn-booster-activate epic" onclick="window.activateBooster(50)">Activer</button>
                         </div>
                     </div>
-                    <!-- Coffre Premium -->
-                    <div class="box-item booster-item rarity-legendary" id="premium-chest-card">
+                    <!-- Coffres en stock -->
+                    <div class="box-item booster-item rarity-legendary" id="chest-stack-card">
                         <div class="box-item-preview">
                             <img src="assets/trophies/locked-treasure-chest.png" alt="Coffre" class="booster-preview-img chest-img-animated">
                         </div>
                         <div class="box-item-info">
-                            <h4 class="box-item-name">Coffre Mystere</h4>
+                            <h4 class="box-item-name">Mes Coffres</h4>
+                            <p class="box-item-type">Ouvre pour des récompenses</p>
+                        </div>
+                        <div class="box-item-footer">
+                            <span class="booster-count-badge legendary" id="chest-stack-count">x0</span>
+                            <button class="btn-booster-activate legendary" id="btn-open-chest" onclick="window.openStackedChest()" disabled>Ouvrir</button>
+                        </div>
+                    </div>
+                    <!-- Pub pour coffre gratuit -->
+                    <div class="box-item booster-item rarity-rare ad-chest-card" id="ad-chest-card">
+                        <div class="box-item-preview">
+                            <div class="ad-chest-icon">🎬</div>
+                        </div>
+                        <div class="box-item-info">
+                            <h4 class="box-item-name">Coffre Gratuit</h4>
+                            <p class="box-item-type">Regarde une pub</p>
+                        </div>
+                        <div class="box-item-footer">
+                            <button class="btn-ad-chest" onclick="window.watchAdForChest()">
+                                <span>▶️ Regarder</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Coffre Premium -->
+                    <div class="box-item booster-item rarity-epic" id="premium-chest-card">
+                        <div class="box-item-preview">
+                            <img src="assets/trophies/locked-treasure-chest.png" alt="Coffre" class="booster-preview-img chest-img-animated">
+                        </div>
+                        <div class="box-item-info">
+                            <h4 class="box-item-name">Acheter Coffre</h4>
                             <p class="box-item-type">Skins, fonds, boosters...</p>
                         </div>
                         <div class="box-item-footer">
@@ -977,7 +1007,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="chest-note">※ Le coffre premium n'affecte pas le timer quotidien</p>
+                <p class="chest-note">※ Max 5 coffres en stock • Le coffre premium n'affecte pas le timer quotidien</p>
             </div>
             <!-- Grid Items -->
             <div class="box-grid" id="boxGrid">
@@ -1459,6 +1489,64 @@
                         🏠 Menu
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ÉCRAN PRÉ-BOSS (avant combat) -->
+        <div class="screen hidden" id="pre-boss-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; margin: 0; padding: 0; z-index: 10000;">
+            <!-- Background blur (image du boss) -->
+            <div class="preboss-bg">
+                <img class="preboss-bg-image" id="preboss-bg-img" src="" alt="">
+                <div class="preboss-bg-overlay"></div>
+            </div>
+
+            <!-- Contenu principal -->
+            <div class="preboss-content">
+                <!-- Carte Boss -->
+                <div class="preboss-card" id="preboss-card">
+                    <!-- Portrait Boss -->
+                    <div class="preboss-portrait">
+                        <img class="preboss-portrait-img" id="preboss-portrait-img" src="" alt="">
+                    </div>
+
+                    <!-- Infos Boss -->
+                    <div class="preboss-info">
+                        <div class="preboss-element" id="preboss-element">⚡</div>
+                        <h2 class="preboss-name" id="preboss-name">ELECTRO</h2>
+                        <p class="preboss-subtitle" id="preboss-subtitle">"Fureur du Ciel"</p>
+
+                        <!-- Stats -->
+                        <div class="preboss-stats">
+                            <div class="preboss-stat">
+                                <span class="preboss-stat-icon">❤️</span>
+                                <span class="preboss-stat-value" id="preboss-segments">15</span>
+                            </div>
+                            <div class="preboss-stat">
+                                <span class="preboss-stat-icon">⏱️</span>
+                                <span class="preboss-stat-value" id="preboss-timer">4:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Section (collapsible) -->
+                <div class="preboss-tips" id="preboss-tips">
+                    <div class="preboss-tips-header" onclick="togglePreBossTips()">
+                        <span>💡 COMMENT VAINCRE</span>
+                        <span class="preboss-tips-arrow" id="preboss-tips-arrow">▼</span>
+                    </div>
+                    <div class="preboss-tips-content hidden" id="preboss-tips-content">
+                        <ul id="preboss-tips-list">
+                            <!-- Tips injectés dynamiquement -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Bouton Combattre -->
+                <button class="preboss-fight-btn" id="preboss-fight-btn" onclick="startPreBossFight()">
+                    <span class="preboss-fight-icon">⚔️</span>
+                    <span class="preboss-fight-text">COMBATTRE</span>
+                </button>
             </div>
         </div>
 

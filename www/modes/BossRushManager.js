@@ -101,8 +101,9 @@ class BossRushManager {
 
     /**
      * Démarre un stage spécifique
+     * @param {boolean} skipPreBoss - Si true, passe directement au combat (utilisé après l'écran pré-boss)
      */
-    startStage(stageNum) {
+    startStage(stageNum, skipPreBoss = false) {
         if (!this.currentRun) {
             logger.error('[BossRush] Pas de run active');
             return;
@@ -122,19 +123,11 @@ class BossRushManager {
         }
 
         this.currentRun.stage = stageNum;
-        this.currentRun.stageStartTime = Date.now();
         this.currentRun.currentStageConfig = stageConfig;
 
         logger.log(`[BossRush] Stage ${stageNum} - ${stageConfig.name}`);
-        logger.log(`[BossRush] Boss data:`, {
-            bossSpeed: bossLevelData.bossSpeed,
-            bossAggression: bossLevelData.bossAggression,
-            bossMoveInterval: bossLevelData.bossMoveInterval,
-            bossPhases: bossLevelData.bossPhases?.length || 0
-        });
 
         // Créer la config complète pour soloGame.startBossRushBattle()
-        // IMPORTANT: Inclure TOUTES les données du boss roguelike (phases, comportements, etc.)
         const fullStageConfig = {
             stage: stageNum,
             name: stageConfig.name,
@@ -158,6 +151,42 @@ class BossRushManager {
             modifiers: {}
         };
 
+        // 🎬 ÉCRAN PRÉ-BOSS - Afficher avant le combat (sauf si skip)
+        if (!skipPreBoss && window.bossRushUI?.showPreBossScreen) {
+            logger.log(`[BossRush] Affichage écran pré-boss: ${stageConfig.name}`);
+
+            window.bossRushUI.showPreBossScreen(
+                stageConfig.name.toLowerCase(),
+                fullStageConfig,
+                () => {
+                    // Callback: lancer le combat après le clic sur COMBATTRE
+                    this.launchBossFight(fullStageConfig);
+                }
+            );
+
+            return fullStageConfig;
+        }
+
+        // Si skipPreBoss, lancer directement le combat
+        this.launchBossFight(fullStageConfig);
+
+        return fullStageConfig;
+    }
+
+    /**
+     * Lance effectivement le combat de boss (après l'écran pré-boss)
+     */
+    launchBossFight(fullStageConfig) {
+        this.currentRun.stageStartTime = Date.now();
+
+        logger.log(`[BossRush] Lancement combat: ${fullStageConfig.name}`);
+        logger.log(`[BossRush] Boss data:`, {
+            bossSpeed: fullStageConfig.bossSpeed,
+            bossAggression: fullStageConfig.bossAggression,
+            bossMoveInterval: fullStageConfig.bossMoveInterval,
+            bossPhases: fullStageConfig.bossPhases?.length || 0
+        });
+
         // Notifier l'UI
         if (this.onStageStart) {
             this.onStageStart(fullStageConfig);
@@ -178,16 +207,13 @@ class BossRushManager {
             window.screenManager.show('game-solo');
         }
 
-        // 🎨 Changer le background selon le boss (APRÈS screenManager pour éviter écrasement)
-        // Boss 1: roche, Boss 2: glace, Boss 3: ghost, Boss 4: foudre
+        // 🎨 Changer le background selon le boss
         if (window.backgroundManager) {
-            window.backgroundManager.setStageBackground(stageNum, 'boss-rush');
+            window.backgroundManager.setStageBackground(fullStageConfig.stage, 'boss-rush');
         }
 
         // Démarrer le combat de boss via la nouvelle méthode
         window.soloGame.startBossRushBattle(fullStageConfig);
-
-        return fullStageConfig;
     }
 
     /**

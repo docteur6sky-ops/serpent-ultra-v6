@@ -12,10 +12,13 @@ import { logger } from '../services/logger.js';
 // ============================================
 
 /**
- * Met à jour l'UI de l'onglet Boosters (compteurs)
+ * Met à jour l'UI de l'onglet Boosters (compteurs boosters + coffres)
  */
 function updateBoostersTabUI() {
     const boosters = window.boxManager?.getBoosters() || { boost25: 0, boost50: 0 };
+    const chests = window.boxManager?.getChests() || 0;
+    const maxBoosters = window.boxManager?.MAX_BOOSTERS || 5;
+    const maxChests = window.boxManager?.MAX_CHESTS || 5;
 
     const count25 = document.getElementById('booster-count-25');
     const count50 = document.getElementById('booster-count-50');
@@ -36,7 +39,76 @@ function updateBoostersTabUI() {
         btn50.classList.toggle('disabled', boosters.boost50 <= 0);
     }
 
-    logger.log(`[BoostersTab] UI mis à jour: 25%=${boosters.boost25}, 50%=${boosters.boost50}`);
+    // Mettre à jour le compteur de coffres
+    updateChestsDisplay();
+
+    logger.log(`[BoostersTab] UI mis à jour: 25%=${boosters.boost25}/${maxBoosters}, 50%=${boosters.boost50}/${maxBoosters}, coffres=${chests}/${maxChests}`);
+}
+
+/**
+ * Met à jour l'affichage des coffres en stock
+ */
+function updateChestsDisplay() {
+    const chests = window.boxManager?.getChests() || 0;
+    const maxChests = window.boxManager?.MAX_CHESTS || 5;
+
+    const countEl = document.getElementById('chest-stack-count');
+    const btnOpen = document.getElementById('btn-open-chest');
+    const adBtn = document.querySelector('#ad-chest-card .btn-ad-chest');
+
+    if (countEl) countEl.textContent = `x${chests}`;
+
+    // Activer/désactiver le bouton ouvrir
+    if (btnOpen) {
+        btnOpen.disabled = chests <= 0;
+        btnOpen.classList.toggle('disabled', chests <= 0);
+    }
+
+    // Désactiver pub si max coffres atteint
+    if (adBtn) {
+        const canAdd = chests < maxChests;
+        adBtn.disabled = !canAdd;
+        adBtn.classList.toggle('disabled', !canAdd);
+        if (!canAdd) {
+            adBtn.innerHTML = '<span>Max atteint</span>';
+        } else {
+            adBtn.innerHTML = '<span>▶️ Regarder</span>';
+        }
+    }
+}
+
+/**
+ * Ouvre un coffre du stock
+ */
+function openStackedChest() {
+    if (window.audio) window.audio.buttonClick();
+
+    if (!window.boxManager?.hasChests()) {
+        if (window.NotificationManager) {
+            window.NotificationManager.show('Pas de coffre en stock !', 'warning', 2000);
+        }
+        return;
+    }
+
+    // Utiliser le coffre
+    const used = window.boxManager.useChest();
+    if (!used) return;
+
+    logger.log('[BoostersTab] Ouverture coffre du stock');
+
+    // Fermer la Box pour lancer l'animation
+    if (window.closeBox) window.closeBox();
+
+    // Lancer l'ouverture du coffre
+    setTimeout(() => {
+        if (window.openChestOpening) {
+            // Animation d'ouverture de coffre AAA
+            window.openChestOpening(true); // true = premium style
+        } else {
+            // Fallback: donner directement la récompense
+            giveDirectReward();
+        }
+    }, 300);
 }
 
 // ============================================
@@ -161,6 +233,8 @@ function handleBoostersTab(category) {
 // ============================================
 
 window.updateBoostersTabUI = updateBoostersTabUI;
+window.updateChestsDisplay = updateChestsDisplay;
+window.openStackedChest = openStackedChest;
 window.buyPremiumChest = buyPremiumChest;
 window.handleBoostersTab = handleBoostersTab;
 
@@ -168,6 +242,8 @@ logger.log('BoostersTabManager chargé');
 
 export {
     updateBoostersTabUI,
+    updateChestsDisplay,
+    openStackedChest,
     buyPremiumChest,
     handleBoostersTab
 };

@@ -8,6 +8,7 @@
  */
 
 import { logger } from '../services/logger.js';
+import { adMobManager } from '../services/AdMobManager.js';
 
 // ============================================
 // CLASSE BOOSTER MANAGER
@@ -134,6 +135,53 @@ class BoosterManager {
     }
 
     /**
+     * Regarde une pub pour obtenir un coffre gratuit
+     * @returns {Promise<boolean>} true si récompense obtenue
+     */
+    async watchAdForChest() {
+        logger.log('[BoosterManager] Tentative pub rewarded pour coffre');
+
+        // Vérifier si on peut ajouter un coffre
+        if (window.boxManager && !window.boxManager.canAddChest()) {
+            logger.warn('[BoosterManager] Max coffres atteint');
+            if (window.notificationManager) {
+                window.notificationManager.show('Max coffres atteint (5) !', 'warning');
+            }
+            return false;
+        }
+
+        // Vérifier si AdMob est disponible
+        if (!adMobManager.initialized && !adMobManager.testMode) {
+            logger.warn('[BoosterManager] AdMob non disponible');
+            if (window.notificationManager) {
+                window.notificationManager.show('Pubs non disponibles', 'error');
+            }
+            return false;
+        }
+
+        try {
+            const rewarded = await adMobManager.showRewarded((reward) => {
+                // Récompense : 1 coffre à ouvrir dans Ma Box
+                if (window.boxManager) {
+                    const added = window.boxManager.addChest();
+
+                    if (added) {
+                        logger.log('[BoosterManager] Coffre obtenu via pub !');
+                    }
+                }
+            });
+
+            return rewarded;
+        } catch (error) {
+            logger.error('[BoosterManager] Erreur pub rewarded:', error.message);
+            if (window.notificationManager) {
+                window.notificationManager.show('Erreur de chargement', 'error');
+            }
+            return false;
+        }
+    }
+
+    /**
      * Nettoie le timer
      */
     cleanup() {
@@ -155,6 +203,7 @@ const boosterManager = new BoosterManager();
 window.boosterManager = boosterManager;
 window.activateBooster = (percent) => boosterManager.activateBooster(percent);
 window.updateBoostersDisplay = () => boosterManager.updateBoostersDisplay();
+window.watchAdForChest = () => boosterManager.watchAdForChest();
 
 logger.log('✅ BoosterManager chargé');
 

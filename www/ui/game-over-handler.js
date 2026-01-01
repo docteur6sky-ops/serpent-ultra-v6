@@ -3,6 +3,7 @@
  */
 
 import { logger } from '../services/logger.js';
+import { adMobManager } from '../services/AdMobManager.js';
 import { SnakeUltra } from '../SnakeUltra.js';
 
 export class GameOverHandler {
@@ -14,7 +15,7 @@ export class GameOverHandler {
      * Gérer le game over du mode solo
      * @param {object} stats - Statistiques de la partie
      */
-    handleSolo(stats) {
+    async handleSolo(stats) {
         logger.log('Game Over Solo', stats);
 
         // Arrêter audio
@@ -38,6 +39,17 @@ export class GameOverHandler {
         // Afficher overlay progression (fonction globale)
         if (window.showProgressionOverlay) {
             window.showProgressionOverlay(stats);
+        }
+
+        // 🎬 Afficher pub interstitielle (1 partie sur 3)
+        this._gameCount = (this._gameCount || 0) + 1;
+        if (this._gameCount >= 3) {
+            this._gameCount = 0;
+            try {
+                await adMobManager.showInterstitial();
+            } catch (e) {
+                logger.warn('Interstitiel non affiché:', e.message);
+            }
         }
     }
 

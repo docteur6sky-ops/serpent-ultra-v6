@@ -113,6 +113,18 @@ roguelikeModule.initRoguelike();
 await import('./modes/BossRushManager.js');
 await import('./ui/boss-rush-ui.js');
 
+// AdMob - Gestion publicités
+const adMobModule = await safeImport('./services/AdMobManager.js', 'AdMobManager');
+if (adMobModule) {
+    // Initialiser AdMob sur mobile uniquement
+    if (window.Capacitor?.isNativePlatform()) {
+        adMobModule.adMobManager.init();
+        logger.log('[Main] AdMob initialisé');
+    } else {
+        logger.log('[Main] AdMob ignoré (web)');
+    }
+}
+
 // ============================================
 // PHASE 5: Navigation et contrôles
 // ============================================
