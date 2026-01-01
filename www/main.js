@@ -76,6 +76,7 @@ await import('./managers/GradeManager.js');  // ✅ Grades Solo/Multi
 await import('./managers/BoosterManager.js');  // ✅ Boosters XP
 await import('./managers/ChestManager.js');  // ✅ Coffre quotidien
 await import('./managers/BoostersTabManager.js');  // ✅ Onglet Boosters dans Box
+await import('./managers/GDPRConsentManager.js');  // ✅ Consentement RGPD
 await import('./managers/ModalManager.js');  // ✅ Modales pour remplacer alert()
 await import('./managers/CleanupManager.js');  // ✅ Gestion mémoire centralisée
 
@@ -211,26 +212,38 @@ function hideLoadingScreen() {
         // ✅ Marquer le loading comme terminé (autorise la musique)
         window.loadingComplete = true;
 
-        // Utiliser startGame() qui gère la logique du pseudo
-        if (window.startGame) {
-            window.startGame();
-        } else if (window.screenManager) {
-            // Fallback si startGame pas encore chargé
-            window.screenManager.show('hub');
-        }
+        // ✅ Vérifier le consentement RGPD avant de démarrer
+        const startAfterConsent = () => {
+            // Utiliser startGame() qui gère la logique du pseudo
+            if (window.startGame) {
+                window.startGame();
+            } else if (window.screenManager) {
+                // Fallback si startGame pas encore chargé
+                window.screenManager.show('hub');
+            }
 
-        // ✅ Lancer la musique du menu maintenant que le loading est terminé
-        if (window.audioManager) {
-            window.audioManager.setAudio('hub');
-        }
+            // ✅ Lancer la musique du menu maintenant que le loading est terminé
+            if (window.audioManager) {
+                window.audioManager.setAudio('hub');
+            }
 
-        // ✅ Synchroniser le registre SnakeUltra avec les variables globales
-        if (window.SnakeUltra?.sync) {
-            window.SnakeUltra.sync();
-        }
+            // ✅ Synchroniser le registre SnakeUltra avec les variables globales
+            if (window.SnakeUltra?.sync) {
+                window.SnakeUltra.sync();
+            }
 
-        logger.log('🎬 Écran de chargement terminé');
+            logger.log('🎬 Écran de chargement terminé');
+        };
+
+        // Afficher popup RGPD si premier lancement
+        if (window.gdprConsentManager && !window.gdprConsentManager.hasConsent()) {
+            window.gdprConsentManager.showIfNeeded(startAfterConsent);
+        } else {
+            startAfterConsent();
+        }
     }
+
+
 }
 
 function initLoadingScreen() {
