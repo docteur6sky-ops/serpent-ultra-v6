@@ -1,82 +1,35 @@
 /**
- * PowerUpState.js - État partagé pour les power-ups
- * Utilisé par ai-game.js et potentiellement d'autres modes
- *
- * Gère pour UNE entité (joueur ou IA):
- * - Effets actifs (slow, double, invincible, ghost)
- * - Type de power-up actif
- * - Timer d'activation
- * - État de ralentissement (par ICE ennemi)
- * - Flag GHOST utilisé (vol one-shot)
+ * PowerUpState.js - V2 - Système de Power-ups avec Débuffs
+ * Utilisé par ai-game.js (Boss Rush) et multi-game.js/server.js (Multiplayer)
  */
 
 import { logger } from '../services/logger.js';
+import { POWERUP_EFFECTS, DEBUFF_TYPES } from '../config/constants.js';
 
 export class PowerUpState {
-    /**
-     * @param {string} name - Nom de l'entité pour les logs (ex: 'player', 'ai')
-     */
     constructor(name = 'entity') {
         this.name = name;
+        this.activePowerup = null;
+        this.powerupTime = 0;
+        this.contactUsed = false;
+        this.storedPowerup = null;
 
-        // Effets actifs
-        this.effects = {
-            slow: false,      // ICE - ralentit l'ennemi
-            double: false,    // LIGHTNING - vitesse x2
-            invincible: false, // ROCK - invincible aux collisions
-            ghost: false      // GHOST - traverse + vole segments
+        this.debuffs = {
+            slowed: { active: false, until: 0, speedMultiplier: 1.0 },
+            invertedControls: { active: false, until: 0 }
         };
 
-        // Power-up actif
-        this.activePowerup = null;  // 'ice', 'lightning', 'rock', 'ghost' ou null
-        this.powerupTime = 0;       // Timestamp d'activation
-
-        // État GHOST (vol one-shot)
-        this.ghostUsed = false;
-
-        // État de ralentissement (par ICE ennemi)
-        this.slowed = false;
-        this.slowedUntil = 0;
-    }
-
-    /**
-     * Active un power-up
-     * @param {string} type - Type du power-up (ice, lightning, rock, ghost)
-     */
-    activate(type) {
-        // Reset d'abord tous les effets
-        this.disable();
-
-        // Activer le nouvel effet
-        switch (type) {
-            case 'ice':
-                this.effects.slow = true;
-                break;
-            case 'lightning':
-                this.effects.double = true;
-                break;
-            case 'rock':
-                this.effects.invincible = true;
-                break;
-            case 'ghost':
-                this.effects.ghost = true;
-                this.ghostUsed = false; // Reset flag pour nouveau GHOST
-                break;
-        }
-
-        this.activePowerup = type;
-        this.powerupTime = performance.now();
-
-        logger.log(`[PowerUpState:${this.name}] Activé: ${type}`);
-    }
-
-    /**
-     * Désactive le power-up actif
-     */
-    disable() {
-        if (this.activePowerup) {
-            logger.log(`[PowerUpState:${this.name}] Expiré: ${this.activePowerup}`);
-        }
+        this.passiveEffects = {
+            unlimitedBoost: false,
+            boostSpeed: 125,
+            selfInvertedControls: false,
+            invincible: false,
+            immuneToSteal: false,
+            immuneToPowerupSteal: false,
+            phaseThrough: false,
+            throughWalls: false,
+            throughEnemy: false
+        };
 
         this.effects = {
             slow: false,
@@ -84,104 +37,257 @@ export class PowerUpState {
             invincible: false,
             ghost: false
         };
-        this.activePowerup = null;
+        
+        this.ghostUsed = false;
     }
 
-    /**
-     * Vérifie si le power-up a expiré
-     * @param {Object} durations - Objet avec les durées par type {lightning: 6000, ...}
-     * @returns {boolean}
-     */
-    isExpired(durations) {
-        if (!this.activePowerup) return false;
+    activate(type) {
+        this.disable();
+        const config = POWERUP_EFFECTS[type];
+        if (!config) {
+            logger.warn('[PowerUpState:' + this.name + '] Power-up inconnu: ' + type);
+            return;
+        }
+        this.activePowerup = type;
+        this.powerupTime = performance.now();
+        this.contactUsed = false;
+        this._applyPassiveEffects(config);
+        this._updateLegacyEffects(type);
+        logger.log('[PowerUpState:' + this.name + '] Activé: ' + type + ' (' + config.icon + ')');
+    }
 
+    _applyPassiveEffects(config) {
+        if (!config.passive) return;
+        const passive = config.passive;
+        switch (passive.type) {
+            case 'UNLIMITED_BOOST':
+                this.passiveEffects.unlimitedBoost = true;
+                this.passiveEffects.boostSpeed = passive.boostSpeed || 125;
+                break;
+            case 'SELF_INVERTED_CONTROLS':
+                this.passiveEffects.selfInvertedControls = true;
+                break;
+            case 'INVINCIBLE':
+                this.passiveEffects.invincible = true;
+                this.passiveEffects.immuneToSteal = passive.immuneToSteal || false;
+                this.passiveEffects.immuneToPowerupSteal = passive.immuneToPowerupSteal || false;
+                break;
+            case 'PHASE_THROUGH':
+                this.passiveEffects.phaseThrough = true;
+                this.passiveEffects.throughWalls = passive.throughWalls || false;
+                this.passiveEffects.throughEnemy = passive.throughEnemy || false;
+                break;
+        }
+    }
+
+    _updateLegacyEffects(type) {
+        switch (type) {
+            case 'ice': this.effects.slow = true; break;
+            case 'fire': this.effects.double = true; break;
+            case 'rock': this.effects.invincible = true; break;
+            case 'ghost': this.effects.ghost = true; break;
+        }
+    }
+
+    disable() {
+        if (this.activePowerup) {
+            logger.log('[PowerUpState:' + this.name + '] Expiré: ' + this.activePowerup);
+        }
+        this.activePowerup = null;
+        this.contactUsed = false;
+        this.passiveEffects = {
+            unlimitedBoost: false, boostSpeed: 125, selfInvertedControls: false,
+            invincible: false, immuneToSteal: false, immuneToPowerupSteal: false,
+            phaseThrough: false, throughWalls: false, throughEnemy: false
+        };
+        this.effects = { slow: false, double: false, invincible: false, ghost: false };
+    }
+
+    // DÉBUFFS
+    applySlowed(duration, speedMultiplier = 0.5) {
+        if (this.passiveEffects.invincible) {
+            logger.log('[PowerUpState:' + this.name + '] Immune au slow (Rock)');
+            return;
+        }
+        this.debuffs.slowed.active = true;
+        this.debuffs.slowed.until = Date.now() + duration;
+        this.debuffs.slowed.speedMultiplier = speedMultiplier;
+        logger.log('[PowerUpState:' + this.name + '] Ralenti ' + Math.round((1 - speedMultiplier) * 100) + '% pour ' + duration + 'ms');
+    }
+
+    applyInvertedControls(duration) {
+        if (this.passiveEffects.invincible) {
+            logger.log('[PowerUpState:' + this.name + '] Immune inversion (Rock)');
+            return;
+        }
+        this.debuffs.invertedControls.active = true;
+        this.debuffs.invertedControls.until = Date.now() + duration;
+        logger.log('[PowerUpState:' + this.name + '] Contrôles inversés pour ' + duration + 'ms');
+    }
+
+    hasInvertedControls() {
+        return this.debuffs.invertedControls.active || this.passiveEffects.selfInvertedControls;
+    }
+
+    isSlowed() { return this.debuffs.slowed.active; }
+    
+    getSpeedMultiplier() {
+        return this.debuffs.slowed.active ? this.debuffs.slowed.speedMultiplier : 1.0;
+    }
+
+    // EFFETS CONTACT
+    markContactUsed() {
+        this.contactUsed = true;
+        logger.log('[PowerUpState:' + this.name + '] Effet contact utilisé');
+    }
+
+    canUseContact() { return this.activePowerup && !this.contactUsed; }
+
+    getContactEffect(targetPowerup = null) {
+        if (!this.activePowerup || this.contactUsed) return null;
+        const config = POWERUP_EFFECTS[this.activePowerup];
+        if (!config || !config.onContact) return null;
+        let effect = { ...config.onContact };
+        if (config.exceptions && targetPowerup) {
+            const key = 'vs' + targetPowerup.charAt(0).toUpperCase() + targetPowerup.slice(1);
+            if (config.exceptions[key]) {
+                effect = { ...effect, ...config.exceptions[key] };
+            }
+        }
+        return effect;
+    }
+
+    // POWER-UP STOCKÉ
+    storePowerup(type) {
+        this.storedPowerup = type;
+        logger.log('[PowerUpState:' + this.name + '] Power-up stocké: ' + type);
+    }
+
+    activateStored() {
+        if (!this.storedPowerup) return false;
+        const type = this.storedPowerup;
+        this.storedPowerup = null;
+        this.activate(type);
+        logger.log('[PowerUpState:' + this.name + '] Power-up stocké activé: ' + type);
+        return true;
+    }
+
+    stealStoredPowerup() {
+        if (this.passiveEffects.immuneToPowerupSteal) {
+            logger.log('[PowerUpState:' + this.name + '] Immune vol power-up (Rock)');
+            return null;
+        }
+        const stolen = this.storedPowerup;
+        this.storedPowerup = null;
+        if (stolen) logger.log('[PowerUpState:' + this.name + '] Power-up stocké volé: ' + stolen);
+        return stolen;
+    }
+
+    hasStoredPowerup() { return this.storedPowerup !== null; }
+
+    // UTILITAIRES PASSIFS
+    canBoostUnlimited() { return this.passiveEffects.unlimitedBoost; }
+    getBoostSpeed() { return this.passiveEffects.boostSpeed; }
+    isInvincible() { return this.passiveEffects.invincible; }
+    canPhaseThrough() { return this.passiveEffects.phaseThrough; }
+    canPhaseThroughWalls() { return this.passiveEffects.throughWalls; }
+    canPhaseThroughEnemy() { return this.passiveEffects.throughEnemy; }
+    isImmuneToSteal() { return this.passiveEffects.immuneToSteal; }
+
+    // EXPIRATION
+    isExpired(durations = null) {
+        if (!this.activePowerup) return false;
         const elapsed = performance.now() - this.powerupTime;
-        const duration = durations[this.activePowerup] || 8000;
+        let duration;
+        if (durations && durations[this.activePowerup] !== undefined) {
+            duration = durations[this.activePowerup];
+        } else {
+            const config = POWERUP_EFFECTS[this.activePowerup];
+            duration = config ? config.duration : 6000;
+        }
         return elapsed > duration;
     }
 
-    /**
-     * Met à jour l'état (vérifie expiration power-up et slow)
-     * @param {number} timestamp - Date.now() pour le slow
-     * @param {Object} durations - Durées des power-ups
-     * @returns {Object} - {powerupExpired: boolean, slowEnded: boolean}
-     */
-    update(timestamp, durations) {
-        const result = { powerupExpired: false, slowEnded: false };
-
-        // Vérifier expiration power-up
+    update(timestamp = Date.now(), durations = null) {
+        const result = { powerupExpired: false, slowEnded: false, invertedEnded: false };
+        
         if (this.activePowerup && this.isExpired(durations)) {
             this.disable();
             result.powerupExpired = true;
         }
-
-        // Vérifier fin du slow
-        if (this.slowed && timestamp > this.slowedUntil) {
-            this.slowed = false;
+        
+        if (this.debuffs.slowed.active && timestamp > this.debuffs.slowed.until) {
+            this.debuffs.slowed.active = false;
+            this.debuffs.slowed.speedMultiplier = 1.0;
             result.slowEnded = true;
-            logger.log(`[PowerUpState:${this.name}] N'est plus ralenti`);
+            logger.log('[PowerUpState:' + this.name + '] Plus ralenti');
         }
-
+        
+        if (this.debuffs.invertedControls.active && timestamp > this.debuffs.invertedControls.until) {
+            this.debuffs.invertedControls.active = false;
+            result.invertedEnded = true;
+            logger.log('[PowerUpState:' + this.name + '] Contrôles rétablis');
+        }
+        
         return result;
     }
 
-    /**
-     * Applique un effet de ralentissement (ICE ennemi)
-     * @param {number} duration - Durée du ralentissement en ms
-     */
-    applySlowed(duration) {
-        this.slowed = true;
-        this.slowedUntil = Date.now() + duration;
-        logger.log(`[PowerUpState:${this.name}] Ralenti pour ${duration}ms`);
-    }
-
-    /**
-     * Marque GHOST comme utilisé (après vol de segments)
-     */
-    markGhostUsed() {
-        this.ghostUsed = true;
-    }
-
-    /**
-     * Vérifie si GHOST peut encore voler
-     * @returns {boolean}
-     */
-    canGhostSteal() {
-        return this.effects.ghost && !this.ghostUsed;
-    }
-
-    /**
-     * Reset complet de l'état
-     */
-    reset() {
-        this.effects = {
-            slow: false,
-            double: false,
-            invincible: false,
-            ghost: false
-        };
-        this.activePowerup = null;
-        this.powerupTime = 0;
-        this.ghostUsed = false;
-        this.slowed = false;
-        this.slowedUntil = 0;
-    }
-
-    /**
-     * Retourne la vitesse modifiée selon l'état
-     * @param {number} baseSpeed - Vitesse de base en ms
-     * @param {number} slowedSpeed - Vitesse quand ralenti
-     * @returns {number}
-     */
     getSpeed(baseSpeed, slowedSpeed = 500) {
-        // Si ralenti par ICE ennemi
-        if (this.slowed) return slowedSpeed;
-
-        // LIGHTNING augmente la vitesse
-        if (this.activePowerup === 'lightning') {
-            return baseSpeed / 2;
+        if (this.debuffs.slowed.active) {
+            return baseSpeed / this.debuffs.slowed.speedMultiplier;
         }
-
         return baseSpeed;
     }
+
+    reset() {
+        this.activePowerup = null;
+        this.powerupTime = 0;
+        this.contactUsed = false;
+        this.storedPowerup = null;
+        this.debuffs = {
+            slowed: { active: false, until: 0, speedMultiplier: 1.0 },
+            invertedControls: { active: false, until: 0 }
+        };
+        this.passiveEffects = {
+            unlimitedBoost: false, boostSpeed: 125, selfInvertedControls: false,
+            invincible: false, immuneToSteal: false, immuneToPowerupSteal: false,
+            phaseThrough: false, throughWalls: false, throughEnemy: false
+        };
+        this.effects = { slow: false, double: false, invincible: false, ghost: false };
+        this.ghostUsed = false;
+    }
+
+    serialize() {
+        return {
+            activePowerup: this.activePowerup,
+            storedPowerup: this.storedPowerup,
+            contactUsed: this.contactUsed,
+            debuffs: {
+                slowed: this.debuffs.slowed.active,
+                slowedMultiplier: this.debuffs.slowed.speedMultiplier,
+                invertedControls: this.debuffs.invertedControls.active
+            },
+            passiveEffects: { ...this.passiveEffects }
+        };
+    }
+
+    deserialize(data) {
+        if (!data) return;
+        if (data.activePowerup) this.activate(data.activePowerup);
+        this.storedPowerup = data.storedPowerup || null;
+        this.contactUsed = data.contactUsed || false;
+        if (data.debuffs) {
+            if (data.debuffs.slowed) {
+                this.debuffs.slowed.active = true;
+                this.debuffs.slowed.speedMultiplier = data.debuffs.slowedMultiplier || 0.5;
+            }
+            if (data.debuffs.invertedControls) {
+                this.debuffs.invertedControls.active = true;
+            }
+        }
+    }
+
+    // RÉTRO-COMPATIBILITÉ
+    markGhostUsed() { this.contactUsed = true; this.ghostUsed = true; }
+    canGhostSteal() { return this.effects.ghost && !this.contactUsed && !this.ghostUsed; }
 }

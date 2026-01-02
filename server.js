@@ -207,7 +207,7 @@ class Room {
             return 'sword';  // 50% épée
         }
         // 50% restants répartis entre ice, fire, rock, ghost, lightning
-        const otherItems = ['ice', 'fire', 'rock', 'ghost', 'lightning'];
+        const otherItems = ['ice', 'fire', 'rock', 'ghost', 'lightning', 'sword'];
         return otherItems[Math.floor(Math.random() * otherItems.length)];
     }
 
@@ -283,6 +283,10 @@ class Room {
             boostActive: false,         // ⚡ BOOST - Boost actif?
             boostEndTime: 0,            // ⚡ BOOST - Timestamp fin boost
             boostCooldownEnd: 0,        // ⚡ BOOST - Timestamp fin cooldown
+            ghostUsed: false,           // 👻 V2 - Ghost effet utilisé
+            lightningUsed: false,       // ⚡ V2 - Lightning effet utilisé
+            invertedControls: false,    // 🔄 V2 - Contrôles inversés (débuff)
+            invertedUntil: 0,           // 🔄 V2 - Timestamp fin inversion
             stats: {                    // 📊 Stats de la partie
                 powerupsCollected: 0,
                 segmentsEaten: 0,
@@ -875,6 +879,85 @@ class Room {
         }
     }
 
+    /**     * Gère l'effet du power-up SWORD sur un adversaire     * Vole 2 segments (comme l'ancien ROCK)     */    handleSwordEffect(attacker, defender) {        if (defender.activePowerup === 'rock') {            logger.info('GAME', );            return;        }        const toSteal = Math.min(2, defender.snake.body.length - 1);        if (toSteal <= 0) return;        defender.snake.shrink(toSteal);        defender.health = defender.snake.length;        for (let i = 0; i < toSteal; i++) {            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {                attacker.snake.grow();            }        }        attacker.health = attacker.snake.length;        attacker.stats.segmentsEaten += toSteal;        defender.stats.segmentsLost += toSteal;        this.gameState.segments[attacker.id] = attacker.snake.length;        this.gameState.segments[defender.id] = defender.snake.length;        logger.info('GAME', );        attacker.activePowerup = null;        attacker.powerupEndTime = 0;    }    handleGhostEffect(attacker, defender) {        if (attacker.ghostUsed) return;        if (defender.activePowerup === 'rock') return;        if (defender.snake.body.length > 1) {            defender.snake.shrink(1);            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) attacker.snake.grow();            attacker.stats.segmentsEaten++;            defender.stats.segmentsLost++;            this.gameState.segments[attacker.id] = attacker.snake.length;            this.gameState.segments[defender.id] = defender.snake.length;            logger.info('GAME', );            attacker.ghostUsed = true;        }    }    handleLightningEffect(attacker, defender) {        if (attacker.lightningUsed) return;        if (defender.activePowerup === 'rock') return;        if (defender.snake.body.length > 1) {            defender.snake.shrink(1);            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) attacker.snake.grow();            attacker.stats.segmentsEaten++;            defender.stats.segmentsLost++;            this.gameState.segments[attacker.id] = attacker.snake.length;            this.gameState.segments[defender.id] = defender.snake.length;        }        defender.invertedControls = true;        defender.invertedUntil = Date.now() + 6000;        logger.info('GAME', );        attacker.lightningUsed = true;    }
+
+
+    /**
+     * Gère l'effet SWORD - Vole 2 segments
+     */
+    handleSwordEffect(attacker, defender) {
+        if (defender.activePowerup === 'rock') {
+            logger.info('GAME', 'SWORD bloqué par ROCK');
+            return;
+        }
+        const toSteal = Math.min(2, defender.snake.body.length - 1);
+        if (toSteal <= 0) return;
+        defender.snake.shrink(toSteal);
+        defender.health = defender.snake.length;
+        for (let i = 0; i < toSteal; i++) {
+            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                attacker.snake.grow();
+            }
+        }
+        attacker.health = attacker.snake.length;
+        attacker.stats.segmentsEaten += toSteal;
+        defender.stats.segmentsLost += toSteal;
+        this.gameState.segments[attacker.id] = attacker.snake.length;
+        this.gameState.segments[defender.id] = defender.snake.length;
+        logger.info('GAME', 'SWORD: vole ' + toSteal + ' segments');
+        // One-shot
+        attacker.activePowerup = null;
+        attacker.powerupEndTime = 0;
+    }
+
+    /**
+     * Gère l'effet GHOST - Vole 1 segment (usage unique)
+     */
+    handleGhostEffect(attacker, defender) {
+        if (attacker.ghostUsed) return;
+        if (defender.activePowerup === 'rock') return;
+        if (defender.snake.body.length > 1) {
+            defender.snake.shrink(1);
+            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                attacker.snake.grow();
+            }
+            attacker.health = attacker.snake.length;
+            defender.health = defender.snake.length;
+            attacker.stats.segmentsEaten++;
+            defender.stats.segmentsLost++;
+            this.gameState.segments[attacker.id] = attacker.snake.length;
+            this.gameState.segments[defender.id] = defender.snake.length;
+            logger.info('GAME', 'GHOST: vole 1 segment');
+            attacker.ghostUsed = true;
+        }
+    }
+
+    /**
+     * Gère l'effet LIGHTNING - Vole 1 segment + inverse contrôles
+     */
+    handleLightningEffect(attacker, defender) {
+        if (attacker.lightningUsed) return;
+        if (defender.activePowerup === 'rock') return;
+        // Voler 1 segment
+        if (defender.snake.body.length > 1) {
+            defender.snake.shrink(1);
+            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
+                attacker.snake.grow();
+            }
+            attacker.health = attacker.snake.length;
+            defender.health = defender.snake.length;
+            attacker.stats.segmentsEaten++;
+            defender.stats.segmentsLost++;
+            this.gameState.segments[attacker.id] = attacker.snake.length;
+            this.gameState.segments[defender.id] = defender.snake.length;
+        }
+        // Inverser contrôles adversaire 6s
+        defender.invertedControls = true;
+        defender.invertedUntil = Date.now() + 6000;
+        logger.info('GAME', 'LIGHTNING: vole 1 + inverse controles');
+        attacker.lightningUsed = true;
+    }
+
     // Boucle de jeu avec setTimeout
     gameLoopTick() {
         // Vérifier EN PREMIER
@@ -1303,8 +1386,34 @@ class Room {
                 continue;
             }
 
-            // Mettre à jour le timer et déplacer
+            // Mettre à jour le timer
             player.lastMoveTime = now;
+
+            // 🚫 BLOQUER SI COLLISION AVEC CORPS ENNEMI (sauf Ghost)
+            // Calculer la prochaine position de la tête
+            const nextHead = player.snake.getNextHeadPosition();
+            let blockedByEnemy = false;
+
+            if (player.activePowerup !== 'ghost') {
+                for (let opponent of this.players.values()) {
+                    if (opponent.id === player.id || !opponent.snake.alive) continue;
+
+                    // Vérifier si nextHead touche le corps de l'adversaire (pas la tête)
+                    const opponentBody = opponent.snake.body.slice(1); // Exclure la tête
+                    if (opponentBody.some(seg => seg.x === nextHead.x && seg.y === nextHead.y)) {
+                        blockedByEnemy = true;
+                        logger.debug('GAME', '🚫 Player ' + player.number + ' bloqué par corps de Player ' + opponent.number);
+                        break;
+                    }
+                }
+            }
+
+            // Si bloqué, ne pas bouger
+            if (blockedByEnemy) {
+                continue;
+            }
+
+            // Déplacer
             player.snake.move();
 
             // Vérifier collision avec soi-même
@@ -1431,9 +1540,19 @@ class Room {
                     } else if (player.activePowerup === 'fire') {
                         // FIRE : Brûler 1 segment
                         this.handleFireEffect(player, opponent);
+                    } else if (player.activePowerup === 'sword') {
+                        // SWORD : Vole 2 segments
+                        this.handleSwordEffect(player, opponent);
+                    } else if (player.activePowerup === 'ghost') {
+                        // GHOST : Vole 1 segment
+                        this.handleGhostEffect(player, opponent);
+                    } else if (player.activePowerup === 'lightning') {
+                        // LIGHTNING : Vole 1 segment + inverse contrôles
+                        this.handleLightningEffect(player, opponent);
                     } else {
-                        // Pas de power-up : Vol progressif
-                        this.handleBodyCollision(player, opponent);
+                        // 🚫 Pas de power-up : BLOQUÉ (comme Boss Rush)
+                        // Ne rien faire - le blocage est géré avant le move()
+                        logger.debug('GAME', 'Player ' + player.number + ' touche Player ' + opponent.number + ' sans power-up (bloqué)');
                     }
                 } else {
                     // Plus de contact : réinitialiser bodyContact
@@ -1556,6 +1675,15 @@ class Room {
         if (player.activePowerup === 'lightning' && Date.now() < player.powerupEndTime) {
             newDirection = { dx: -newDirection.dx, dy: -newDirection.dy };
             logger.debug('INPUT', `⚡ Contrôles inversés pour Player ${player.number}`);
+
+        }
+
+        // V2: Debuff controles inverses (inflige par Lightning ennemi)
+        if (player.invertedControls && Date.now() < player.invertedUntil) {
+            newDirection = { dx: -newDirection.dx, dy: -newDirection.dy };
+        } else if (player.invertedControls) {
+            player.invertedControls = false;
+            player.invertedUntil = 0;
         }
 
         // Le Snake gère la validation anti-retour
@@ -1598,6 +1726,8 @@ class Room {
             // POWER-UP - Activer le power-up
             const duration = POWERUP_TYPES[item.toUpperCase()]?.duration || 6000;
             player.activePowerup = item;
+            player.ghostUsed = false;  // V2: Reset flags
+            player.lightningUsed = false;
             player.powerupEndTime = now + duration;
 
             const symbol = POWERUP_TYPES[item.toUpperCase()]?.symbol || '?';
@@ -1663,7 +1793,10 @@ class Room {
                 hasSword: player.hasSword,              // ⚔️ ÉPÉE - Épée active (dégainée)?
                 swordEndTime: player.swordEndTime,      // ⚔️ ÉPÉE - Timestamp fin épée
                 boostActive: player.boostActive,        // ⚡ BOOST - Actif?
-                boostCooldownEnd: player.boostCooldownEnd // ⚡ BOOST - Fin cooldown
+                boostCooldownEnd: player.boostCooldownEnd, // ⚡ BOOST - Fin cooldown
+                frozen: player.frozen,                  // ❄️ V2 - Gelé
+                invertedControls: player.invertedControls, // 🔄 V2 - Contrôles inversés
+                invertedUntil: player.invertedUntil      // 🔄 V2 - Timestamp fin inversion
             };
         }
 

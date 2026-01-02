@@ -7318,11 +7318,11 @@ body.dark-mode .game-over-progression {
 }
 
 .mp-pw-emoji {
-    font-size: 12px;
+    font-size: 20px;                /* 🔥 Augmenté: 12px -> 20px */
     visibility: hidden;             /* ✅ Invisible mais prend de la place */
     opacity: 0;
     line-height: 1;
-    width: 14px;                    /* ✅ Largeur fixe */
+    width: 24px;                    /* 🔥 Augmenté: 14px -> 24px */
     text-align: center;
 }
 

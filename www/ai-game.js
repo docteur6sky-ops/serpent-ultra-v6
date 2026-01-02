@@ -6,7 +6,7 @@ import { logger } from './services/logger.js';
 import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { SnakeAI } from './ai/snake-ai.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
-import { POWERUP_SKIN_COLORS } from './config/constants.js';
+import { POWERUP_SKIN_COLORS, POWERUP_EFFECTS } from './config/constants.js';
 import { CleanupManager } from './managers/CleanupManager.js';
 import { PowerUpState } from './core/PowerUpState.js';
 
@@ -40,10 +40,12 @@ class AISnakeGame extends BaseSnakeGame {
 
         // Durées des power-ups (en ms) - toutes à 6 secondes
         this.POWERUP_DURATIONS = {
+            fire: 6000,       // 6 secondes - unlimited boost
             lightning: 6000,  // 6 secondes (ex-fire)
             ice: 6000,        // 6 secondes
             rock: 6000,       // 6 secondes
-            ghost: 6000       // 6 secondes
+            ghost: 6000,      // 6 secondes
+            sword: 6000       // 6 secondes - steal 2 segments
         };
 
         // Effets power-ups (utilise PowerUpState centralisé)
@@ -106,20 +108,22 @@ class AISnakeGame extends BaseSnakeGame {
     }
 
     /**
-     * Calcule la vitesse du joueur selon son power-up actif
-     * LIGHTNING: 125ms (x2 vitesse), ICE/ROCK/GHOST: 250ms (vitesse normale)
-     * Si ralenti par ICE ennemi: 500ms
+     * Calcule la vitesse du joueur selon power-up et débuffs
+     * FIRE: 125ms (boost illimité), SLOWED: x2, Normal: 250ms
      */
     getPlayerSpeed() {
-        return this.playerPowerup.getSpeed(250, 500);
+        const BASE = 250;
+        if (this.playerPowerup.canBoostUnlimited()) return this.playerPowerup.getBoostSpeed();
+        return this.playerPowerup.getSpeed(BASE, 500);
     }
 
     /**
-     * Calcule la vitesse de l'IA selon son power-up actif
-     * Si ralenti par ICE ennemi: 500ms
+     * Calcule la vitesse de l'IA selon power-up et débuffs
      */
     getAISpeed() {
-        return this.aiPowerup.getSpeed(250, 500);
+        const BASE = 250;
+        if (this.aiPowerup.canBoostUnlimited()) return this.aiPowerup.getBoostSpeed();
+        return this.aiPowerup.getSpeed(BASE, 500);
     }
 
     /**
@@ -250,13 +254,21 @@ class AISnakeGame extends BaseSnakeGame {
         const playerSpeed = this.getPlayerSpeed();
         const aiSpeed = this.getAISpeed();
 
+        // 🔥 Vérifier collision tête-à-tête AVANT mouvement (les deux effets s'appliquent)
+        const playerShouldMove = (now - this.playerLastMove > playerSpeed);
+        const aiShouldMove = (now - this.aiLastMove > aiSpeed);
+
+        if (playerShouldMove && aiShouldMove) {
+            this.checkHeadToHeadCollision();
+        }
+
         // Déplacer chaque serpent selon sa propre vitesse
-        if (now - this.playerLastMove > playerSpeed) {
+        if (playerShouldMove) {
             this.playerLastMove = now;
             this.movePlayer();
         }
 
-        if (now - this.aiLastMove > aiSpeed) {
+        if (aiShouldMove) {
             this.aiLastMove = now;
             this.moveAI();
         }
@@ -299,13 +311,14 @@ class AISnakeGame extends BaseSnakeGame {
         const collidesWithAI = this.aiSnake.some(seg => seg.x === head.x && seg.y === head.y);
         if (collidesWithAI) {
             // ✅ Vérifier si GHOST AVANT de déclencher les effets
-            const isGhost = this.playerActivePowerup === 'ghost';
+            const canPhase = this.playerPowerup.canPhaseThroughEnemy();
 
-            // Déclencher l'effet du power-up (si actif)
-            this.handleCollision('player', 'ai');
+            // 🔥 BIDIRECTIONNEL: Appliquer les DEUX effets (joueur -> IA et IA -> joueur)
+            this.handleCollision('player', 'ai');  // Effet du joueur sur IA
+            this.handleCollision('ai', 'player');  // Effet de l'IA sur joueur (riposte)
 
             // GHOST peut traverser, les autres sont bloqués
-            if (isGhost) {
+            if (canPhase) {
                 // Peut traverser l'adversaire
                 logger.log('[AIGame] 👻 GHOST: Joueur traverse l\'IA');
                 // Continue le déplacement normalement (ne return pas)
@@ -351,13 +364,14 @@ class AISnakeGame extends BaseSnakeGame {
         const collidesWithPlayer = this.playerSnake.some(seg => seg.x === head.x && seg.y === head.y);
         if (collidesWithPlayer) {
             // ✅ Vérifier si GHOST AVANT de déclencher les effets
-            const isGhost = this.aiActivePowerup === 'ghost';
+            const canPhase = this.aiPowerup.canPhaseThroughEnemy();
 
-            // Déclencher l'effet du power-up (si actif)
-            this.handleCollision('ai', 'player');
+            // 🔥 BIDIRECTIONNEL: Appliquer les DEUX effets (IA -> joueur et joueur -> IA)
+            this.handleCollision('ai', 'player');  // Effet de l'IA sur joueur
+            this.handleCollision('player', 'ai');  // Effet du joueur sur IA (riposte)
 
             // GHOST peut traverser, les autres sont bloqués
-            if (isGhost) {
+            if (canPhase) {
                 // Peut traverser l'adversaire
                 logger.log('[AIGame] 👻 GHOST: IA traverse le joueur');
                 // Continue le déplacement normalement (ne return pas)
@@ -385,6 +399,54 @@ class AISnakeGame extends BaseSnakeGame {
         // Déplacement normal
         this.aiSnake.unshift(head);
         this.aiSnake.pop();
+    }
+
+    // ============================================
+    // COLLISION TÊTE-À-TÊTE (MUTUAL)
+    // ============================================
+
+    /**
+     * Vérifie si les deux serpents vont entrer en collision tête-à-tête
+     * Si oui, applique les deux effets de power-up AVANT mouvement
+     */
+    checkHeadToHeadCollision() {
+        // Calculer les nouvelles positions des têtes
+        let playerNewHead = {
+            x: this.playerSnake[0].x + this.playerDx,
+            y: this.playerSnake[0].y + this.playerDy
+        };
+        let aiNewHead = {
+            x: this.aiSnake[0].x + this.aiDx,
+            y: this.aiSnake[0].y + this.aiDy
+        };
+
+        // Wrapping pour joueur
+        if (playerNewHead.x < 0) playerNewHead.x = this.GRID_SIZE - 1;
+        if (playerNewHead.x >= this.GRID_SIZE) playerNewHead.x = 0;
+        if (playerNewHead.y < 0) playerNewHead.y = this.GRID_SIZE - 1;
+        if (playerNewHead.y >= this.GRID_SIZE) playerNewHead.y = 0;
+
+        // Wrapping pour IA
+        if (aiNewHead.x < 0) aiNewHead.x = this.GRID_SIZE - 1;
+        if (aiNewHead.x >= this.GRID_SIZE) aiNewHead.x = 0;
+        if (aiNewHead.y < 0) aiNewHead.y = this.GRID_SIZE - 1;
+        if (aiNewHead.y >= this.GRID_SIZE) aiNewHead.y = 0;
+
+        // Collision tête-à-tête: les deux têtes vont au même endroit
+        // OU les deux têtes échangent leurs positions (croisement)
+        const headsAtSamePos = (playerNewHead.x === aiNewHead.x && playerNewHead.y === aiNewHead.y);
+        const headsCrossing = (
+            playerNewHead.x === this.aiSnake[0].x && playerNewHead.y === this.aiSnake[0].y &&
+            aiNewHead.x === this.playerSnake[0].x && aiNewHead.y === this.playerSnake[0].y
+        );
+
+        if (headsAtSamePos || headsCrossing) {
+            logger.log('[AIGame] 💥 Collision tête-à-tête détectée!');
+
+            // Appliquer TOUS les effets avant mouvement (les deux directions)
+            this.handleCollision('player', 'ai');
+            this.handleCollision('ai', 'player');
+        }
     }
 
     // ============================================
@@ -418,126 +480,115 @@ class AISnakeGame extends BaseSnakeGame {
     }
 
     /**
-     * Gère une collision entre attaquant et défenseur
-     * ✅ EFFETS POWER-UPS :
-     * - ROCK (défenseur) : Immunité totale
-     * - ICE (attaquant) : Ralentit 500ms pendant 6s
-     * - GHOST (attaquant) : Vole 2 segments (usage unique)
-     * - LIGHTNING (attaquant) : Rien (juste boost vitesse)
-     * - Aucun : Aucun effet (collision sans conséquence)
+     * Gère une collision entre attaquant et défenseur - V2
+     * Utilise POWERUP_EFFECTS pour déterminer les effets
      */
     handleCollision(attacker, defender) {
-        const attackerName = attacker === 'player' ? 'Joueur' : 'IA';
-        const defenderName = defender === 'player' ? 'Joueur' : 'IA';
+        const attackerState = attacker === 'player' ? this.playerPowerup : this.aiPowerup;
+        const defenderState = defender === 'player' ? this.playerPowerup : this.aiPowerup;
+        const attackerSnake = attacker === 'player' ? this.playerSnake : this.aiSnake;
+        const defenderSnake = defender === 'player' ? this.playerSnake : this.aiSnake;
 
-        const attackerPowerup = attacker === 'player' ? this.playerActivePowerup : this.aiActivePowerup;
-        const defenderPowerup = defender === 'player' ? this.playerActivePowerup : this.aiActivePowerup;
-
-        // ✅ ROCK = Immunité totale
-        if (defenderPowerup === 'rock') {
-            logger.log(`[AIGame] 🛡️ ${defenderName} immunisé (ROCK) contre ${attackerName}`);
-            return; // Aucun effet
+        // Vérifier si l'attaquant peut utiliser son effet contact
+        if (!attackerState.canUseContact()) {
+            logger.log('[AIGame] ' + attacker + ' collision sans effet (déjà utilisé ou pas de power-up)');
+            return;
         }
 
-        // Appliquer effet selon power-up de l'attaquant
-        if (attackerPowerup === 'ice') {
-            this.handleIceEffect(attacker, defender);
-        } else if (attackerPowerup === 'ghost') {
-            this.handleGhostEffect(attacker, defender);
-        } else if (attackerPowerup === 'lightning') {
-            // ✅ LIGHTNING : Pas d'effet sur collision (juste boost vitesse)
-            logger.log(`[AIGame] ⚡ ${attackerName} touche ${defenderName} mais LIGHTNING ne fait rien`);
-        } else {
-            // ✅ Pas de power-up : collision sans effet
-            logger.log(`[AIGame] ${attackerName} touche ${defenderName} sans power-up - aucun effet`);
+        // Récupérer l'effet contact (avec exceptions pour Rock)
+        const contactEffect = attackerState.getContactEffect(defenderState.activePowerup);
+        if (!contactEffect) {
+            return;
+        }
+
+        // Vérifier immunité Rock
+        if (defenderState.isInvincible()) {
+            logger.log('[AIGame] ' + defender + ' immunisé (Rock)');
+            return;
+        }
+
+        let totalStolen = 0;
+        let totalBurned = 0;
+
+        // 🔥 Effet BURN (Fire) - Détruit segments sans les voler
+        if (contactEffect.burnSegments > 0) {
+            const burned = this.applyBurnEffect(defenderSnake, contactEffect.burnSegments);
+            totalBurned = burned;
+            logger.log('[AIGame] 🔥 ' + attacker + ' brûle ' + burned + ' segment(s)');
+        }
+
+        // ⚔️ Effet STEAL (Ghost, Lightning, Sword)
+        if (contactEffect.stealSegments > 0 && !defenderState.isImmuneToSteal()) {
+            const stolen = this.applyStealEffect(attackerSnake, defenderSnake, contactEffect.stealSegments);
+            totalStolen = stolen;
+            if (attacker === 'player') {
+                this.playerSegmentsStolenThisGame += stolen;
+            }
+            logger.log('[AIGame] ⚔️ ' + attacker + ' vole ' + stolen + ' segment(s)');
+        }
+
+        // 👻 Vol de power-up stocké (Ghost uniquement)
+        if (contactEffect.stealEnemyPowerup) {
+            const stolenPowerup = defenderState.stealStoredPowerup();
+            if (stolenPowerup) {
+                attackerState.storePowerup(stolenPowerup);
+                logger.log('[AIGame] 👻 ' + attacker + ' vole power-up stocké: ' + stolenPowerup);
+            }
+        }
+
+        // 💫 Appliquer débuff
+        if (contactEffect.debuff) {
+            const debuff = contactEffect.debuff;
+            if (debuff.type === 'SLOWED') {
+                defenderState.applySlowed(debuff.duration, debuff.speedMultiplier);
+            } else if (debuff.type === 'INVERTED_CONTROLS') {
+                defenderState.applyInvertedControls(debuff.duration);
+            }
+            logger.log('[AIGame] 💫 ' + defender + ' reçoit débuff: ' + debuff.type);
+        }
+
+        // Marquer comme utilisé (one-shot)
+        attackerState.markContactUsed();
+
+        // Effets visuels si segments perdus
+        if (totalStolen > 0 || totalBurned > 0) {
+            const now = Date.now();
+            if (defender === 'player') {
+                this.playerFlash = { color: totalBurned > 0 ? '#FF5722' : '#FFFFFF', until: now + 1500 };
+            } else {
+                this.aiFlash = { color: totalBurned > 0 ? '#FF5722' : '#FFFFFF', until: now + 1500 };
+            }
+            if (this.audio) this.audio.eat();
         }
 
         this.updateUI();
     }
 
     /**
-     * Effet ICE : Ralentit l'adversaire à 500ms pendant 6 secondes
+     * Applique l'effet BURN - Détruit des segments (Fire)
      */
-    handleIceEffect(attacker, defender) {
-        const now = Date.now();
-        const SLOW_DURATION = 6000; // 6 secondes
-
-        if (defender === 'player') {
-            this.playerPowerup.applySlowed(SLOW_DURATION);
-        } else {
-            this.aiPowerup.applySlowed(SLOW_DURATION);
+    applyBurnEffect(targetSnake, count) {
+        let burned = 0;
+        for (let i = 0; i < count && targetSnake.length > 1; i++) {
+            const seg = targetSnake.pop();
+            this.createBreakEffect(seg.x, seg.y, '#FF5722');
+            burned++;
         }
+        return burned;
     }
 
     /**
-     * Effet GHOST : Vole 2 segments à l'adversaire (usage unique)
-     * Après le vol, le power-up GHOST est automatiquement désactivé
+     * Applique l'effet STEAL - Vole des segments
      */
-    handleGhostEffect(attacker, defender) {
-        // ✅ Vérifier si déjà utilisé (évite vols multiples)
-        const alreadyUsed = attacker === 'player' ? this.playerGhostUsed : this.aiGhostUsed;
-        if (alreadyUsed) {
-            return; // Déjà volé, ne rien faire
-        }
-
-        const attackerSnake = attacker === 'player' ? this.playerSnake : this.aiSnake;
-        const defenderSnake = defender === 'player' ? this.playerSnake : this.aiSnake;
-
+    applyStealEffect(attackerSnake, defenderSnake, count) {
         let stolen = 0;
-        const segmentsToRemove = [];
-
-        if (defenderSnake.length > 2) {
-            // Stocker position des segments avant de les supprimer
-            segmentsToRemove.push(defenderSnake[defenderSnake.length - 2]);
-            segmentsToRemove.push(defenderSnake[defenderSnake.length - 1]);
-
-            defenderSnake.splice(-2); // Perd 2 segments
-            attackerSnake.push({...attackerSnake[attackerSnake.length - 1]});
-            attackerSnake.push({...attackerSnake[attackerSnake.length - 1]});
-            stolen = 2;
-        } else if (defenderSnake.length === 2) {
-            // Stocker position du segment avant de le supprimer
-            segmentsToRemove.push(defenderSnake[defenderSnake.length - 1]);
-
-            defenderSnake.pop();
-            attackerSnake.push({...attackerSnake[attackerSnake.length - 1]});
-            stolen = 1;
-        }
-
-        // 💥 Créer des particules blanches pour chaque segment volé
-        segmentsToRemove.forEach(seg => {
+        for (let i = 0; i < count && defenderSnake.length > 1; i++) {
+            const seg = defenderSnake.pop();
             this.createBreakEffect(seg.x, seg.y, '#FFFFFF');
-        });
-
-        logger.log(`[AIGame] 👻 GHOST: ${attacker} vole ${stolen} segment(s) à ${defender}`);
-
-        // 🏆 Tracker segments volés par le joueur (pour trophée Voleur)
-        if (attacker === 'player' && stolen > 0) {
-            this.playerSegmentsStolenThisGame += stolen;
-            logger.log(`[AIGame] 🏆 Segments volés cette partie: ${this.playerSegmentsStolenThisGame}`);
+            attackerSnake.push({...attackerSnake[attackerSnake.length - 1]});
+            stolen++;
         }
-
-        // ✨ Clignotement blanc sur le défenseur (1.5 secondes)
-        const now = Date.now();
-        if (defender === 'player') {
-            this.playerFlash = { color: '#FFFFFF', until: now + 1500 };
-        } else {
-            this.aiFlash = { color: '#FFFFFF', until: now + 1500 };
-        }
-
-        // 🔊 Son pour le vol de segments
-        if (this.audio) this.audio.eat();
-
-        // ✅ Marquer comme utilisé (mais garder le power-up actif pour traverser)
-        if (attacker === 'player') {
-            this.playerGhostUsed = true;
-        } else {
-            this.aiGhostUsed = true;
-        }
-
-        // ✅ Ne PAS désactiver GHOST - le laisser actif pour continuer à traverser
-        // Il expirera naturellement après 6 secondes
-        logger.log(`[AIGame] 👻 GHOST: Vol effectué, peut continuer à traverser pendant ${this.POWERUP_DURATIONS.ghost/1000}s`);
+        return stolen;
     }
 
     // ============================================
@@ -702,7 +753,8 @@ class AISnakeGame extends BaseSnakeGame {
         if (this.powerups.length >= this.MAX_POWERUPS) return;
 
         const rand = Math.random();
-        const type = rand < 0.25 ? 'ice' : rand < 0.50 ? 'lightning' : rand < 0.75 ? 'rock' : 'ghost';
+        const types = ['fire', 'lightning', 'ice', 'rock', 'ghost', 'sword'];
+        const type = types[Math.floor(Math.random() * types.length)];
 
         const occupied = [
             ...this.playerSnake,
@@ -835,6 +887,11 @@ class AISnakeGame extends BaseSnakeGame {
             playerSkinColors = POWERUP_SKIN_COLORS.slowed;
         }
 
+        // ⚡ Si contrôles inversés (Lightning débuff), couleur jaune
+        if (this.playerPowerup.debuffs.invertedControls.active) {
+            playerSkinColors = POWERUP_SKIN_COLORS.invertedControls;
+        }
+
         // ✨ Si clignotement actif (impact GHOST), couleur blanche
         if (this.playerFlash) {
             const shouldFlash = Math.floor(Date.now() / 200) % 2 === 0;
@@ -894,6 +951,11 @@ class AISnakeGame extends BaseSnakeGame {
         // ✅ Si ralenti par ICE ennemi, forcer couleur cyan
         if (this.aiSlowed) {
             aiSkinColors = POWERUP_SKIN_COLORS.slowed;
+        }
+
+        // ⚡ Si contrôles inversés (Lightning débuff), couleur jaune
+        if (this.aiPowerup.debuffs.invertedControls.active) {
+            aiSkinColors = POWERUP_SKIN_COLORS.invertedControls;
         }
 
         // ✨ Si clignotement actif (impact GHOST), couleur blanche
@@ -991,6 +1053,12 @@ class AISnakeGame extends BaseSnakeGame {
 
     changeDirection(dx, dy) {
         if (this.locked) return;
+
+        // ⚡ Inverser contrôles si Lightning passif ou débuff
+        if (this.playerPowerup.hasInvertedControls()) {
+            dx = -dx;
+            dy = -dy;
+        }
 
         // Empêcher demi-tour
         if (this.playerDx === -dx && this.playerDy === -dy) return;

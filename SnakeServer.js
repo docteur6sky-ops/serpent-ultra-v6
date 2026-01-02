@@ -29,6 +29,17 @@ class Snake {
         return this.body[0];
     }
 
+    // Calculer la prochaine position de la tête (sans bouger)
+    getNextHeadPosition() {
+        let x = this.head.x + this.nextDirection.dx;
+        let y = this.head.y + this.nextDirection.dy;
+        if (x < 0) x = 29;
+        if (x >= 30) x = 0;
+        if (y < 0) y = 29;
+        if (y >= 30) y = 0;
+        return { x, y };
+    }
+
     // Déplacer le serpent
     move() {
         if (!this.alive) return;

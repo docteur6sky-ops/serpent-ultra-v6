@@ -5,6 +5,7 @@
 
 import { logger } from './services/logger.js';
 import { drawSnakeEnhanced, getDirectionString } from './SkinsRenderer.js';
+import { POWERUP_SKIN_COLORS } from './config/constants.js';
 import { BaseSnakeGame } from './core/BaseSnakeGame.js';
 import { multiplayerUIManager } from './ui/MultiplayerUIManager.js';
 import { CleanupManager } from './managers/CleanupManager.js';
@@ -40,6 +41,7 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
         // Tracking power-ups pour trophées
         this.powerupsCollectedThisGame = 0;
         this.lastPowerupState = null;
+        this.lastSnakeLength = 0;  // 🔊 Pour détecter croissance (son eat)
 
         // 💥 État des explosions multi-joueurs
         this.explodingPlayers = {}; // { playerId: true } pour cacher les serpents explosés
@@ -109,6 +111,14 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
             // ✅ TRACKING POWER-UPS: Détecter quand le joueur collecte un power-up
             if (gameState?.players && this.client?.playerId) {
                 const myPlayer = gameState.players[this.client.playerId];
+                
+                // 🔊 SON EAT: Détecter quand le serpent grandit
+                const currentLength = myPlayer?.snake?.body?.length || 0;
+                if (currentLength > this.lastSnakeLength && this.lastSnakeLength > 0) {
+                    window.audio?.eat();
+                }
+                this.lastSnakeLength = currentLength;
+                
                 if (myPlayer?.activePowerup && myPlayer.activePowerup !== this.lastPowerupState) {
                     // Un nouveau power-up a été collecté (via utilisation de l'item)
                     this.powerupsCollectedThisGame++;
@@ -154,6 +164,7 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
         // 🎁 MYSTERY BOX COLLECTÉE - Animation roulette
         this.client.onMysteryBoxCollected = (message) => {
             logger.log(`[MultiGame] Mystery Box collectée! Item: ${message.item}`);
+            window.audio?.powerup();  // 🔊 Son power-up
             this.playRouletteAnimation(message.item);
         };
 
@@ -437,7 +448,27 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
                         outline: '#B8860B',
                         glow: '#FFD700'
                     };
-                } else if (!isMe) {
+                } else if (activePowerup === 'sword') {
+                    // SWORD : Rouge crimson
+                    skinColors = {
+                        head: { light: '#DC143C', dark: '#B22222' },
+                        body: { from: '#DC143C', to: '#8B0000' },
+                        tail: { color: '#8B0000' },
+                        outline: '#660000',
+                        glow: '#DC143C'
+                    };
+                }
+
+                // V2: Débuffs visuels (priorité sur power-ups)
+                if (playerData.frozen) {
+                    // Gelé = cyan foncé clignotant
+                    skinColors = POWERUP_SKIN_COLORS.slowed;
+                } else if (playerData.invertedControls && Date.now() < playerData.invertedUntil) {
+                    // Contrôles inversés = jaune
+                    skinColors = POWERUP_SKIN_COLORS.invertedControls;
+                }
+
+                if (!skinColors && !isMe) {
                     // Adversaire sans power-up : rouge
                     skinColors = {
                         head: { light: '#FF6B6B', dark: '#CC3636' },
@@ -979,6 +1010,13 @@ class MultiplayerSnakeGame extends BaseSnakeGame {
 
         // Tracking victoires multijoueur (pour trophées)
         this.trackMultiplayerVictory(isWinner);
+
+        // 🔊 Sons de fin de partie
+        if (isWinner) {
+            window.audio?.victory?.();
+        } else {
+            window.audio?.gameover?.();
+        }
 
         // Afficher l'overlay via le manager UI
         multiplayerUIManager.showGameOverOverlay({

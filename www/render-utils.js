@@ -160,10 +160,9 @@ const RenderUtils = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        let emoji = '❄️'; // ice par défaut
-        if (type === 'lightning') emoji = '⚡';
-        else if (type === 'rock') emoji = '🪨';
-        else if (type === 'ghost') emoji = '👻';
+        // Emoji selon le type (6 power-ups V2)
+        const emojis = { ice: '❄️', fire: '🔥', lightning: '⚡', rock: '🪨', ghost: '👻', sword: '⚔️' };
+        const emoji = emojis[type] || '❓';
 
         ctx.fillText(emoji, x * cellSize + center, y * cellSize + center);
     },
