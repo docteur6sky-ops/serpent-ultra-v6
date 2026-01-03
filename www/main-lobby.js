@@ -46,12 +46,11 @@ class MainLobby {
      * Demander la liste des salons au serveur
      */
     refreshRoomList() {
-        logger.log('🔄 Actualisation de la liste des salons...');
-
+        // Silencieux si pas encore connecté (normal au démarrage)
         if (!this.client || !this.client.ws) {
-            logger.error('❌ Client WebSocket non disponible');
             return;
         }
+        logger.log('🔄 Actualisation de la liste des salons...');
 
         this.client.ws.send(JSON.stringify({
             type: 'list_rooms'

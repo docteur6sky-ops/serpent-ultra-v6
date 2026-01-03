@@ -598,12 +598,11 @@ class Room {
         // Vérifier si le power-up est toujours actif
         if (player.activePowerup && now < player.powerupEndTime) {
             switch (player.activePowerup) {
-                case 'fire':
-                    return CONFIG.FIRE_TICK_RATE;      // 140ms - x2 vitesse
+                // 🔥 FIRE: Plus de x2 auto - maintenant boost infini (via bouton)
                 case 'ice':
                     return CONFIG.ICE_TICK_RATE;       // 550ms - ÷2 vitesse
                 case 'lightning':
-                    return CONFIG.LIGHTNING_TICK_RATE; // 140ms - x2 vitesse + contrôles inversés
+                    return CONFIG.LIGHTNING_TICK_RATE; // 140ms - x2 vitesse
                 default:
                     return CONFIG.BASE_TICK_RATE;      // 275ms - normal
             }
@@ -1443,8 +1442,8 @@ class Room {
             // Déplacer
             player.snake.move();
 
-            // Vérifier collision avec soi-même
-            if (player.snake.checkSelfCollision()) {
+            // Vérifier collision avec soi-même (Ghost peut se traverser)
+            if (player.snake.checkSelfCollision() && player.activePowerup !== 'ghost') {
                 player.snake.die();
                 logger.info('GAME', `💀 Player ${player.number} se mord`);
                 continue;
@@ -1698,14 +1697,10 @@ class Room {
                 return;
         }
 
-        // ⚡ LIGHTNING : Inverser les contrôles
-        if (player.activePowerup === 'lightning' && Date.now() < player.powerupEndTime) {
-            newDirection = { dx: -newDirection.dx, dy: -newDirection.dy };
-            logger.debug('INPUT', `⚡ Contrôles inversés pour Player ${player.number}`);
+        // ⚡ LIGHTNING : N'inverse PLUS ses propres contrôles (seulement l'ennemi touché)
+        // Supprimé: l'inversion de soi-même causait le bug de 180°
 
-        }
-
-        // V2: Debuff controles inverses (inflige par Lightning ennemi)
+        // V2: Debuff controles inverses (infligé par Lightning ennemi)
         if (player.invertedControls && Date.now() < player.invertedUntil) {
             newDirection = { dx: -newDirection.dx, dy: -newDirection.dy };
         } else if (player.invertedControls) {
@@ -1780,8 +1775,9 @@ class Room {
 
         const now = Date.now();
 
-        // Vérifier cooldown
-        if (now < player.boostCooldownEnd) {
+        // Vérifier cooldown (🔥 FIRE = boost infini, pas de cooldown)
+        const hasFireActive = player.activePowerup === 'fire' && Date.now() < player.powerupEndTime;
+        if (now < player.boostCooldownEnd && !hasFireActive) {
             const remaining = Math.ceil((player.boostCooldownEnd - now) / 1000);
             logger.debug('GAME', `⚡ Boost en cooldown pour Player ${player.number} (${remaining}s)`);
             return;

@@ -92,6 +92,12 @@ export class BossFightSystem {
         this.boostDuration = 3000;   // 3 secondes
         this.boostCooldown = 10000;  // 10 secondes
 
+        // 🎯 FLAGS POWER-UP CONTACT (one-shot par combat)
+        this.fireContactUsed = false;
+        this.ghostContactUsed = false;
+        this.iceContactUsed = false;
+        this.lightningContactUsed = false;
+
         // 🛡️ Invincibilité après collision tête-tête
         this.headToHeadInvincible = false;
         this.headToHeadInvincibleUntil = 0;
@@ -1007,7 +1013,15 @@ export class BossFightSystem {
         // Note: cleanupTemporaryWalls est appelé dans updateSpecialBehavior
 
         // Vérifier si le boss doit bouger
-        const moveDelay = this.boss.moveInterval / this.boss.speed;
+        let moveDelay = this.boss.moveInterval / this.boss.speed;
+
+        // ❄️⚡ Appliquer le ralentissement si actif
+        if (this.boss.slowed && Date.now() < this.boss.slowedUntil) {
+            moveDelay = moveDelay / (this.boss.slowFactor || 0.5);
+        } else if (this.boss.slowed) {
+            this.boss.slowed = false;
+        }
+
         if (timestamp - this.boss.lastMoveTime < moveDelay) return;
 
         this.boss.lastMoveTime = timestamp;
@@ -1741,20 +1755,49 @@ export class BossFightSystem {
                 if (this.stealGracePeriod > 0) {
                     return;
                 }
-                // 🛡️ FIX: Épée prioritaire sur ghost/invincible
+                // 🛡️ FIX: Épée prioritaire sur tout
                 if (this.swordActive) {
                     this.playerStealsBossSegments();
                     return;
                 }
-                // Joueur ghost/invincible traverse le boss sans dégâts
-                if (isPlayerGhost || isPlayerInvincible) {
-                    return; // Traverse sans dégâts
+
+                // 🔥 FIRE - Brûle 1 segment du boss
+                const isPlayerFire = this.game.powerupEffects?.double || false;
+                if (isPlayerFire && !this.fireContactUsed) {
+                    this.playerBurnsBossSegment();
+                    return;
                 }
+
+                // 👻 GHOST - Vole 1 segment au boss
+                if (isPlayerGhost && !this.ghostContactUsed) {
+                    this.playerGhostStealsBossSegment();
+                    return;
+                }
+
+                // ⚡ LIGHTNING - Vole 1 segment + ralentit boss
+                const isPlayerLightning = this.game.powerupEffects?.lightning || false;
+                if (isPlayerLightning && !this.lightningContactUsed) {
+                    this.playerLightningEffect();
+                    return;
+                }
+
+                // ❄️ ICE - Ralentit le boss
+                const isPlayerIce = this.game.powerupEffects?.slow || false;
+                if (isPlayerIce && !this.iceContactUsed) {
+                    this.playerIceEffect();
+                    return;
+                }
+
+                // Rock traverse sans effet
+                if (isPlayerInvincible) {
+                    return;
+                }
+
                 if (this.boss.invincible) {
                     this.playerBlockedByBoss();
                     return;
                 }
-                // Sans épée ni protection → bloqué
+                // Sans power-up ni protection → bloqué
                 this.playerBlockedByBoss();
                 return;
             }
@@ -2070,6 +2113,104 @@ export class BossFightSystem {
         this.updateBossUI();
     }
 
+
+
+    /**
+     * 🔥 FIRE - Brûle 1 segment du boss (détruit, ne vole pas)
+     */
+    playerBurnsBossSegment() {
+        if (this.boss.snake.length <= 1) return;
+
+        logger.log('[BossFight] 🔥 FIRE: Brûle 1 segment du boss!');
+
+        this.boss.snake.pop();
+        this.fireContactUsed = true;
+        this.stealGracePeriod = 3;
+
+        if (window.audio) window.audio.eat?.();
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#FF5722', 8);
+        this.showFloatingDamage(this.game.snake[0].x, this.game.snake[0].y, '🔥 -1', '#FF5722');
+
+        if (this.boss.snake.length <= 1) {
+            this.bossFightWon();
+            return;
+        }
+        this.updateBossUI();
+    }
+
+    /**
+     * 👻 GHOST - Vole 1 segment au boss
+     */
+    playerGhostStealsBossSegment() {
+        if (this.boss.snake.length <= 1) return;
+
+        logger.log('[BossFight] 👻 GHOST: Vole 1 segment au boss!');
+
+        this.boss.snake.pop();
+        this.game.snake.push({ ...this.game.snake[this.game.snake.length - 1] });
+        this.ghostContactUsed = true;
+        this.stealGracePeriod = 3;
+
+        if (window.audio) window.audio.eat?.();
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#FFFFFF', 8);
+        this.showFloatingDamage(this.game.snake[0].x, this.game.snake[0].y, '👻 +1', '#FFFFFF');
+
+        if (this.boss.snake.length <= 1) {
+            this.bossFightWon();
+            return;
+        }
+        this.updateBossUI();
+    }
+
+    /**
+     * ⚡ LIGHTNING - Vole 1 segment + ralentit le boss
+     */
+    playerLightningEffect() {
+        logger.log('[BossFight] ⚡ LIGHTNING: Vole 1 segment + ralentit boss!');
+
+        if (this.boss.snake.length > 1) {
+            this.boss.snake.pop();
+            this.game.snake.push({ ...this.game.snake[this.game.snake.length - 1] });
+        }
+
+        this.boss.slowed = true;
+        this.boss.slowedUntil = Date.now() + 3000;
+        this.boss.slowFactor = 0.5;
+
+        this.lightningContactUsed = true;
+        this.stealGracePeriod = 3;
+
+        if (window.audio) window.audio.eat?.();
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#FFD700', 10);
+        this.showFloatingDamage(this.game.snake[0].x, this.game.snake[0].y, '⚡ +1', '#FFD700');
+
+        if (this.boss.snake.length <= 1) {
+            this.bossFightWon();
+            return;
+        }
+        this.updateBossUI();
+    }
+
+    /**
+     * ❄️ ICE - Ralentit le boss
+     */
+    playerIceEffect() {
+        logger.log('[BossFight] ❄️ ICE: Ralentit le boss!');
+
+        this.boss.slowed = true;
+        this.boss.slowedUntil = Date.now() + 3000;
+        this.boss.slowFactor = 0.5;
+
+        this.iceContactUsed = true;
+        this.stealGracePeriod = 2;
+
+        if (window.audio) window.audio.eat?.();
+        this.game.createParticles(this.game.snake[0].x, this.game.snake[0].y, '#00FFFF', 8);
+        this.showFloatingDamage(this.game.snake[0].x, this.game.snake[0].y, '❄️ SLOW', '#00FFFF');
+
+        this.updateBossUI();
+    }
+
     bossStealsPlayerSegments() {
         const segmentsToSteal = 5;
         const segmentsLost = Math.min(segmentsToSteal, this.game.snake.length - 3);
@@ -2266,6 +2407,12 @@ export class BossFightSystem {
         this.swordActive = false;
         this.swordTimer = 0;
         this.stealGracePeriod = 0;
+
+        // 🎯 Reset power-up contact flags
+        this.fireContactUsed = false;
+        this.ghostContactUsed = false;
+        this.iceContactUsed = false;
+        this.lightningContactUsed = false;
 
         // 🧹 Nettoyer les timeouts de Mystery Box
         if (this.mysteryBoxTimeouts && this.mysteryBoxTimeouts.length > 0) {

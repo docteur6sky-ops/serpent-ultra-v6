@@ -1,5 +1,17 @@
 {
-  "date": "2026-01-01",
-  "leaderboard": [],
-  "attempts": {}
+  "date": "2026-01-02",
+  "leaderboard": [
+    {
+      "id": "mjwskjpkv339b",
+      "pseudo": "snakey",
+      "score": 123705,
+      "level": 20,
+      "time": 2772,
+      "attempt": 1,
+      "date": "2026-01-02T11:29:40.040Z"
+    }
+  ],
+  "attempts": {
+    "snakey": 1
+  }
 }
