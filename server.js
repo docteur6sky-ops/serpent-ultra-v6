@@ -838,6 +838,11 @@ class Room {
      * Gèle l'adversaire (immobile)
      */
     handleIceEffect(attacker, defender) {
+        // Rock est immunisé contre le gel
+        if (defender.activePowerup === 'rock') {
+            logger.info('GAME', `❄️ ICE bloqué par ROCK - Player ${defender.number} immunisé`);
+            return;
+        }
         // Geler l'adversaire s'il ne l'est pas déjà
         if (!defender.frozen) {
             this.applyFreezeEffect(defender);
@@ -849,23 +854,25 @@ class Room {
      * Gère l'effet du power-up FIRE sur un adversaire
      * Brûle 1 segment + boost pour l'attaquant
      */
+    /**
+     * Gère l'effet du power-up FIRE sur un adversaire
+     * Brûle 1 segment (détruit, ne vole pas)
+     */
     handleFireEffect(attacker, defender) {
+        // Rock est immunisé contre Fire
+        if (defender.activePowerup === 'rock') {
+            logger.info('GAME', `🔥 FIRE bloqué par ROCK - Player ${defender.number} immunisé`);
+            return;
+        }
         if (defender.snake.body.length > 3) {
+            // 🔥 BRÛLER = détruire le segment (PAS de grow pour l'attaquant)
             defender.snake.shrink(1);
-            defender.health = defender.snake.length; // ❤️ Sync health
+            defender.health = defender.snake.length;
 
-            // 🐍 Grandir seulement si pas au max
-            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
-                attacker.snake.grow();
-                attacker.health = attacker.snake.length; // ❤️ Sync health
-            }
-
-            attacker.stats.segmentsEaten++;
             defender.stats.segmentsLost++;
-            defender.swordCharge = 0; // ⚔️ Reset charge épée
+            defender.swordCharge = 0;
 
-            // ✅ Mettre à jour le tableau de scores
-            this.gameState.segments[attacker.id] = attacker.snake.length;
+            // Mettre à jour le tableau de scores
             this.gameState.segments[defender.id] = defender.snake.length;
 
             logger.info('GAME', `🔥 Player ${attacker.number} brûle 1 segment de Player ${defender.number}`);
@@ -879,7 +886,6 @@ class Room {
         }
     }
 
-    /**     * Gère l'effet du power-up SWORD sur un adversaire     * Vole 2 segments (comme l'ancien ROCK)     */    handleSwordEffect(attacker, defender) {        if (defender.activePowerup === 'rock') {            logger.info('GAME', );            return;        }        const toSteal = Math.min(2, defender.snake.body.length - 1);        if (toSteal <= 0) return;        defender.snake.shrink(toSteal);        defender.health = defender.snake.length;        for (let i = 0; i < toSteal; i++) {            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {                attacker.snake.grow();            }        }        attacker.health = attacker.snake.length;        attacker.stats.segmentsEaten += toSteal;        defender.stats.segmentsLost += toSteal;        this.gameState.segments[attacker.id] = attacker.snake.length;        this.gameState.segments[defender.id] = defender.snake.length;        logger.info('GAME', );        attacker.activePowerup = null;        attacker.powerupEndTime = 0;    }    handleGhostEffect(attacker, defender) {        if (attacker.ghostUsed) return;        if (defender.activePowerup === 'rock') return;        if (defender.snake.body.length > 1) {            defender.snake.shrink(1);            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) attacker.snake.grow();            attacker.stats.segmentsEaten++;            defender.stats.segmentsLost++;            this.gameState.segments[attacker.id] = attacker.snake.length;            this.gameState.segments[defender.id] = defender.snake.length;            logger.info('GAME', );            attacker.ghostUsed = true;        }    }    handleLightningEffect(attacker, defender) {        if (attacker.lightningUsed) return;        if (defender.activePowerup === 'rock') return;        if (defender.snake.body.length > 1) {            defender.snake.shrink(1);            if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) attacker.snake.grow();            attacker.stats.segmentsEaten++;            defender.stats.segmentsLost++;            this.gameState.segments[attacker.id] = attacker.snake.length;            this.gameState.segments[defender.id] = defender.snake.length;        }        defender.invertedControls = true;        defender.invertedUntil = Date.now() + 6000;        logger.info('GAME', );        attacker.lightningUsed = true;    }
 
 
     /**
@@ -910,12 +916,18 @@ class Room {
         attacker.powerupEndTime = 0;
     }
 
+
     /**
-     * Gère l'effet GHOST - Vole 1 segment (usage unique)
+     * Gère l'effet GHOST - Vole 1 segment + power-up stocké (usage unique)
      */
     handleGhostEffect(attacker, defender) {
         if (attacker.ghostUsed) return;
         if (defender.activePowerup === 'rock') return;
+
+        let stoleSegment = false;
+        let stolePowerup = false;
+
+        // Voler 1 segment
         if (defender.snake.body.length > 1) {
             defender.snake.shrink(1);
             if (attacker.snake.length < CONFIG.MAX_SNAKE_LENGTH) {
@@ -927,7 +939,22 @@ class Room {
             defender.stats.segmentsLost++;
             this.gameState.segments[attacker.id] = attacker.snake.length;
             this.gameState.segments[defender.id] = defender.snake.length;
-            logger.info('GAME', 'GHOST: vole 1 segment');
+            stoleSegment = true;
+        }
+
+        // 👻 Voler le power-up stocké de l'ennemi
+        if (defender.storedItem && !attacker.storedItem) {
+            attacker.storedItem = defender.storedItem;
+            defender.storedItem = null;
+            stolePowerup = true;
+            logger.info('GAME', `👻 GHOST: vole power-up stocké (${attacker.storedItem})`);
+        }
+
+        if (stoleSegment || stolePowerup) {
+            const msg = stoleSegment && stolePowerup
+                ? 'GHOST: vole 1 segment + power-up stocké'
+                : stoleSegment ? 'GHOST: vole 1 segment' : 'GHOST: vole power-up stocké';
+            logger.info('GAME', msg);
             attacker.ghostUsed = true;
         }
     }
@@ -2409,16 +2436,25 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static(path.join(__dirname, 'www'), {
-    etag: false,
-    lastModified: false
-}));
+// Servir fichiers statiques seulement si le dossier www existe (dev local)
+const wwwPath = path.join(__dirname, 'www');
+if (require('fs').existsSync(wwwPath)) {
+    app.use(express.static(wwwPath, {
+        etag: false,
+        lastModified: false
+    }));
+}
 
 // Parser JSON pour les requêtes API
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index.html'));
+    const indexPath = path.join(__dirname, 'www', 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.json({ status: 'ok', server: 'Snake Ultra Multiplayer', version: '1.0' });
+    }
 });
 
 // ============================================
