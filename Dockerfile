@@ -13,7 +13,7 @@ COPY Logger.js ./
 COPY SecurityValidator.js ./
 
 # Installer uniquement les dépendances de production
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts --legacy-peer-deps
 
 # Exposer le port
 EXPOSE 3000
