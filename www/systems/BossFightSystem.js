@@ -431,8 +431,11 @@ export class BossFightSystem {
     activateBoost() {
         const now = Date.now();
 
-        // Vérifier cooldown
-        if (now < this.boostCooldownEnd) {
+        // 🔥 FIRE = boost infini (pas de cooldown)
+        const hasFireActive = this.game.powerupEffects?.double || false;
+
+        // Vérifier cooldown (sauf si Fire actif)
+        if (now < this.boostCooldownEnd && !hasFireActive) {
             const remaining = Math.ceil((this.boostCooldownEnd - now) / 1000);
             logger.log(`[BossFight] ⚡ Boost en cooldown (${remaining}s)`);
             return false;

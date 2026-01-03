@@ -396,11 +396,12 @@ class SoloSnakeGame extends BaseSnakeGame {
             if (this.snake[i].x === head.x && this.snake[i].y === head.y) { selfCollision = true; break; }
         }
         if (selfCollision) {
-            // Vérifier immunité auto-collision (skin cyber/glitch/spectral)
+            // Vérifier immunité auto-collision (skin cyber/glitch/spectral + Ghost)
             const run = this.roguelikeSystem.isActive ? window.roguelikeManager?.currentRun : null;
             const selfCollisionImmune = run?.selfCollisionImmune || false;
+            const isGhostActive = this.powerupEffects?.ghost || false;
 
-            if (!this.powerUpSystem.isInvincibleActive && !selfCollisionImmune) {
+            if (!this.powerUpSystem.isInvincibleActive && !selfCollisionImmune && !isGhostActive) {
                 if (this.audio) this.audio.die();
                 this.gameOver();
                 return;
@@ -674,15 +675,13 @@ class SoloSnakeGame extends BaseSnakeGame {
             this.firstDirectionChangeTime = Date.now();
         }
 
-        // Lightning inverse les contrôles (sauf si bonus Maîtrise de l'Éclair)
+        // ⚡ LIGHTNING : N'inverse PLUS ses propres contrôles
+        // L'effet d'inversion s'applique seulement aux ennemis (boss/multi)
+        // Le bonus 'lightning_master' n'est plus nécessaire
         if (this.powerUpSystem.isLightningActive) {
+            // Track achievement si lightning_master pour compatibilité
             const run = this.roguelikeSystem?.isActive ? window.roguelikeManager?.currentRun : null;
-            const hasLightningMaster = run?.upgrades?.includes('lightning_master') || false;
-            if (!hasLightningMaster) {
-                newDx = -newDx;
-                newDy = -newDy;
-            } else {
-                // Tracking achievement Maîtrise Légendaire (une seule fois)
+            if (run?.upgrades?.includes('lightning_master')) {
                 achievementManager.onUsedLightningMaster();
             }
         }
