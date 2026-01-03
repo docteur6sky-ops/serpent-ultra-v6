@@ -1,5 +1,8 @@
 FROM node:22-alpine
 
+# Force rebuild - 2026-01-03
+ARG CACHE_BUST=1
+
 WORKDIR /app
 
 # Copier uniquement les fichiers serveur nécessaires
