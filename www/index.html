@@ -256,10 +256,10 @@
                 </div>
             </div>
 
-            <!-- Bouton Daily Challenge -->
+            <!-- Bouton Classement Mondial -->
             <div style="display: flex; justify-content: center; gap: 10px; margin: 8px 0; padding: 0 16px;">
-                <button class="btn btn-primary" id="hub-daily-btn" onclick="window.audio?.buttonClick();window.showDailyChallenge()" style="flex: 1; max-width: 200px; background: linear-gradient(135deg, #e94560, #0f3460); border: 2px solid #e94560; font-size: 0.9rem; padding: 10px 12px;">
-                    🎯 Défi du Jour
+                <button class="btn btn-primary" id="hub-leaderboard-btn" onclick="window.audio?.buttonClick();window.showLeaderboard('solo')" style="flex: 1; max-width: 200px; background: linear-gradient(135deg, #FFD700, #FFA500); border: 2px solid #FFD700; font-size: 0.9rem; padding: 10px 12px; color: #1a1a2e;">
+                    🏆 Leaderboard
                 </button>
             </div>
 
@@ -292,22 +292,7 @@
                             </button>
                             <button class="hub-new-run-btn hidden" id="hub-new-run-btn" onclick="window.audio.buttonClick();if(confirm('Abandonner la run sauvegardee et en commencer une nouvelle?')){window.deleteRoguelikeSavedRun();window.startRoguelikeRun();}">🔄 Nouvelle Run</button>
                         </div>
-                        <!-- Slide 2: SOLO -->
-                        <div class="carousel-slide" data-mode="solo">
-                            <button class="carousel-mode-btn carousel-mode-solo" role="button" tabindex="0" aria-label="Mode Solo" onclick="window.audio.buttonClick();showDifficultySelection()">
-                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="carousel-icon-img"></div>
-                                <div class="carousel-mode-text">Solo</div>
-                            </button>
-                        </div>
-                        <!-- Slide 3: ONLINE -->
-                        <div class="carousel-slide" data-mode="online">
-                            <button class="carousel-mode-btn carousel-mode-online" role="button" tabindex="0" aria-label="Mode Online" onclick="window.audio.buttonClick();window.showMultiplayer()">
-                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Online" class="carousel-icon-img"></div>
-                                <div class="carousel-mode-text">Online</div>
-                                <div class="carousel-mode-badge">NEW</div>
-                            </button>
-                        </div>
-                        <!-- Slide 4: BOSS RUSH -->
+                        <!-- Slide 2: BOSS RUSH -->
                         <div class="carousel-slide" data-mode="boss">
                             <button class="carousel-mode-btn carousel-mode-boss" role="button" tabindex="0" aria-label="Mode Boss Rush" onclick="window.audio.buttonClick();startBossRush()">
                                 <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_ia.webp" alt="Boss Rush" class="carousel-icon-img"></div>
@@ -315,14 +300,29 @@
                                 <div class="carousel-mode-badge carousel-badge-boss">4 BOSS</div>
                             </button>
                         </div>
+                        <!-- Slide 3: SOLO -->
+                        <div class="carousel-slide" data-mode="solo">
+                            <button class="carousel-mode-btn carousel-mode-solo" role="button" tabindex="0" aria-label="Mode Solo" onclick="window.audio.buttonClick();showDifficultySelection()">
+                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_solo.webp" alt="Solo" class="carousel-icon-img"></div>
+                                <div class="carousel-mode-text">Solo</div>
+                            </button>
+                        </div>
+                        <!-- Slide 4: ONLINE (Désactivé - Beta) -->
+                        <div class="carousel-slide" data-mode="online">
+                            <button class="carousel-mode-btn carousel-mode-online disabled" role="button" tabindex="0" aria-label="Mode Online" onclick="window.audio.buttonClick();window.ModalManager.info('Le mode Multijoueur sera disponible dans une prochaine mise à jour !', {title: 'Bientôt disponible'});">
+                                <div class="carousel-mode-icon"><img src="assets/hub_pictures/snake_multi.webp" alt="Online" class="carousel-icon-img"></div>
+                                <div class="carousel-mode-text">Online</div>
+                                <div class="carousel-coming-soon">Bientôt disponible</div>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <button class="carousel-arrow carousel-next" aria-label="Mode suivant">▶</button>
                 <div class="carousel-dots">
                     <button class="carousel-dot active" data-index="0" aria-label="Roguelike"></button>
-                    <button class="carousel-dot" data-index="1" aria-label="Solo"></button>
-                    <button class="carousel-dot" data-index="2" aria-label="Online"></button>
-                    <button class="carousel-dot" data-index="3" aria-label="Boss Rush"></button>
+                    <button class="carousel-dot" data-index="1" aria-label="Boss Rush"></button>
+                    <button class="carousel-dot" data-index="2" aria-label="Solo"></button>
+                    <button class="carousel-dot" data-index="3" aria-label="Online"></button>
                 </div>
             </div>
             <!-- Navigation Fixe (Bottom Nav) -->
@@ -339,9 +339,10 @@
                     <div class="hub-nav-icon">🏆</div>
                     <div class="hub-nav-label">Trophées</div>
                 </button>
-                <button class="hub-nav-btn" onclick="window.audio.buttonClick();window.showFriends()">
-                    <div class="hub-nav-icon">👥</div>
-                    <div class="hub-nav-label">Amis</div>
+                <button class="hub-nav-btn" onclick="window.audio.buttonClick();window.showMessaging()" style="position: relative;">
+                    <div class="hub-nav-icon">📬</div>
+                    <div class="hub-nav-label">Messages</div>
+                    <div class="hub-nav-badge hidden" id="messages-badge">0</div>
                 </button>
                 <button class="hub-nav-btn" onclick="window.audio.buttonClick();showOptions()" aria-label="Ouvrir les options">
                     <div class="hub-nav-icon">⚙️</div>

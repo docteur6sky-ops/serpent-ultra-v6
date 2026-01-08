@@ -5,6 +5,7 @@
 import { logger } from '../services/logger.js';
 import { adMobManager } from '../services/AdMobManager.js';
 import { SnakeUltra } from '../SnakeUltra.js';
+import { submitScoreAuto } from '../services/firebase.js';
 
 export class GameOverHandler {
     constructor() {
@@ -31,9 +32,24 @@ export class GameOverHandler {
             window.updateCareerStats(stats);
         }
 
-        // Sauvegarder dans le classement (fonction globale)
+        // Sauvegarder dans le classement local
         if (window.saveScore) {
             window.saveScore(stats);
+        }
+
+        // 🏆 Soumettre au leaderboard Firebase (global)
+        try {
+            const isNewRecord = await submitScoreAuto('solo', stats.score, {
+                level: stats.level,
+                combo: stats.combo,
+                difficulty: stats.difficulty,
+                time: stats.timeString
+            });
+            if (isNewRecord) {
+                logger.log('[GameOver] Nouveau record Firebase !');
+            }
+        } catch (e) {
+            logger.warn('[GameOver] Erreur soumission Firebase:', e.message);
         }
 
         // Afficher overlay progression (fonction globale)

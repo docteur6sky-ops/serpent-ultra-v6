@@ -680,13 +680,19 @@ class RoguelikeManager {
      */
     async submitScoreToLeaderboard(stats) {
         // Soumettre au leaderboard mondial Firebase
-        if (window.firebaseUI) {
-            window.firebaseUI.submitAndShowResult('roguelike', stats.score, {
+        try {
+            const { submitScoreAuto } = await import('../services/firebase.js');
+            const isNewRecord = await submitScoreAuto('roguelike', stats.score, {
                 level: stats.level,
                 applesEaten: stats.applesEaten,
                 upgradesCollected: stats.upgradesCollected,
                 timePlayed: Math.floor(stats.timePlayed)
             });
+            if (isNewRecord) {
+                logger.log('[RoguelikeManager] Nouveau record Firebase roguelike !');
+            }
+        } catch (e) {
+            logger.warn('[RoguelikeManager] Erreur soumission Firebase:', e.message);
         }
     }
 

@@ -281,30 +281,70 @@
     box-shadow: 0 3px 10px rgba(255, 87, 34, 0.5) !important;
 }
 
+/* ═══ MODE DÉSACTIVÉ (Beta) ═══ */
+.carousel-mode-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(60%);
+}
+
+.carousel-mode-btn.disabled:hover {
+    transform: none;
+    filter: grayscale(60%);
+}
+
+.carousel-mode-btn.disabled::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    z-index: 5;
+}
+
+.carousel-coming-soon {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #FFD700;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #FFD700;
+    z-index: 10;
+    white-space: nowrap;
+}
+
 /* ═══ FLÈCHES DE NAVIGATION ═══ */
 .carousel-arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    border: 2px solid #9c27b0;
     border-radius: 50%;
     color: #fff;
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.5);
 }
 
 .carousel-arrow:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-50%) scale(1.1);
+    transform: translateY(-50%) scale(1.15);
 }
 
 .carousel-arrow:active {
@@ -312,11 +352,53 @@
 }
 
 .carousel-prev {
-    left: 0;
+    left: -5px;
+    animation: arrow-hint-left 1.5s ease-in-out infinite;
 }
 
 .carousel-next {
-    right: 0;
+    right: -5px;
+    animation: arrow-hint-right 1.5s ease-in-out infinite;
+}
+
+@keyframes arrow-hint-left {
+    0%, 100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(-50%) translateX(-4px); }
+}
+
+@keyframes arrow-hint-right {
+    0%, 100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(-50%) translateX(4px); }
+}
+
+/* ═══ COULEURS FLÈCHES PAR MODE ═══ */
+
+/* ROGUELIKE - Violet */
+.hub-carousel-container[data-current-mode="roguelike"] .carousel-arrow {
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    border-color: #ba68c8;
+    box-shadow: 0 4px 20px rgba(156, 39, 176, 0.6);
+}
+
+/* BOSS RUSH - Rouge/Orange */
+.hub-carousel-container[data-current-mode="boss"] .carousel-arrow {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    border-color: #EF5350;
+    box-shadow: 0 4px 20px rgba(244, 67, 54, 0.6);
+}
+
+/* SOLO - Vert */
+.hub-carousel-container[data-current-mode="solo"] .carousel-arrow {
+    background: linear-gradient(135deg, #4CAF50, #388E3C);
+    border-color: #81C784;
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.6);
+}
+
+/* ONLINE - Bleu (même si désactivé) */
+.hub-carousel-container[data-current-mode="online"] .carousel-arrow {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border-color: #64B5F6;
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.6);
 }
 
 /* ═══ INDICATEURS DOTS ═══ */

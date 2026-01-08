@@ -234,7 +234,7 @@ export async function updateUserStats(newStats) {
 // ============================================
 
 /**
- * Soumet un score au leaderboard
+ * Soumet un score au leaderboard (nécessite connexion Google)
  * @param {string} mode - 'solo', 'roguelike', 'bossrush'
  * @param {number} score - Le score
  * @param {object} details - Détails supplémentaires (combo, niveau, etc.)
@@ -286,6 +286,63 @@ export async function submitScore(mode, score, details = {}) {
 }
 
 /**
+ * Soumet un score au leaderboard SANS compte Google (avec pseudo local)
+ * @param {string} mode - 'solo', 'roguelike', 'bossrush'
+ * @param {number} score - Le score
+ * @param {object} details - Détails supplémentaires
+ */
+export async function submitScoreAnonymous(mode, score, details = {}) {
+    if (!db) {
+        logger.warn('[Firebase] DB non initialisée');
+        return false;
+    }
+
+    try {
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+
+        // Créer un ID unique basé sur le pseudo (pour éviter les doublons)
+        const odisplayNameId = pseudo.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+        const leaderboardRef = collection(db, 'leaderboards', mode, 'scores');
+        const scoreDoc = doc(leaderboardRef, odisplayNameId);
+
+        // Vérifier si c'est un nouveau record personnel
+        const existingScore = await getDoc(scoreDoc);
+
+        if (!existingScore.exists() || existingScore.data().score < score) {
+            await setDoc(scoreDoc, {
+                odisplayName: pseudo,
+                odisplayNameId: odisplayNameId,
+                photoURL: null,
+                score: score,
+                details: details,
+                timestamp: serverTimestamp()
+            });
+
+            logger.log(`[Firebase] Nouveau record ${mode} (${pseudo}): ${score}`);
+            return true;
+        }
+
+        logger.log(`[Firebase] Score ${score} < record actuel ${existingScore.data().score}`);
+        return false; // Pas un nouveau record
+    } catch (error) {
+        logger.error('[Firebase] Erreur soumission score anonyme:', error);
+        return false;
+    }
+}
+
+/**
+ * Soumet un score (utilise Google si connecté, sinon pseudo local)
+ */
+export async function submitScoreAuto(mode, score, details = {}) {
+    if (currentUser) {
+        return submitScore(mode, score, details);
+    } else {
+        return submitScoreAnonymous(mode, score, details);
+    }
+}
+
+/**
  * Récupère le leaderboard
  * @param {string} mode - 'solo', 'roguelike', 'bossrush'
  * @param {number} limitCount - Nombre de scores à récupérer
@@ -301,16 +358,24 @@ export async function getLeaderboard(mode, limitCount = 10) {
         const q = query(leaderboardRef, orderBy('score', 'desc'), limit(limitCount));
         const snapshot = await getDocs(q);
 
+        const pseudo = localStorage.getItem('snakeultra_pseudo') || '';
+        const odisplayNameId = pseudo.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
         const scores = [];
         let rank = 1;
-        snapshot.forEach((doc) => {
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Supporter les deux formats (Google auth et anonyme)
+            const name = data.displayName || data.odisplayName || 'Anonyme';
+            const isMe = docSnap.id === currentUser?.uid || docSnap.id === odisplayNameId;
+
             scores.push({
                 rank: rank++,
-                displayName: doc.data().displayName || 'Anonyme',
-                photoURL: doc.data().photoURL,
-                score: doc.data().score,
-                details: doc.data().details,
-                isCurrentUser: doc.id === currentUser?.uid
+                displayName: name,
+                photoURL: data.photoURL,
+                score: data.score,
+                details: data.details,
+                isCurrentUser: isMe
             });
         });
 
@@ -354,5 +419,5 @@ export async function getUserRank(mode) {
 
 export default {
     initFirebase, signInWithGoogle, logOut, getCurrentUser, isLoggedIn, getUserProfile, updateUserStats,
-    submitScore, getLeaderboard, getUserRank
+    submitScore, submitScoreAnonymous, submitScoreAuto, getLeaderboard, getUserRank
 };

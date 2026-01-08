@@ -7308,21 +7308,21 @@ body.dark-mode .game-over-progression {
     justify-content: center;
     gap: 0;
     opacity: 0.3;
-    min-height: 20px;               /* ✅ Hauteur fixe */
+    min-height: 50px;               /* 🔥 Augmenté: 20px -> 50px (comme Boss Rush) */
     transition: opacity 0.3s ease, gap 0.3s ease;
 }
 
 .mp-powerup-inline.active {
     opacity: 1;
-    gap: 4px;
+    gap: 8px;                       /* 🔥 Augmenté: 4px -> 8px */
 }
 
 .mp-pw-emoji {
-    font-size: 20px;                /* 🔥 Augmenté: 12px -> 20px */
+    font-size: 40px;                /* 🔥 Augmenté: 20px -> 40px (comme Boss Rush) */
     visibility: hidden;             /* ✅ Invisible mais prend de la place */
     opacity: 0;
     line-height: 1;
-    width: 24px;                    /* 🔥 Augmenté: 14px -> 24px */
+    width: 48px;                    /* 🔥 Augmenté: 24px -> 48px */
     text-align: center;
 }
 
@@ -7332,12 +7332,12 @@ body.dark-mode .game-over-progression {
 }
 
 .mp-pw-bar {
-    width: 60px;
-    height: 7px;
+    width: 100px;                   /* 🔥 Augmenté: 60px -> 100px */
+    height: 12px;                   /* 🔥 Augmenté: 7px -> 12px */
     background: var(--bg-bar);
-    border-radius: 3px;
+    border-radius: 6px;             /* 🔥 Augmenté: 3px -> 6px */
     overflow: hidden;
-    border: 1px solid var(--border-bar);
+    border: 2px solid var(--border-bar); /* 🔥 Augmenté: 1px -> 2px */
 }
 
 .mp-pw-fill {
@@ -11791,6 +11791,564 @@ body.dark-mode .hub-chest-timer {
 /* Mode dark - même background */
 body.dark-mode .chest-modal-overlay {
     background: url('assets/backgrounds/backgrounds_generique.webp') center center / cover no-repeat;
+}
+
+/* ============================================
+   CINÉMATIQUE D'INVOCATION - STYLE GACHA AAA
+   ============================================ */
+
+.invocation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: invocation-fade-in 0.5s ease-out;
+}
+
+@keyframes invocation-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.invocation-fade-out {
+    animation: invocation-fade-out 0.5s ease-out forwards;
+}
+
+@keyframes invocation-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.invocation-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.invocation-btn {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 20px 50px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #1a1a2e;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow:
+        0 0 30px rgba(255, 215, 0, 0.8),
+        0 0 60px rgba(255, 165, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+    animation: invocation-btn-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes invocation-btn-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 30px rgba(255, 215, 0, 0.8),
+            0 0 60px rgba(255, 165, 0, 0.5);
+    }
+    50% {
+        box-shadow:
+            0 0 50px rgba(255, 215, 0, 1),
+            0 0 100px rgba(255, 165, 0, 0.8);
+    }
+}
+
+.invocation-btn:hover {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow:
+        0 0 50px rgba(255, 215, 0, 1),
+        0 0 100px rgba(255, 165, 0, 0.8);
+}
+
+.invocation-btn:active {
+    transform: translateX(-50%) scale(0.98);
+}
+
+.invocation-btn-appear {
+    animation: invocation-btn-appear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes invocation-btn-appear {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.3) translateY(50px);
+    }
+    60% {
+        transform: translateX(-50%) scale(1.1) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1) translateY(0);
+    }
+}
+
+.invocation-skip {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.invocation-skip:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.invocation-skip.hidden {
+    display: none;
+}
+
+/* ============================================
+   MESSAGERIE ADMIN - STYLE AAA
+   ============================================ */
+
+/* Overlay principal */
+.messaging-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 15000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.messaging-overlay.messaging-visible {
+    opacity: 1;
+}
+
+.messaging-container {
+    width: 90%;
+    max-width: 450px;
+    max-height: 85vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 20px;
+    border: 2px solid rgba(0, 255, 135, 0.3);
+    box-shadow: 0 0 40px rgba(0, 255, 135, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.messaging-visible .messaging-container {
+    transform: scale(1) translateY(0);
+}
+
+/* Header */
+.messaging-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0, 255, 135, 0.1) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(0, 255, 135, 0.2);
+}
+
+.messaging-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 22px;
+    font-weight: bold;
+    color: #00FF87;
+    text-shadow: 0 0 10px rgba(0, 255, 135, 0.5);
+}
+
+.messaging-icon {
+    font-size: 28px;
+}
+
+.messaging-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.5);
+    color: #FF6464;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.messaging-close:hover {
+    background: rgba(255, 100, 100, 0.4);
+    transform: scale(1.1);
+}
+
+/* Contenu */
+.messaging-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+/* État vide */
+.messaging-empty {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.messaging-empty-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.messaging-empty-text {
+    font-size: 20px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.messaging-empty-sub {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Liste de messages */
+.messaging-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Carte message */
+.message-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.message-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+    border-color: rgba(0, 255, 135, 0.3);
+}
+
+.message-card.unread {
+    background: rgba(0, 255, 135, 0.08);
+    border-color: rgba(0, 255, 135, 0.3);
+}
+
+.message-card.important.unread {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(0, 255, 135, 0.08) 100%);
+    border-color: rgba(255, 215, 0, 0.4);
+}
+
+/* Indicateur non lu */
+.message-card-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00FF87;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px #00FF87;
+}
+
+.message-card-indicator.read {
+    background: #444;
+    box-shadow: none;
+}
+
+/* Icône */
+.message-card-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+/* Corps */
+.message-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-card-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-card-preview {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-card-date {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Récompense */
+.message-card-reward {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    animation: reward-pulse 2s ease-in-out infinite;
+}
+
+.message-card-reward.claimed {
+    background: #333;
+    box-shadow: none;
+    animation: none;
+}
+
+@keyframes reward-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Badge NEW */
+.message-card-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    padding: 3px 8px;
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A5A 100%);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.5);
+}
+
+/* Modal détail */
+.message-detail-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 16000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.message-detail-overlay.visible {
+    opacity: 1;
+}
+
+.message-detail-container {
+    width: 85%;
+    max-width: 400px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 20px;
+    border: 2px solid rgba(0, 255, 135, 0.4);
+    padding: 25px;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.message-detail-overlay.visible .message-detail-container {
+    transform: scale(1);
+}
+
+.message-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.message-detail-header.important {
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.message-detail-icon {
+    font-size: 36px;
+}
+
+.message-detail-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+}
+
+.message-detail-date {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.message-detail-content {
+    font-size: 15px;
+    color: #CCC;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+}
+
+/* Récompense dans le détail */
+.message-detail-reward {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.message-detail-reward.claimed {
+    background: rgba(100, 100, 100, 0.2);
+    border-color: rgba(100, 100, 100, 0.3);
+}
+
+.reward-title {
+    font-size: 14px;
+    color: #FFD700;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.message-detail-reward.claimed .reward-title {
+    color: #888;
+}
+
+.reward-items {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.reward-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.reward-emoji {
+    font-size: 30px;
+}
+
+.reward-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+
+.reward-claim-btn {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.reward-claim-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+}
+
+.reward-claim-btn.claimed {
+    background: #444;
+    color: #888;
+    box-shadow: none;
+}
+
+.message-detail-close {
+    width: 100%;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.message-detail-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Badge sur le bouton hub */
+.hub-nav-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A5A 100%);
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.5);
+}
+
+.hub-nav-badge.hidden {
+    display: none;
 }
 
 /* ============================================

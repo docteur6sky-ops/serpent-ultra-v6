@@ -269,7 +269,7 @@ class BossRushManager {
     /**
      * Run complétée (4 boss vaincus)
      */
-    completeRun() {
+    async completeRun() {
         if (!this.currentRun) return;
 
         this.currentRun.completed = true;
@@ -336,17 +336,21 @@ class BossRushManager {
         logger.log('[BossRush] Run complétée!', finalStats);
 
         // Soumettre au leaderboard mondial Firebase (victoire = bonus 10000 + temps inversé)
-        if (window.firebaseUI) {
+        try {
+            const { submitScoreAuto } = await import('../services/firebase.js');
             // Score: 10000 (victoire) + bonus temps (plus rapide = plus de points)
             const timeBonus = Math.max(0, Math.floor(600 - totalTime) * 10); // Bonus max si < 10min
             const score = 10000 + timeBonus;
-            window.firebaseUI.submitAndShowResult('bossrush', score, {
+            await submitScoreAuto('bossrush', score, {
                 stageReached: 4,
                 totalTime: Math.floor(totalTime),
                 bossesDefeated: 4,
                 completed: true,
                 isPerfect: finalStats.isPerfect || false
             });
+            logger.log('[BossRush] Score victoire soumis:', score);
+        } catch (e) {
+            logger.warn('[BossRush] Erreur soumission Firebase:', e.message);
         }
 
         // Afficher l'écran de fin
@@ -412,14 +416,20 @@ class BossRushManager {
         logger.log(`[BossRush] Game Over au stage ${stage}`, finalStats);
 
         // Soumettre au leaderboard mondial Firebase
-        if (window.firebaseUI) {
-            const score = (stage - 1) * 1000 + Math.floor(totalTime); // Score basé sur stage atteint
-            window.firebaseUI.submitAndShowResult('bossrush', score, {
-                stageReached: stage,
-                totalTime: Math.floor(totalTime),
-                bossesDefeated: bossesDefeated
-            });
-        }
+        (async () => {
+            try {
+                const { submitScoreAuto } = await import('../services/firebase.js');
+                const score = (stage - 1) * 1000 + Math.floor(totalTime); // Score basé sur stage atteint
+                await submitScoreAuto('bossrush', score, {
+                    stageReached: stage,
+                    totalTime: Math.floor(totalTime),
+                    bossesDefeated: bossesDefeated
+                });
+                logger.log('[BossRush] Score game over soumis:', score);
+            } catch (e) {
+                logger.warn('[BossRush] Erreur soumission Firebase:', e.message);
+            }
+        })();
 
         // Afficher l'écran de fin
         if (window.bossRushUI) {

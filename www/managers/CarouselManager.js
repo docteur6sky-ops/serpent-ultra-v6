@@ -228,6 +228,13 @@ class CarouselManager {
                 dot.classList.remove('active');
             }
         });
+
+        // Mettre à jour la couleur des flèches selon le mode actuel
+        if (this.container) {
+            const currentSlide = this.slides[this.currentIndex];
+            const mode = currentSlide?.dataset.mode || 'roguelike';
+            this.container.dataset.currentMode = mode;
+        }
     }
 
     /**

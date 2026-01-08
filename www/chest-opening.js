@@ -356,11 +356,92 @@ class ChestOpeningExperience {
     }
 
     /**
+     * 🎬 CINÉMATIQUE D'INVOCATION - Style Gacha AAA
+     * Joue la vidéo d'invocation avant de révéler un skin rare
+     */
+    async playInvocationCinematic() {
+        logger.log('[ChestOpening] 🎬 Lancement cinématique invocation...');
+
+        return new Promise((resolve) => {
+            // Créer l'overlay cinématique
+            const overlay = document.createElement('div');
+            overlay.id = 'invocation-cinematic';
+            overlay.className = 'invocation-overlay';
+            overlay.innerHTML = `
+                <video id="invocation-video" class="invocation-video" playsinline muted>
+                    <source src="assets/backgrounds/loading_pro.mp4" type="video/mp4">
+                </video>
+                <button id="invocation-btn" class="invocation-btn hidden">
+                    🥚 OUVRIR L'ŒUF
+                </button>
+                <div id="invocation-skip" class="invocation-skip">PASSER ▶▶</div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            const video = document.getElementById('invocation-video');
+            const btn = document.getElementById('invocation-btn');
+            const skipBtn = document.getElementById('invocation-skip');
+
+            // Fonction pour terminer la cinématique
+            const finishCinematic = () => {
+                overlay.classList.add('invocation-fade-out');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve();
+                }, 500);
+            };
+
+            // Afficher le bouton à la fin de la vidéo
+            video.addEventListener('ended', () => {
+                logger.log('[ChestOpening] 🎬 Vidéo terminée');
+                btn.classList.remove('hidden');
+                btn.classList.add('invocation-btn-appear');
+                skipBtn.classList.add('hidden');
+
+                // Son épique
+                if (window.audio) {
+                    window.audio.bossAppear?.();
+                }
+            });
+
+            // Bouton "OUVRIR L'ŒUF"
+            btn.onclick = () => {
+                if (window.audio) {
+                    window.audio.chestOpen?.();
+                }
+                finishCinematic();
+            };
+
+            // Bouton PASSER
+            skipBtn.onclick = () => {
+                video.pause();
+                btn.classList.remove('hidden');
+                btn.classList.add('invocation-btn-appear');
+                skipBtn.classList.add('hidden');
+            };
+
+            // Lancer la vidéo
+            video.play().catch(e => {
+                logger.warn('[ChestOpening] Erreur lecture vidéo:', e);
+                // Si la vidéo ne peut pas jouer, montrer directement le bouton
+                btn.classList.remove('hidden');
+                skipBtn.classList.add('hidden');
+            });
+        });
+    }
+
+    /**
      * Révèle une récompense individuelle
      */
     async revealReward(reward) {
         const rewardsZone = document.querySelector('.chest-rewards-zone');
         if (!rewardsZone) return;
+
+        // 🎬 CINÉMATIQUE D'INVOCATION pour les skins !
+        if (reward.itemType === 'skin') {
+            await this.playInvocationCinematic();
+        }
 
         // Créer carte récompense
         const card = document.createElement('div');
