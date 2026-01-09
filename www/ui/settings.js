@@ -383,7 +383,7 @@ function showFeedbackModal() {
  */
 export function submitFeedback(type) {
     // URL Google Form - REMPLACER par ton propre formulaire
-    const feedbackUrl = 'https://forms.gle/XXXXXXXXXX';
+    const feedbackUrl = 'https://docs.google.com/forms/d/105UXmaqf2NwBPtFkKxn9axtiHnTrDLroMAFHWME4JpM/viewform';
     window.open(feedbackUrl, '_blank');
     closeFeedbackModal();
     logger.log('[Feedback] Type: ' + type);
