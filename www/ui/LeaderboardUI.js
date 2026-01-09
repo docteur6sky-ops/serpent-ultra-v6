@@ -111,6 +111,19 @@ class LeaderboardUI {
      * Charge le leaderboard depuis Firebase
      */
     async loadLeaderboard(mode) {
+        // Vérifier connexion
+        if (window.offlineManager && !window.offlineManager.online) {
+            const content = this.modal.querySelector(".leaderboard-content");
+            content.innerHTML = `
+                <div class="leaderboard-offline">
+                    <span class="offline-icon">📡</span>
+                    <p>Mode hors-ligne</p>
+                    <p class="offline-desc">Les classements nécessitent une connexion internet</p>
+                </div>
+            `;
+            return;
+        }
+
         this.isLoading = true;
         const content = this.modal.querySelector('.leaderboard-content');
 

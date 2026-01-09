@@ -13582,3 +13582,194 @@ body.dark-mode .chest-modal-overlay {
 .firebase-notification:not(.show) {
     pointer-events: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FEEDBACK MODAL - Beta Feedback System
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.feedback-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.feedback-modal-overlay.show {
+    opacity: 1;
+}
+
+.feedback-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #4CAF50;
+    border-radius: 20px;
+    padding: 25px;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(76, 175, 80, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.feedback-modal-overlay.show .feedback-modal {
+    transform: scale(1);
+}
+
+.feedback-modal h3 {
+    color: #4CAF50;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.feedback-modal p {
+    color: #ccc;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.feedback-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.feedback-option-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px 20px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.feedback-option-btn.bug {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    border-color: #ef5350;
+}
+
+.feedback-option-btn.bug:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 20px rgba(244, 67, 54, 0.4);
+}
+
+.feedback-option-btn.idea {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    border-color: #FFB74D;
+}
+
+.feedback-option-btn.idea:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 20px rgba(255, 152, 0, 0.4);
+}
+
+.feedback-option-btn.other {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border-color: #64B5F6;
+}
+
+.feedback-option-btn.other:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.4);
+}
+
+.feedback-icon {
+    font-size: 1.3rem;
+}
+
+.feedback-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.feedback-info p {
+    margin: 5px 0;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.feedback-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 30px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.feedback-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   OFFLINE BANNER - Network Status Indicator
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: #fff;
+    text-align: center;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 10000;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+}
+
+.offline-banner.show {
+    transform: translateY(0);
+}
+
+.offline-banner .offline-icon {
+    margin-right: 8px;
+}
+
+/* Leaderboard offline state */
+.leaderboard-offline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.leaderboard-offline .offline-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.7;
+}
+
+.leaderboard-offline p {
+    color: #ccc;
+    font-size: 1.1rem;
+    margin: 5px 0;
+}
+
+.leaderboard-offline .offline-desc {
+    color: #888;
+    font-size: 0.9rem;
+}

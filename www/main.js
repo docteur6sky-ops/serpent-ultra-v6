@@ -9,6 +9,7 @@
 // 1. Services de base (pas de dépendances)
 import { logger } from './services/logger.js';
 import { state } from './services/StateManager.js';
+import { offlineManager } from './services/OfflineManager.js';
 import { ErrorBoundary } from './services/ErrorBoundary.js';
 
 // ============================================
@@ -96,6 +97,8 @@ await import('./managers/CarouselManager.js');  // ✅ Carrousel modes de jeu
 await import('./BoxSystem.js');  // ✅ Système Box unifié (manager + UI)
 await import('./chest-opening.js');  // ✅ Expérience AAA ouverture coffre
 await import('./stats-manager.js');  // ✅ Gestionnaire écran Stats/Carrière
+await import('./ui/MessagingUI.js');  // ✅ Messagerie admin → joueurs
+await import('./ui/LeaderboardUI.js');  // ✅ Classement mondial Firebase
 
 // Utilitaires
 await import('./render-utils.js');

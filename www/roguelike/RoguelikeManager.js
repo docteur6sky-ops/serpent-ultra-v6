@@ -367,6 +367,7 @@ class RoguelikeManager {
         // Les points arrivent déjà calculés (avec combo, appleScore, etc.) depuis solo-game.js
         this.currentRun.applesEaten++;
         this.currentRun.score += points;
+        achievementManager.onXPEarned(points);
 
         // Tracking anti-triche
         const sm = getSecurityManager();
@@ -485,6 +486,7 @@ class RoguelikeManager {
         const bossXP = 200;
         this.currentRun.score += bossXP;
 
+        achievementManager.onXPEarned(bossXP);
         // Afficher le choix d'upgrade normalement
         this.showUpgradeChoice();
     }
@@ -529,6 +531,8 @@ class RoguelikeManager {
         this.currentRun = applyUpgrade(this.currentRun, upgradeId);
         this.currentRun.modifiers = calculateRunModifiers(this.currentRun.upgrades);
 
+        // Notifier le système d'achievements
+        achievementManager.onUpgradeSelected(upgrade);
         logger.log(`[RoguelikeManager] Upgrade sélectionné: ${upgrade.name}`);
 
         this.isShowingUpgradeChoice = false;
@@ -547,6 +551,8 @@ class RoguelikeManager {
         // Bonus XP pour skip
         const bonusXP = 50;
         this.currentRun.score += bonusXP;
+        achievementManager.onXPEarned(bonusXP);
+        achievementManager.onUpgradeSkipped();
 
         logger.log(`[RoguelikeManager] Upgrade passé, +${bonusXP} XP`);
 

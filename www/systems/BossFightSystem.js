@@ -2259,7 +2259,7 @@ export class BossFightSystem {
         logger.log('[BossFight] Boss vaincu!');
 
         const bossName = this.game.roguelikeLevelData?.name || 'BOSS';
-        const segmentsLostDuringFight = (this.bossStartPlayerSegments || this.game.snake.length) - this.game.snake.length;
+        const segmentsLostDuringFight = Math.max(0, (this.bossStartPlayerSegments || this.game.snake.length) - this.game.snake.length);
         achievementManager.onBossKilled(bossName, this.bossTimer, segmentsLostDuringFight);
 
         this.bossDefeated = true;

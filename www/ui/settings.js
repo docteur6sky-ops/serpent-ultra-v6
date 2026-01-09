@@ -329,3 +329,78 @@ window.updateTouchSensitivity = updateTouchSensitivity;
 window.updateDpadSize = updateDpadSize;
 
 logger.log('✅ Module settings.js chargé');
+
+// ============================================
+// FEEDBACK BETA
+// ============================================
+
+/**
+ * Ouvrir le formulaire de feedback beta
+ */
+export function openBetaFeedback() {
+    showFeedbackModal();
+}
+
+/**
+ * Affiche le modal de feedback
+ */
+function showFeedbackModal() {
+    const pseudo = localStorage.getItem('snakeultra_pseudo') || 'Anonyme';
+    
+    const modal = document.createElement('div');
+    modal.className = 'feedback-modal-overlay';
+    modal.innerHTML = `
+        <div class="feedback-modal">
+            <h3>💬 Feedback Beta</h3>
+            <p>Merci de nous aider à améliorer Snake Ultra !</p>
+            <div class="feedback-options">
+                <button class="feedback-option-btn bug" onclick="window.submitFeedback('bug')">
+                    <span class="feedback-icon">🐛</span>
+                    <span>Signaler un bug</span>
+                </button>
+                <button class="feedback-option-btn idea" onclick="window.submitFeedback('idea')">
+                    <span class="feedback-icon">💡</span>
+                    <span>Suggérer une idée</span>
+                </button>
+                <button class="feedback-option-btn other" onclick="window.submitFeedback('other')">
+                    <span class="feedback-icon">📝</span>
+                    <span>Autre commentaire</span>
+                </button>
+            </div>
+            <div class="feedback-info">
+                <p>Version: 6.0 Beta</p>
+                <p>Pseudo: ${pseudo}</p>
+            </div>
+            <button class="feedback-close-btn" onclick="window.closeFeedbackModal()">Fermer</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+
+/**
+ * Soumettre le feedback
+ */
+export function submitFeedback(type) {
+    // URL Google Form - REMPLACER par ton propre formulaire
+    const feedbackUrl = 'https://forms.gle/XXXXXXXXXX';
+    window.open(feedbackUrl, '_blank');
+    closeFeedbackModal();
+    logger.log('[Feedback] Type: ' + type);
+}
+
+/**
+ * Fermer le modal
+ */
+export function closeFeedbackModal() {
+    const modal = document.querySelector('.feedback-modal-overlay');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+// Exports globaux feedback
+window.openBetaFeedback = openBetaFeedback;
+window.submitFeedback = submitFeedback;
+window.closeFeedbackModal = closeFeedbackModal;
